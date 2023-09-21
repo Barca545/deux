@@ -36,7 +36,7 @@ impl<'a> Query<'a> {
     Ok(self)
   }
   
-  ///Returns entities from entities containing all of the components in map i.e. all of the entities whose bitmask matches the query's bitmask
+  ///Returns entities from entities containing all of the components in a whose bitmask matches the query's bitmask
   pub fn run(&self) -> (QueryIndices,QueryComponents){
     //what exactly are these indexes?
     let indexes:Vec<usize> = self
@@ -64,10 +64,11 @@ impl<'a> Query<'a> {
       }
       result.push(components_to_keep);
     };
-
     return (indexes,result)
   }
   
+  ///Returns a query entity containing all entities containing the queried components. 
+  ///Exposes the `immut_get_component` and `mut_get_component` methods for returned entities.
   pub fn run_entity(&self) -> Vec<QueryEntity>{
     self
       .entities
