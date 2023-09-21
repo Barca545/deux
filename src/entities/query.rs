@@ -1,7 +1,7 @@
 use std::any::{Any, TypeId};
 use eyre::Result;
 use crate::custom_errors::CustomErrors;
-use super::entities::{Entities, Component};
+use super::{entities::{Entities, Component}, query_entity::QueryEntity};
 
 pub type QueryIndices = Vec<usize>;
 pub type QueryComponents = Vec<Vec<Component>>;
@@ -66,14 +66,33 @@ impl<'a> Query<'a> {
     };
 
     return (indexes,result)
-
+  }
+  
+  pub fn run_entity(&self) -> Vec<QueryEntity>{
+    self
+      .entities
+      .map
+      .iter()
+      .enumerate()
+      .filter_map(|(index, entity_map)|{
+        if entity_map & self.map == self.map {
+          Some(QueryEntity::new(index,self.entities))
+        }
+        else {
+          None
+        }
+    })
+    .collect()
   }
 }
 
 #[cfg(test)]
 #[allow(clippy::float_cmp)]
 mod test {
+  use crate::entities::query_entity::QueryEntity;
+  use std::cell::{Ref, RefMut};
   use super::*;
+
 
   #[test]
   fn query_mask_updating_with_component() -> Result<()>{
@@ -153,5 +172,71 @@ mod test {
     assert_eq!(indexes[1],3);
 
     Ok(())
+  }
+
+  #[test]
+  fn query_for_entity_ref() -> Result<()>{
+    let mut entities = Entities::default();
+    entities.register_component::<u32>();
+    entities.register_component::<f32>();
+
+    entities.create_entity()
+      .with_component(100_u32)?;
+
+    entities.create_entity()
+      .with_component(10.0_f32)?;
+
+    let mut query = Query::new(&entities);
+    
+    let entities: Vec<QueryEntity> = query
+    .with_component::<u32>()?
+    .run_entity();
+
+  assert_eq!(entities.len(),1);
+  
+  for entity in entities {
+    assert_eq!(entity.id, 0);
+    let health: Ref<u32> = entity.immut_get_component::<u32>()?;
+    assert_eq!(*health, 100);
+  }
+  Ok(())
+  }
+
+  #[test]
+  fn query_for_entity_mutable() -> Result<()>{
+    let mut entities = Entities::default();
+    entities.register_component::<u32>();
+    entities.register_component::<f32>();
+
+    entities.create_entity()
+      .with_component(100_u32)?;
+
+    entities.create_entity()
+      .with_component(10.0_f32)?;
+
+    let mut query = Query::new(&entities);
+    
+    let entities: Vec<QueryEntity> = query
+    .with_component::<u32>()?
+    .run_entity();
+
+  assert_eq!(entities.len(),1);
+  
+  for entity in entities {
+    assert_eq!(entity.id, 0);
+    let mut health: RefMut<u32> = entity.mut_get_component::<u32>()?;
+    assert_eq!(*health, 100);
+    *health += 1;
+  }
+
+  let entities: Vec<QueryEntity> = query
+    .with_component::<u32>()?
+    .run_entity();
+  
+  for entity in entities {
+    let health: Ref<u32> = entity.immut_get_component::<u32>()?;
+    assert_eq!(*health, 101);
+  }
+  Ok(())
   }
 }

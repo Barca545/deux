@@ -7,5 +7,9 @@ pub enum CustomErrors {
   #[error("Attempted to use an unregisted component")]
 	ComponentNotRegistered, 
 	#[error("Attempted to reference an entity that does not exist")]
-	EntityDoesNotExist
+	EntityDoesNotExist,
+  #[error("Attempted to use component data that does not exist")]
+	ComponentDataDoesNotExist, 
+  #[error("Attempted to downcast component to the wrong type")]
+	DowncastToWrongType, 
 }

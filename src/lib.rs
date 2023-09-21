@@ -1,12 +1,11 @@
 pub mod entities;
 mod resources;
 pub mod custom_errors;
+
 use entities::{entities::Entities, query::Query};
 use sdl2::rect::{Rect,Point};
-
 use std::any::Any;
-
-use crate::resources::Resource;
+use resources::Resource;
 use eyre::Result;
 
 
@@ -34,6 +33,7 @@ Questions
 - as_ref vs &
 - are the ids the same as the indices in my code?
 - integration vs unit test?
+- what is a collection?
 */
 
 //confirm my documentation for the entities portion is correct

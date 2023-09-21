@@ -30,8 +30,8 @@ impl Entities{
   pub fn register_component<T:Any + 'static>(&mut self){
     let typeid = TypeId::of::<T>();
     self.components.insert(typeid,vec![]);
-    let bitmask = 2u32.pow(self.bitmasks.len() as u32);
-    self.bitmasks.insert(typeid, bitmask);
+    self.bitmasks.insert(typeid, 1 << self.bitmasks.len());
+
   }
   
   pub fn create_entity(&mut self)-> &mut Self{
@@ -43,12 +43,13 @@ impl Entities{
       .iter_mut()
       .for_each(|(_key,components)|components.push(None));
     self.map.push(0);
+    self.inserting_into_index = self.map.len() - 1;
     }
     self
   }
 
-  ///Used with `create_entity` to assign components and their initial values to the entity being created. 
-  ///Updates the entity's bitmap to indicate which components they contain.
+  // /Used with `create_entity` to assign components and their initial values to the entity being created. 
+  // /Updates the entity's bitmap to indicate which components they contain.
   pub fn with_component(&mut self, data:impl Any) -> Result<&mut Self>  {
     let typeid:TypeId = data.type_id();
     let index = self.inserting_into_index;
@@ -67,6 +68,7 @@ impl Entities{
     };
     Ok(self)
   }
+
 
   pub fn get_bitmask(&self, typeid:&TypeId) -> Option<u32> {
     return self.bitmasks.get(typeid).copied()
@@ -133,7 +135,6 @@ use super::*;
     entities.register_component::<Health>();
     let health_components = entities.components.get(&typeid).unwrap();
     assert_eq!(health_components.len(),0);
-    dbg!(entities);
   }
 
   #[test] 
@@ -161,7 +162,6 @@ use super::*;
     let speed = entities.components.get(&TypeId::of::<Speed>()).unwrap();
     assert!(health.len()==speed.len() && health.len()==1);
     assert!(health[0].is_none() && speed[0].is_none());
-    dbg!(entities);
   }
   
   #[test]
@@ -191,7 +191,7 @@ use super::*;
     entities.create_entity()
       .with_component(Health(100))?
       .with_component(Speed(15))?;
-    
+
     let entity_map = entities.map[0];
     assert_eq!(entity_map,3);
 
