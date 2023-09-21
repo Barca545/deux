@@ -14,6 +14,8 @@ pub type Component = Rc<RefCell<dyn Any>>;
 pub type Components = HashMap<TypeId,Vec<Option<Component>>>;
 
 //so you can search for classes of entities because they will all have the same number for their bitmap
+
+//use another bitmask for specific id?
 #[derive(Debug,Default)]
 pub struct Entities {
   //what is this type
@@ -31,7 +33,6 @@ impl Entities{
     let typeid = TypeId::of::<T>();
     self.components.insert(typeid,vec![]);
     self.bitmasks.insert(typeid, 1 << self.bitmasks.len());
-
   }
   
   pub fn create_entity(&mut self)-> &mut Self{
@@ -115,6 +116,7 @@ impl Entities{
     else{
       return Err(CustomErrors::EntityDoesNotExist.into());
     }
+    
     Ok(())
   }
 
@@ -203,6 +205,7 @@ use super::*;
 
     Ok(())
   }
+  
   #[test]
   fn delete_component_by_entity_id() -> Result<()>{
     let mut entities = Entities::default();
@@ -244,7 +247,6 @@ use super::*;
     let speed = borrowed_speed.downcast_ref::<Speed>().unwrap();
 
     assert_eq!(speed.0,50);
-    
     
     Ok(())
   }
