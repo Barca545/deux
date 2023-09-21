@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 eyre = "0.3.7"
 thiserror = "1.0.48"
+gl = { path = "lib/gl" }
 
 [dependencies.sdl2]
 version = "0.35.2"
