@@ -1,16 +1,22 @@
-[package]
-name = "deux"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = [
+  "gl",
+  "game_loop",
+  "ecs",
+  "view"
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace.dependencies]
+ecs = {path ="ecs"}
+view = {path ="view"}
+game_loop = {path ="game_loop"}
+gl = {path ="gl"}
 
-[dependencies]
-eyre = "0.3.7"
-thiserror = "1.0.48"
-gl = { path = "lib/gl" }
-
-[dependencies.sdl2]
+[workspace.dependencies.sdl2]
 version = "0.35.2"
 default-features = false
 features = ["image"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
