@@ -24,7 +24,7 @@ impl<'a> Query<'a> {
     }
   }
   ///Tells the query the entities it pulls must contain the component passed in as an argument.
-  pub fn with_component<T: Any>(& mut self) -> Result<&mut Self>{
+  pub fn with_component<T: Any>(&mut self) -> Result<&mut Self>{
     let typeid = TypeId::of::<T>();
     if let Some(bit_mask) = self.entities.get_bitmask(&typeid){
       self.map |= bit_mask; 
@@ -93,7 +93,6 @@ mod test {
   use crate::entities::query_entity::QueryEntity;
   use std::cell::{Ref, RefMut};
   use super::*;
-
 
   #[test]
   fn query_mask_updating_with_component() -> Result<()>{

@@ -12,11 +12,16 @@ ecs = {path ="ecs"}
 view = {path ="view"}
 game_loop = {path ="game_loop"}
 gl = {path ="gl"}
+eyre = "0.3.7"
+thiserror = "1.0.48"
 
 [workspace.dependencies.sdl2]
 version = "0.35.2"
 default-features = false
 features = ["image"]
+
+[workspace.features]
+gl_debug = ["gl/debug"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

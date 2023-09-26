@@ -6,6 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-eyre = "0.3.7"
-thiserror = "1.0.48"
+eyre = {workspace=true}
+thiserror = {workspace=true}
 sdl2 = {workspace=true}
+
+[build-dependencies]
+walkdir = "2.1"

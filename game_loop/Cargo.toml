@@ -10,3 +10,5 @@ sdl2 = {workspace=true}
 ecs = {workspace=true}
 view = {workspace=true}
 gl = {workspace=true}
+eyre = {workspace=true}
+thiserror = {workspace=true}

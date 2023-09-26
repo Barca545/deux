@@ -1,10 +1,11 @@
 pub mod entities;
 pub mod resources;
 pub mod custom_errors;
+pub mod systems;
 
 use entities::{entities::Entities, query::Query};
 use sdl2::rect::{Rect,Point};
-use std::any::Any;
+use std::{any::Any, ffi::CString};
 use resources::Resource;
 use eyre::Result;
 
@@ -49,7 +50,7 @@ impl World{
   /**
   Generates a new world with default settings. 
   ```
-  use deux::World;
+  use ecs::World;
   let mut world = World::new();
   ```
   */
@@ -58,21 +59,22 @@ impl World{
   }
   
   /**
-  Adds a resource to the world
+  Adds a resource to the world. Use with `from_user_defined_data`, `from_relative_exe_path`
   ```
-  use deux::World;
+  use ecs::World;
   let mut world = World::new();
-  world.add_resource(10_u32);
+  world.add_resource().from_user_defined_data(10_u32);
+  world.add_resource().from_relative_exe_path("dummy.path");
   ```
   */
-  pub fn add_resource(&mut self, resource_data: impl Any){
-    self.resources.add(resource_data)
+  pub fn add_resource(&mut self) -> &mut Resource{
+    &mut self.resources
   }
 
   /**
   Query a resource by type and get a mutable reference. The type of the resource must be added.
   ```
-  use deux::World;
+  use ecs::World;
   let mut world = World::new();
   world.add_resource(10_u32);
   let resource = world.mut_get_resource::<u32>().unwrap();
@@ -91,7 +93,7 @@ impl World{
   /**
   Query a resource by type and get an immutable reference. The type of the resource must be added.
   ```
-  use deux::World;
+  use ecs::World;
 
   let mut world = World::new();
   world.add_resource(10_u32);
@@ -102,11 +104,15 @@ impl World{
   pub fn immut_get_resource<T:Any>(&self) -> Option<&T>{
     self.resources.get_ref::<T>()
   }
+
+  pub fn load_resource_from_cstring(&self,resource_name:&str)-> Result<CString>{
+    self.resources.load_resource_from_cstring(resource_name)
+  }
   
   /**
   Takes in a type and removes the resource from the World. Does not care if the resource exists. 
   ```
-  use deux::World;
+  use ecs::World;
   use std::any::TypeId;
 
   let mut world = World::new();
