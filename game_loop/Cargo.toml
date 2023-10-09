@@ -12,3 +12,4 @@ view = {workspace=true}
 gl = {workspace=true}
 eyre = {workspace=true}
 thiserror = {workspace=true}
+cgmath = {workspace=true}

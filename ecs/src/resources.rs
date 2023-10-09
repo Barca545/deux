@@ -20,7 +20,7 @@ impl Resource{
 
   //this is for loading the asset folder
   //currently adding a new one would overwrite other ones so possibly find a way around that
-  pub fn folder_from_relative_exe_path(&mut self,rel_path:&str){
+  pub fn path_to_asset_folder_from_relative_exe_path(&mut self,rel_path:&str){
     let typeid:TypeId = TypeId::of::<std::path::PathBuf>();
     //this line makes it hard to test because this exe is not the one that would eventually be used
     //in final build use current_exe() instead of current_dir()
@@ -141,7 +141,7 @@ mod tests {
   #[test] 
   fn load_cstring(){
     let mut resources = Resource::default();
-    resources.add().folder_from_relative_exe_path("ecs\\src\\");
+    resources.add().path_to_asset_folder_from_relative_exe_path("ecs\\src\\");
     let root_path:&PathBuf = resources.get_ref::<PathBuf>().unwrap();
     let test_relative_path = resource_name_to_path(root_path, "triangle.frag");
     

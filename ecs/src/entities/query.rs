@@ -16,6 +16,7 @@ pub struct Query<'a> {
 }
 
 impl<'a> Query<'a> {
+  #[deprecated(since="Forever",note="Query Entity Method does it better")]
   pub fn new(entities:&'a Entities) -> Self{
     Self {
       map:0,
@@ -91,7 +92,7 @@ impl<'a> Query<'a> {
 #[allow(clippy::float_cmp)]
 mod test {
   use crate::entities::query_entity::QueryEntity;
-  use std::cell::{Ref, RefMut};
+  use std::{cell::{Ref, RefMut}, borrow::BorrowMut};
   use super::*;
 
   #[test]

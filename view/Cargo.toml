@@ -7,3 +7,7 @@ edition = "2021"
 sdl2 = {workspace=true}
 ecs = {workspace=true}
 gl = {workspace=true}
+cgmath = {workspace=true}
+image = {workspace=true}
+eyre = {workspace=true}
+thiserror = {workspace=true}

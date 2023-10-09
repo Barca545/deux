@@ -14,6 +14,9 @@ game_loop = {path ="game_loop"}
 gl = {path ="gl"}
 eyre = "0.3.7"
 thiserror = "1.0.48"
+nalgebra = "0.32.3"
+cgmath = "0.18.0"
+image = "0.24.7"
 
 [workspace.dependencies.sdl2]
 version = "0.35.2"

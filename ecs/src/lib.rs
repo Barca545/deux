@@ -125,13 +125,13 @@ impl World{
   }
 
   ///Tells Entities that entities inside will have a component of type T.
-  pub fn register_component<T:Any + 'static>(&mut self){
-    self.entities.register_component::<T>();
+  pub fn register_component<T:Any + 'static>(&mut self)->&mut Entities{
+    self.entities.register_component::<T>()
   }
 
   ///Creates a new entity adds it to the entities list. Iterates over the registered components and initializes them with 'None'. 
   /// Sets the bitmap for the entity to 0 indicating it has no components associated with it.
-  /// Use with `.with_component::<T>()` to create an entity with components.
+  /// Use with `.with_component()` to create an entity with components.
   pub fn create_entity(&mut self) -> &mut Entities {
     self.entities.create_entity()
   }
@@ -179,9 +179,18 @@ impl World{
 
 //might make sense to make a separate components module
 //Resources
-pub struct ScreenHeight(pub u32);
-pub struct ScreenWidth(pub u32);
-
+pub struct ScreenDimensions{
+  pub height: i32,
+  pub width: i32
+}
+impl ScreenDimensions {
+  pub fn new(height:i32,width:i32) -> Self{
+    ScreenDimensions { 
+      height, 
+      width 
+    }
+  }
+}
 //components
 pub struct Sprite(pub Rect);
 pub struct Position(pub Point);

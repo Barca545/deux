@@ -40,7 +40,7 @@ fn add_resource_by_type(){
   let fps = world.immut_get_resource::<FpsResource>().unwrap();
   assert_eq!(fps.0,60);
 
-  world.add_resource().folder_from_relative_exe_path("assets");
+  world.add_resource().path_to_asset_folder_from_relative_exe_path("assets");
   let path:&PathBuf = world.immut_get_resource::<PathBuf>().unwrap();
   assert_eq!(path.to_str(), Some("C:\\Users\\Jamari\\Documents\\Hobbies\\Coding\\deux\\target\\debug\\deps\\assets"));
 }
@@ -49,7 +49,7 @@ fn add_resource_by_type(){
 fn load_resource_from_cstring(){
   let mut world = init_world();
 
-  world.add_resource().folder_from_relative_exe_path("assets");
+  world.add_resource().path_to_asset_folder_from_relative_exe_path("assets");
   let path:&PathBuf = world.immut_get_resource::<PathBuf>().unwrap();
   assert_eq!(path.to_str(), Some("C:\\Users\\Jamari\\Documents\\Hobbies\\Coding\\deux\\target\\debug\\deps\\assets"));
   

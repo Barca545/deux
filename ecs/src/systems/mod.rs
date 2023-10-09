@@ -1,2 +1,2 @@
-pub mod physics;
-pub mod input;
+pub mod system;
+pub mod dispatcher;

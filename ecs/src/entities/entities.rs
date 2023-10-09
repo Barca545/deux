@@ -29,10 +29,11 @@ pub struct Entities {
 }
 
 impl Entities{
-  pub fn register_component<T:Any + 'static>(&mut self){
+  pub fn register_component<T:Any + 'static>(&mut self)->&mut Self{
     let typeid = TypeId::of::<T>();
     self.components.insert(typeid,vec![]);
     self.bitmasks.insert(typeid, 1 << self.bitmasks.len());
+    self
   }
   
   pub fn create_entity(&mut self)-> &mut Self{
@@ -49,8 +50,8 @@ impl Entities{
     self
   }
 
-  // /Used with `create_entity` to assign components and their initial values to the entity being created. 
-  // /Updates the entity's bitmap to indicate which components they contain.
+  ///Used with `create_entity` to assign components and their initial values to the entity being created. 
+  ///Updates the entity's bitmap to indicate which components they contain.
   pub fn with_component(&mut self, data:impl Any) -> Result<&mut Self>  {
     let typeid:TypeId = data.type_id();
     let index = self.inserting_into_index;
