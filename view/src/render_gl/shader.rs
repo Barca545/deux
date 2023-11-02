@@ -1,7 +1,7 @@
-
+extern crate nalgebra_glm as glm;
 
 use ecs::World;
-use cgmath::{Matrix4,Matrix};
+use glm::{TMat4};
 use gl::{VERTEX_SHADER,FRAGMENT_SHADER,types::{GLint,GLchar,GLenum,GLuint}, Gl};
 use std::{
   ffi::{CString, CStr},
@@ -87,7 +87,7 @@ impl Program {
     location
   }
 
-  pub fn set_uniform_matrix4fv(&self, uniform_location:i32,uniform_value:&Matrix4<f32>){
+  pub fn set_uniform_matrix4fv(&self, uniform_location:i32,uniform_value:&TMat4<f32>){
     unsafe{
       self.gl.UniformMatrix4fv(
         uniform_location, 

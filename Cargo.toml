@@ -4,24 +4,39 @@ members = [
   "gl",
   "game_loop",
   "ecs",
-  "view"
+  "view",
+  "time",
+  "input"
 ]
 
 [workspace.dependencies]
 ecs = {path ="ecs"}
+input = {path = "input"}
 view = {path ="view"}
+time = {path="time"}
 game_loop = {path ="game_loop"}
 gl = {path ="gl"}
+
 eyre = "0.3.7"
 thiserror = "1.0.48"
 nalgebra = "0.32.3"
 cgmath = "0.18.0"
 image = "0.24.7"
+nalgebra-glm = "0.18.0"
+
+[workspace.dependencies.winapi]
+version = "0.3.9"
+default-features = false
+features = ["profileapi","sysinfoapi"]
 
 [workspace.dependencies.sdl2]
 version = "0.35.2"
 default-features = false
 features = ["image"]
+
+[workspace.dependencies.glfw]
+version = "0.53.0"
+default-features = false
 
 [workspace.features]
 gl_debug = ["gl/debug"]

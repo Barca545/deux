@@ -7,9 +7,16 @@ edition = "2021"
 
 [dependencies]
 sdl2 = {workspace=true}
+input = {workspace=true}
 ecs = {workspace=true}
-view = {workspace=true}
+time = {workspace=true}
+view= {workspace=true}
 gl = {workspace=true}
+glfw = {workspace=true}
 eyre = {workspace=true}
 thiserror = {workspace=true}
 cgmath = {workspace=true}
+nalgebra-glm = {workspace=true}
+
+[build-dependencies]
+cmake = "0.1"

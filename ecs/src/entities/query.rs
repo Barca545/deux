@@ -16,7 +16,6 @@ pub struct Query<'a> {
 }
 
 impl<'a> Query<'a> {
-  #[deprecated(since="Forever",note="Query Entity Method does it better")]
   pub fn new(entities:&'a Entities) -> Self{
     Self {
       map:0,
@@ -36,8 +35,20 @@ impl<'a> Query<'a> {
     }
     Ok(self)
   }
+
+  pub fn with_component_typeid(&mut self,typeid:TypeId) -> Result<&mut Self>{
+    if let Some(bit_mask) = self.entities.get_bitmask(&typeid){
+      self.map |= bit_mask; 
+      self.typeids.push(typeid)
+    }
+    else {
+      return Err(CustomErrors::ComponentNotRegistered.into());
+    }
+    Ok(self)
+  }
   
   ///Returns entities from entities containing all of the components in a whose bitmask matches the query's bitmask
+  #[deprecated(since="Forever",note="Query Entity method does it better")]
   pub fn run(&self) -> (QueryIndices,QueryComponents){
     //what exactly are these indexes?
     let indexes:Vec<usize> = self
@@ -113,6 +124,7 @@ mod test {
     assert_eq!(TypeId::of::<f32>(),query.typeids[1]); 
     Ok(())
   }
+  
 
   #[test]
   fn run_query () -> Result<()> {

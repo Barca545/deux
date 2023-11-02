@@ -1,159 +1,141 @@
-extern crate cgmath;
-use std::ptr::null;
+extern crate nalgebra_glm as glm;
+use crate::camera::Camera;
+use crate::render_gl::vertex::UncoloredTexturedVertex;
 
 use super::{
   Program,
-  buffer::{ArrayBuffer,VertexArray, ElementArrayBuffer}, TexturedVertex, Texture,
+  buffer::
+    {ArrayBuffer,VertexArray, ElementArrayBuffer}, 
+    TexturedVertex, 
+    Texture, 
+    data::F32Tuple3, 
+    math::{normalize,radians},
 };
 
+use std::{ptr::null, f32::consts::PI};
+use cgmath::Vector3;
 use ecs::World;
 use eyre::Result;
-use gl::{Gl,TRIANGLES, UNSIGNED_INT, types::GLsizei}; 
-use cgmath::Matrix4;
+use gl::{Gl,TRIANGLES, types::GLsizei}; 
+use glm::{vec3,TVec3,TMat4,look_at,perspective,rotate, identity,translate};
 
 //right now this only renders the square
 pub struct RenderableObject{
+  vertices: Vec<UncoloredTexturedVertex>, //really this should be something that impls the vertex trait
   shader_program:Program,
-  transform: i32,
+  // transform_uniform_loc: i32,
+  model_uniform_loc: i32,
+  view_uniform_loc: i32,
+  projection_uniform_loc:i32,
   _texture: Texture,
-  _vbo: ArrayBuffer,
-  vao:VertexArray,
-  index_count: GLsizei
+  // _vbo: ArrayBuffer,
+  // vao:VertexArray,
+  // index_count: GLsizei,
 }
 //add error wrapping 
 impl RenderableObject{
-  ///Builds a `RenderableObject` by taking in data and drawing it into the VBO, EBO and constructing the VAO.
-  pub fn new(gl:&Gl,world:&World,name:&str) -> Result<RenderableObject>{
+/**
+Builds a `RenderableObject` by taking in data and drawing it into the VBO, 
+EBO and constructing the VAO.
+*/
+  pub fn new(gl:&Gl,world:&World,name:&str,vertices:Vec<UncoloredTexturedVertex>) -> Result<RenderableObject>{
     let shader_program = Program::from_shader_files(&gl,world,name);
     
-    let transform = shader_program.get_uniform_location("transform");
+    //let transform_uniform_loc = shader_program.get_uniform_location("transform");
+    let model_uniform_loc = shader_program.get_uniform_location("model");
+    let view_uniform_loc = shader_program.get_uniform_location("view");
+    let projection_uniform_loc = shader_program.get_uniform_location("projection");
     
     //this actually loads the texture beforehand which feels like it might be faster I'm not sure I love it doing all the texture binding logic before I actually tell it to render
     let txt_path = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
     let texture = Texture::rgb_from_path(txt_path).with_mipmaps().load(gl)?;
     
-    let vertices = [
-                            // positions       // colors        // texture coords
-      TexturedVertex::from((0.5,  0.5, 0.0,   1.0, 0.0, 0.0,   1.0, 1.0)), // top right
-      TexturedVertex::from((0.5, -0.5, 0.0,   0.0, 1.0, 0.0,   1.0, 0.0)), // bottom right
-      TexturedVertex::from((-0.5, -0.5, 0.0,   0.0, 0.0, 1.0,   0.0, 0.0)), // bottom left
-      TexturedVertex::from((-0.5,  0.5, 0.0,   1.0, 1.0, 0.0,   0.0, 1.0))  // top left
-    ];
+    // let indices = [
+    //   0, 1, 3,  // first Triangle
+    //   1, 2, 3   // second Triangle
+    // ];
 
-    let indices = [
-      0, 1, 3,  // first Triangle
-      1, 2, 3   // second Triangle
-    ];
+    Ok(RenderableObject { 
+      vertices,
+      shader_program,
+      _texture:texture,
+      // transform_uniform_loc,
+      model_uniform_loc,
+      view_uniform_loc,
+      projection_uniform_loc,
+      // _vbo: vbo, 
+      // vao,
+      // index_count: indices.len() as i32,
+    })
+  }
 
+  fn model_transform(&self,position_vec:&TVec3<f32>)->TMat4<f32>{
+    //there is some issue with this 
+    let identity =  identity::<f32,4>();
+    let position = translate(&identity, position_vec);
+    let axis:TVec3<f32> = vec3(1.0,0.0, 0.0);
+    let model = rotate(&position, radians(0.0), &axis);
+    model
+  }
+
+  fn projection_transform(&self,aspect:f32)->TMat4<f32>{
+    let projection = perspective(aspect, radians(45.0), 0.1, 100.0);
+    projection
+  }
+
+  pub fn render(&self, gl:&Gl,aspect:f32,camera:&Camera,position:&TVec3<f32>){
     let vbo = ArrayBuffer::new(&gl);
     vbo.bind();
-    vbo.static_draw_data(&vertices);
+    vbo.static_draw_data(&self.vertices);
     vbo.unbind();
 
-    let ebo = ElementArrayBuffer::new(&gl);
-    ebo.bind();
-    ebo.static_draw_data(&indices);
-    ebo.unbind();
+    //Am I using the ebo, can I get rid of this?
+    // let ebo = ElementArrayBuffer::new(&gl);
+    // ebo.bind();
+    // ebo.static_draw_data(&indices);
+    // ebo.unbind();
 
     let vao: VertexArray = VertexArray::new(&gl);
     vao.bind();
     vbo.bind();
-    ebo.bind();
+    // ebo.bind();
 
-    TexturedVertex::vertex_attrib_pointers(&gl);
+    UncoloredTexturedVertex::vertex_attrib_pointers(&gl);
     vao.unbind();
     vbo.unbind();
-    ebo.unbind();
+    // ebo.unbind();
     
-
-    Ok(RenderableObject { 
-      shader_program,
-      _texture:texture,
-      transform,
-      _vbo: vbo, 
-      vao,
-      index_count: indices.len() as i32
-    })
-  }
-
-  pub fn render(&self, gl:&Gl, matrix: &Matrix4<f32>){
     self.shader_program.use_program();
-    //should this be transformation matrix?
+    
+    //I think I want to abstract at least the projection into the camera class?
 
+    //bind the model transform
     self.shader_program.set_uniform_matrix4fv(
-      self.transform, 
-      &matrix);
-   
-    self.vao.bind();
+      self.model_uniform_loc, 
+      &self.model_transform(position)
+    );
+
+    //bind the view transform
+    self.shader_program.set_uniform_matrix4fv(
+      self.view_uniform_loc, 
+      &camera.camera_view()
+    );
+
+    //bind the projection transform
+    self.shader_program.set_uniform_matrix4fv(
+      self.projection_uniform_loc, 
+      //program did not like the initial value for aspect ratio
+      &self.projection_transform(aspect)
+    );
+  
+    vao.bind();
 
     unsafe{
-      gl.DrawElements(
+      gl.DrawArrays(
         TRIANGLES,
-        self.index_count,
-        UNSIGNED_INT,
-        null()
+        0,
+        36,
       );
     }
   }
-
 }
-#[cfg(test)]
-mod tests{
-    use std::path::PathBuf;
-
-    use ecs::{World, ScreenDimensions};
-    use gl::Gl;
-    use sdl2::video::GLProfile::Core;
-    use crate::render_gl::{Texture, ImageLoader};
-    use image::io::Reader;
-  
-  #[test]
-  fn load_text()-> eyre::Result<()>{  
-    let mut world = World::new();
-  
-    world.add_resource().from_user_defined_data(ScreenDimensions::new(720,1280));
-    
-    let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
-    
-  
-    //gl stuff to eventually crate
-    let gl_attr = video_subsystem.gl_attr();
-    gl_attr.set_context_profile(Core);
-    gl_attr.set_context_version(3,3);
-    
-    let window = video_subsystem
-      .window(
-        "Project: Deux",
-        world.immut_get_resource::<ScreenDimensions>().unwrap().width.try_into().unwrap(),
-        world.immut_get_resource::<ScreenDimensions>().unwrap().height.try_into().unwrap())
-      .opengl()
-      .resizable()
-      .position_centered()
-      .build()
-      .expect("could not initialize video subsystem");
-  
-    //gl stuff to eventually crate
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = Gl::load_with(&mut|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
-  
-    
-    // struct Loader{}   
-    // impl<'a> ImageLoader<'a> for Loader{}
-    // impl Loader{
-    //   fn new()->Self{
-    //     Loader{}
-    //   }
-    // }
-    
-    // let new = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
-    // let image = Reader::open(new)?;
-    
-    //let img = loader.image_from_path(root_path.join("wall.jpg").to_str().unwrap());
-  
-    //let texture = Texture::rgb_from_path(new).load(&gl)?;
-
-    Ok(())
-  }
-}
-

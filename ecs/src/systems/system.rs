@@ -1,31 +1,118 @@
+use std::any::{Any, TypeId};
+
+use eyre::Result;
+
 use crate::World;
 
-//https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md
+//work on the dispatcher, 
+//I think there is a much fancier 
+//implementation for all this I can eventually do but this seems like a solid mvp for now
 
-//https://docs.rs/specs/latest/specs/trait.System.html#associatedtype.SystemData
-pub trait System{  
-  //I think having it output the data in case the next system in the chain needs it is a solid idea
-  fn run(&mut self,world: &mut World);
-}
-//confirm if I need to use boxes or other fancy things
-//pub type BoxedSystem<'a> = Rc<RefCell<dyn System<'a,SystemData = Vec<QueryEntity<'a>>>>>;
+pub trait System{
+  type Data;
 
-pub type BoxedSystem = Box<dyn System>;
-
-
-///Do not really need the stuff below since Specs uses it because they have different Data types
-//https://docs.rs/shred/0.15.0/shred/trait.DynamicSystemData.html
-pub trait DynamicSystemData {
-  type Accessor;
+  fn run(&mut self,world:&World,data:Self::Data)->Result<()>;
 }
 
-//https://docs.rs/shred/0.15.0/shred/trait.Accessor.html 
-pub trait Accessor {
-  type DataType;
+pub trait SystemData{
+  //don't love this solution but this currently allows me to 
+  fn get_ids()->Vec<TypeId>;
+}
 
-  fn new() -> Self;
+impl<P1> SystemData for (P1,)
+where 
+  P1:'static+Any,
+{
+  fn get_ids()->Vec<TypeId>{
+    let mut ids = vec![];
+    ids.push(TypeId::of::<P1>());
+    ids
+  }
+}
 
-  fn reads();
+impl<P1,P2> SystemData for (P1,P2)
+where 
+  P1:'static+Any,
+  P2:'static+Any
+{
+  fn get_ids()->Vec<TypeId>{
+    let mut  ids = vec![];
+    ids.push(TypeId::of::<P1>());
+    ids.push(TypeId::of::<P2>());
+    ids
+  }
+}
 
-  fn writes();
+impl<P1,P2,P3> SystemData for (P1,P2,P3)
+where 
+  P1:'static+Any,
+  P2:'static+Any,
+  P3:'static+Any,
+{
+  fn get_ids()->Vec<TypeId>{
+    let mut  ids = vec![];
+    ids.push(TypeId::of::<P1>());
+    ids.push(TypeId::of::<P2>());
+    ids.push(TypeId::of::<P3>());
+    ids
+  }
+}
+
+#[cfg(test)]
+mod tests{
+  use std::any::{TypeId, Any};
+
+  use eyre::Result;
+
+  use crate::{systems::system::{System, SystemData}, World, entities::query::{self, Query}};
+
+  #[test]
+  fn test_get_ref()->Result<()>{
+    let mut world = build_world()?;
+    
+    struct System1;
+
+    impl System for System1{     
+      type Data = Vec<TypeId>;
+      
+      fn run(&mut self,world:&World,data:Self::Data)->Result<()>{
+        let health_id = data[0];
+        let speed_id = data[1];
+
+        let mut query = Query::new(&world.entities);
+        
+        query
+        .with_component_typeid(health_id)?
+        .run_entity();
+        
+
+        Ok(())
+      }
+    }
+
+    let mut system = System1;
+    
+    system.run(&world,vec![Health.type_id(),Speed.type_id()])?;
+
+    Ok(())
+  }
+
+  #[derive(Debug)]
+  struct Health(i32);
+  struct Speed(f32);
+
+  fn build_world()->Result<World>{
+    let mut world = World::default();
+    
+    world
+      .register_component::<Health>()
+      .register_component::<Speed>();
+    
+    world
+      .create_entity()
+      .with_component(Health(100))?
+      .with_component(Speed(2.0))?;
+
+    Ok(world)
+  }
 }
