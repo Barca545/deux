@@ -4,18 +4,14 @@ members = [
   "gl",
   "game_loop",
   "ecs",
-  "view",
-  "time",
-  "input"
+  "engine"
 ]
 
 [workspace.dependencies]
 ecs = {path ="ecs"}
-input = {path = "input"}
-view = {path ="view"}
-time = {path="time"}
 game_loop = {path ="game_loop"}
 gl = {path ="gl"}
+engine = {path ="engine"}
 
 eyre = "0.3.7"
 thiserror = "1.0.48"

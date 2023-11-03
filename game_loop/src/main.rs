@@ -1,32 +1,23 @@
-mod components;
-mod resources;
-
 extern crate gl;
 extern crate nalgebra_glm as glm;
-extern crate view;
-extern crate cgmath;
-extern crate input;
 extern crate glfw;
+extern crate engine;
+
+use engine::{
+  time::ServerTime, 
+  ecs::{World, world_resources::ScreenDimensions}, 
+  view::{
+    render_gl::{Viewport, UncoloredTexturedVertex, RenderableObject, ColorBuffer, DepthBuffer}, 
+    camera::Camera
+  }, 
+  input::user_inputs::FrameInputs,
+};
 
 use glfw::{Context, fail_on_errors, Key, Action};
-use input::{FrameInputs,UserInputs};
-use glm::{vec3,TVec3,TMat4,look_at,perspective,rotate, identity,translate};
-use eyre::Result;
-use std::{time::Duration, thread::sleep, env};
-use ecs::{World,ScreenDimensions};
-use sdl2::{
-  self,
-  event::{Event,WindowEvent},
-  keyboard::Keycode,
-  video::GLProfile::Core, mouse::{MouseWheelDirection, MouseState}, EventPump
-};
-
-use view::{
-  render_gl::{Viewport,RenderableObject,ColorBuffer, DepthBuffer,UncoloredTexturedVertex}, 
-  camera::{self, Camera}
-};
+use glm::vec3;
 use gl::{Gl,DEPTH_TEST};
-use time::ServerTime;
+use eyre::Result;
+use std::env;
 
 
 fn main() -> Result<(), String>  {
@@ -160,7 +151,6 @@ fn main() -> Result<(), String>  {
   let aspect = world.immut_get_resource::<ScreenDimensions>().unwrap().aspect;
 
   let mut camera = Camera::new(aspect);
-
   
   world.add_resource().from_user_defined_data(FrameInputs::new());
   let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();

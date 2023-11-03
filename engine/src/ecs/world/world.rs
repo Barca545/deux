@@ -1,11 +1,6 @@
-pub mod entities;
-pub mod resources;
-pub mod custom_errors;
+use crate::ecs::{resources::Resource, entities::Entities, query::Query};
 
-use entities::{entities::Entities, query::Query};
-use sdl2::rect::{Rect,Point};
 use std::{any::Any, ffi::CString};
-use resources::Resource;
 use eyre::Result;
 
 /*
@@ -134,6 +129,7 @@ impl World{
     self.entities.create_entity()
   }
 
+  ///Creates a query to access entities in a `World` instance.
   pub fn query(&self) -> Query {
     Query::new(&self.entities)
   }
@@ -154,49 +150,11 @@ impl World{
     self.entities.delete_entity_by_id(index)
   }
 
-  //obv these can't all spawn in the same place. These values will need to be fed in from somewhere (probably scrips for stats)
-  //Kitten says to make sure this stays in memory instead of getting cleared up by garbage collection. 
-  //this maybe should be a part of a system rather than the world?
-  pub fn create_player_champion(& mut self) -> Result<()>{
-    self.register_component::<Sprite>();
-    self.register_component::<Position>();
-    self.register_component::<Speed>();
-    self.register_component::<Velocity>();
-    self.register_component::<Target>();
-    
-    self.create_entity()
-      .with_component(Sprite(Rect::new(0, 0, 26, 36)))?
-      .with_component(Position(Point::new(0,0)))?
-      .with_component(Speed(2))?
-      .with_component(Velocity(Point::new(0,0)))?
-      .with_component(Target(Point::new(0,0)))?;
-    Ok(())
-  }
 }
 
 //might make sense to make a separate components module
 //Resources
-pub struct ScreenDimensions{
-  pub height: i32,
-  pub width: i32,
-  pub aspect: f32
-}
-impl ScreenDimensions {
-  pub fn new(height:i32,width:i32) -> Self{
-    let aspect = width as f32/height as f32;
-    ScreenDimensions { 
-      height, 
-      width,
-      aspect 
-    }
-  }
-}
-//components
-pub struct Sprite(pub Rect);
-pub struct Position(pub Point);
-pub struct Speed(pub u32);
-pub struct Velocity(pub Point);
-pub struct Target(pub Point);
+
 
 #[cfg(test)]
 mod tests {}
