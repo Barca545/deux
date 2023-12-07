@@ -1,8 +1,13 @@
 use super::gl_data::F32Tuple3;
 use std::f32::consts::PI;
 use cgmath::{Vector3, Matrix4, Vector4};
+use glm::{TVec3, TMat4, TVec4};
 
 //When multiplying matrices the right-most matrix is first multiplied with the vector so you should read the multiplications from right to left.
+
+pub type Vec3 = TVec3<f32>;
+pub type Vec4 = TVec4<f32>;
+pub type Mat4 = TMat4<f32>;
 
 pub enum Axis{
   X,
@@ -19,13 +24,13 @@ pub fn translate(position:F32Tuple3,x:f32,y:f32,z:f32)->F32Tuple3{
   }
 }
 
-pub fn scale(position:F32Tuple3,x:f32,y:f32,z:f32)->F32Tuple3{    
-  F32Tuple3{
-    d0: position.d0 * x, 
-    d1: position.d1 * y, 
-    d2: position.d2 * z
-  }
-}
+// pub fn scale(position:F32Tuple3,x:f32,y:f32,z:f32)->F32Tuple3{    
+//   F32Tuple3{
+//     d0: position.d0 * x, 
+//     d1: position.d1 * y, 
+//     d2: position.d2 * z
+//   }
+// }
 
 //consider quaternions for rotation
 pub fn rotate(position:F32Tuple3,axis:Axis,degrees:f32)->F32Tuple3{    

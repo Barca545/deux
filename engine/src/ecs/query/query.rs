@@ -105,7 +105,7 @@ impl<'a> Query<'a> {
 #[allow(clippy::float_cmp)]
 mod test {
   // use super::entities::query_entity::QueryEntity;
-  use std::{cell::{Ref, RefMut}, borrow::BorrowMut};
+  use std::cell::{Ref, RefMut};
   use super::*;
 
   #[test]

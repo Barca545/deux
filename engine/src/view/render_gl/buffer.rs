@@ -1,5 +1,5 @@
 use gl;
-use gl::{types::{GLuint,GLsizeiptr,GLvoid},Gl,ARRAY_BUFFER,ELEMENT_ARRAY_BUFFER};
+use gl::{types::{GLuint,GLsizeiptr,GLvoid},Gl,ARRAY_BUFFER,ELEMENT_ARRAY_BUFFER,FRAMEBUFFER};
 use std::{mem::size_of,marker::PhantomData};
 
 //const generics to rework this?
@@ -8,12 +8,12 @@ pub trait BufferType{
   const BUFFER_TYPE:GLuint;
 }
 
-pub struct BufferTypeArray{}
+pub struct BufferTypeArray;
 impl BufferType for BufferTypeArray{
   const BUFFER_TYPE:GLuint = ARRAY_BUFFER;
 }
 
-pub struct BufferTypeElementArray{}
+pub struct BufferTypeElementArray;
 impl BufferType for BufferTypeElementArray{
   const BUFFER_TYPE:GLuint = ELEMENT_ARRAY_BUFFER;
 }
@@ -24,7 +24,7 @@ pub struct Buffer<B> {
   _marker: PhantomData<B>
 }
 
-impl <B>Buffer<B>where B: BufferType{
+impl<B> Buffer<B> where B: BufferType{
   pub fn new(gl:&Gl) -> Buffer<B> {
     let mut buffer_obj: GLuint = 0;
     unsafe{

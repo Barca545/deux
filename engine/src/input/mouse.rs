@@ -1,9 +1,10 @@
-use crate::view::camera::Camera;
-use glm::{Vec3, Mat4};
+use glfw::Window;
 
-#[derive(Debug)]
-pub struct Mouse{
-  current_ray:Vec3,
-  projection_matrix:Mat4,
-  camera:Camera
+struct Mouse;
+//maybe make the mouse picker a trait or someting or raycast a trait and stick it on here
+impl Mouse{
+  fn mouse_click(window:&Window){
+    // window.set_mouse_button_callback(callback)
+    //this needs to 
+  }
 }

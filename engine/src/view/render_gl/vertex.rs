@@ -13,10 +13,10 @@ pub struct TexturedVertex{
 impl Vertex for TexturedVertex{}
 impl From<(f32,f32,f32,f32,f32,f32,f32,f32)> for TexturedVertex{
   fn from(value: (f32,f32,f32,f32,f32,f32,f32,f32)) -> Self {
-      let pos = (value.0,value.1,value.2);
-      let clr = (value.3,value.4,value.5);
-      let txt = (value.6,value.7);
-      Self::new(pos, clr, txt)
+    let pos = (value.0,value.1,value.2);
+    let clr = (value.3,value.4,value.5);
+    let txt = (value.6,value.7);
+    Self::new(pos, clr, txt)
   }
 }
 impl TexturedVertex{
@@ -64,11 +64,18 @@ pub struct UntexturedVertex{
 }
 
 impl Vertex for UntexturedVertex {}
+impl From<(f32,f32,f32,f32,f32,f32)> for UntexturedVertex{
+  fn from(value: (f32,f32,f32,f32,f32,f32)) -> Self {
+    let pos = (value.0,value.1,value.2);
+    let clr = (value.3,value.4,value.5);
+    Self::new(pos, clr)
+  }
+}
 impl UntexturedVertex{
-  pub fn new(pos:F32Tuple3,clr:F32Tuple3)->Self{
+  pub fn new(pos:(f32,f32,f32),clr:(f32,f32,f32))->Self{
     UntexturedVertex{
-      pos,
-      clr,
+      pos: F32Tuple3::from(pos),
+      clr: F32Tuple3::from(clr),
     }
   }
    
@@ -104,9 +111,9 @@ pub struct UncoloredTexturedVertex{
 impl Vertex for UncoloredTexturedVertex{}
 impl From<(f32,f32,f32,f32,f32)> for UncoloredTexturedVertex{
   fn from(value: (f32,f32,f32,f32,f32)) -> Self {
-      let pos = (value.0,value.1,value.2);
-      let txt = (value.3,value.4);
-      Self::new(pos, txt)
+    let pos = (value.0,value.1,value.2);
+    let txt = (value.3,value.4);
+    Self::new(pos, txt)
   }
 }
 impl UncoloredTexturedVertex{
@@ -138,7 +145,7 @@ impl UncoloredTexturedVertex{
 
 //make a derive for this?
 //maybe eventually move new here once I figure out trait obj
-trait Vertex {
+pub trait Vertex {
   unsafe fn define_vertex_attrib_pointer(gl:&Gl, stride:usize, location:usize, offset:usize,tuple_size:GLint){
     gl.EnableVertexAttribArray(location as GLuint);
     gl.VertexAttribPointer(

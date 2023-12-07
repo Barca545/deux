@@ -1,15 +1,12 @@
 extern crate nalgebra_glm as glm;
 
-use crate::ecs::World;
+use crate::{ecs::World, math::math::Mat4};
 
 use gl::{VERTEX_SHADER,FRAGMENT_SHADER,types::{GLint,GLchar,GLenum,GLuint}, Gl};
-use glm::TMat4;
 use std::{
   ffi::{CString, CStr},
   ptr::null_mut
 };
-
-
 
 pub struct Program{
   gl: Gl,
@@ -90,7 +87,12 @@ impl Program {
     location
   }
 
-  pub fn set_uniform_matrix4fv(&self, uniform_location:i32,uniform_value:&TMat4<f32>){
+  pub fn set_uniform_matrix4fv(&self, uniform_location:i32,uniform_value:&Mat4){
+
+   // value is incorrect if the matricies use higher precision
+   // value when f64 0x00000099c4dfe6e0
+   // value when f32 0x000000f76aafead0
+
     unsafe{
       self.gl.UniformMatrix4fv(
         uniform_location, 

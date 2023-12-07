@@ -1,3 +1,4 @@
+#[derive(Debug,Clone, Copy)]
 pub struct ScreenDimensions{
   pub height: i32,
   pub width: i32,

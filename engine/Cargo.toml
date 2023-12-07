@@ -10,5 +10,6 @@ eyre = {workspace=true}
 thiserror = {workspace=true}
 cgmath = {workspace=true}
 nalgebra-glm = {workspace=true}
+nalgebra = {workspace=true}
 image = {workspace=true}
 winapi = {workspace=true}

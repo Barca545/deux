@@ -1,7 +1,9 @@
-use crate::{errors::FilesystemErrors, filesystem::ImageLoader};
+use std::ptr;
+
+use crate::{errors::{FilesystemErrors,RenderErrors, FramebufferErrors}, filesystem::ImageLoader, ecs::world_resources::ScreenDimensions};
 
 use eyre::Result;
-use gl::{TEXTURE_2D, Gl, UNSIGNED_BYTE, RGB, RGBA, types::{GLvoid,GLenum, GLuint, GLint, GLsizei}, RGB8, TEXTURE_BASE_LEVEL, TEXTURE_MAX_LEVEL, RGBA8, TEXTURE0,TEXTURE_WRAP_S,TEXTURE_WRAP_T,REPEAT,TEXTURE_MIN_FILTER,TEXTURE_MAG_FILTER,LINEAR};
+use gl::{TEXTURE_2D, Gl, UNSIGNED_BYTE, RGB, RGBA, types::{GLvoid,GLenum, GLuint, GLint, GLsizei}, RGB8, TEXTURE_BASE_LEVEL, TEXTURE_MAX_LEVEL, RGBA8, TEXTURE0,TEXTURE_WRAP_S,TEXTURE_WRAP_T,REPEAT,TEXTURE_MIN_FILTER,TEXTURE_MAG_FILTER,LINEAR, RGB_INTEGER, RG32I, RGB32I,UNSIGNED_INT, FRAMEBUFFER, NEAREST, COLOR_ATTACHMENT0, FRAMEBUFFER_COMPLETE};
 
 pub struct Texture{
   gl:Gl,
@@ -16,18 +18,18 @@ impl Texture {
     }
   }
   
-  pub fn rgb_from_path(path:&str) -> TextureLoadBuilder{
+  pub fn rgb_from_path(path:&str)->TextureLoadBuilder{
     TextureLoadBuilder { 
       options: TextureLoadOptions::rgb_from_path(path)
     }
   }
 
-  pub fn rgba_from_path(path:&str) ->TextureLoadBuilder{
+  pub fn rgba_from_path(path:&str)->TextureLoadBuilder{
     TextureLoadBuilder { 
       options: TextureLoadOptions::rgba_from_path(path)
     } 
   }
-
+  
   //I still feel like something is supposed to be calling this externally since Necury had it publick in his crate but idk how
   fn from_path<'a>(
     options: TextureLoadOptions<'a>,
@@ -35,9 +37,7 @@ impl Texture {
   )->Result<Self>{
     let mut texture_obj:GLuint = 0;
     
-    unsafe{
-      gl.GenTextures(1,&mut texture_obj)
-    };
+    unsafe{gl.GenTextures(1,&mut texture_obj)}
 
     let texture = Texture::default(gl);
     texture.update(options)?;
@@ -116,7 +116,7 @@ impl Texture {
           gl.TexParameteri(TEXTURE_2D,TEXTURE_MAX_LEVEL,LINEAR as GLint);
         }
       }
-    } 
+    }
     _=> unreachable!("{}",FilesystemErrors::IllegalTextureFormat) 
     }
 
@@ -177,19 +177,20 @@ pub struct TextureLoadOptions<'a>{
 impl<'a> ImageLoader<'a> for TextureLoadOptions<'a>{}
 
 impl<'a> TextureLoadOptions<'a>{
+
   pub fn rgb_from_path(path: &'a str)->Self{
     TextureLoadOptions { 
       path,
-      format: RGB,
-      gen_mipmaps: true
+      format:RGB,
+      gen_mipmaps:true
     }
   }
   
   pub fn rgba_from_path(path: &'a str)->Self{
     TextureLoadOptions { 
       path,
-      format: RGBA,
-      gen_mipmaps: true
+      format:RGBA,
+      gen_mipmaps:true
     }
   }
 }

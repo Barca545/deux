@@ -1,4 +1,3 @@
-pub mod mouse;
+pub mod mouse_picker;
 pub mod user_inputs;
-
-// use self::{mouse,user_inputs};
+mod mouse;

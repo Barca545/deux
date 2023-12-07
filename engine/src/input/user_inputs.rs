@@ -1,5 +1,12 @@
 use std::fmt::Debug;
 
+//this is lazy, probably shouldn't be public but whatever
+#[derive(Debug)]
+pub struct MousePosition{
+  pub x:f64,
+  pub y:f64
+}
+
 #[derive(Debug)]
 pub enum UserInputs{
   MoveCameraUp,
@@ -9,7 +16,9 @@ pub enum UserInputs{
   ZoomInCamera,
   ZoomOutCamera,
   CenterCamera,
-  AutoAttack,//place holder so the matches don't say the "_>" term is unreachable
+  AutoAttack,
+  MouseClick(MousePosition)
+  //place holder so the matches don't say the "_>" term is unreachable
 }
 
 #[derive(Debug)]

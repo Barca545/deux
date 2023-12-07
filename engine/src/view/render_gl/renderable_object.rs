@@ -2,7 +2,7 @@ extern crate nalgebra_glm as glm;
 
 use crate::{
   ecs::World,
-  math::math::radians, view::camera::Camera
+  math::{Renderable, Transforms, math::Vec3},
 };
 
 use super::{
@@ -13,17 +13,15 @@ use super::{
 };
 
 use eyre::Result;
-use gl::{Gl,TRIANGLES}; 
-use glm::{vec3,TVec3,TMat4,perspective,rotate,identity,translate};
+use gl::{Gl,TRIANGLES, types::GLint};
 
 //right now this only renders the square
 pub struct RenderableObject{
   vertices: Vec<UncoloredTexturedVertex>, //really this should be something that impls the vertex trait
   shader_program:Program,
-  // transform_uniform_loc: i32,
-  model_uniform_loc: i32,
-  view_uniform_loc: i32,
-  projection_uniform_loc:i32,
+  model_uniform_loc:GLint,
+  view_uniform_loc:GLint,
+  projection_uniform_loc:GLint,
   _texture: Texture,
   // _vbo: ArrayBuffer,
   // vao:VertexArray,
@@ -56,7 +54,6 @@ EBO and constructing the VAO.
       vertices,
       shader_program,
       _texture:texture,
-      // transform_uniform_loc,
       model_uniform_loc,
       view_uniform_loc,
       projection_uniform_loc,
@@ -65,22 +62,10 @@ EBO and constructing the VAO.
       // index_count: indices.len() as i32,
     })
   }
+}
 
-  fn model_transform(&self,position_vec:&TVec3<f32>)->TMat4<f32>{
-    //there is some issue with this 
-    let identity =  identity::<f32,4>();
-    let position = translate(&identity, position_vec);
-    let axis:TVec3<f32> = vec3(1.0,0.0, 0.0);
-    let model = rotate(&position, radians(0.0), &axis);
-    model
-  }
-
-  fn projection_transform(&self,aspect:f32)->TMat4<f32>{
-    let projection = perspective(aspect, radians(45.0), 0.1, 100.0);
-    projection
-  }
-
-  pub fn render(&self, gl:&Gl,aspect:f32,camera:&Camera,position:&TVec3<f32>){
+impl Renderable for RenderableObject{
+  fn render(&self, gl:&Gl,transforms:&Transforms,position:&Vec3){
     let vbo = ArrayBuffer::new(&gl);
     vbo.bind();
     vbo.static_draw_data(&self.vertices);
@@ -102,27 +87,25 @@ EBO and constructing the VAO.
     vbo.unbind();
     // ebo.unbind();
     
+    //should all the shader stuff be wrapped into a method on the struct?
     self.shader_program.use_program();
-    
-    //I think I want to abstract at least the projection into the camera class?
 
     //bind the model transform
     self.shader_program.set_uniform_matrix4fv(
       self.model_uniform_loc, 
-      &self.model_transform(position)
+      &transforms.get_model_transform(position)
     );
 
     //bind the view transform
     self.shader_program.set_uniform_matrix4fv(
       self.view_uniform_loc, 
-      &camera.camera_view()
+      &transforms.get_view_transform()
     );
 
     //bind the projection transform
     self.shader_program.set_uniform_matrix4fv(
       self.projection_uniform_loc, 
-      //program did not like the initial value for aspect ratio
-      &self.projection_transform(aspect)
+      transforms.get_projection_transform().as_matrix()
     );
   
     vao.bind();

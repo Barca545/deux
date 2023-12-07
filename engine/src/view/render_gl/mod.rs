@@ -6,6 +6,11 @@ mod depth_buffer;
 mod renderable_object;
 mod color_buffer;
 mod texture;
+mod selectable_object;
+mod picking_program;
+mod pixel_info;
+mod framebuffer;
+mod texture_attatchment;
 
 pub use self::{
   color_buffer::ColorBuffer,
@@ -15,4 +20,8 @@ pub use self::{
   vertex::{UntexturedVertex,TexturedVertex,UncoloredTexturedVertex},
   shader::{Shader,Program},
   texture::Texture,
+  selectable_object::SelectableObject,
+  framebuffer::FrameBuffer,
+  texture_attatchment::TextureAttachment,
+  picking_program::PickingProgram
 };
