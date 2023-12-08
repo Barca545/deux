@@ -20,7 +20,7 @@ impl Texture {
   
   pub fn rgb_from_path(path:&str)->TextureLoadBuilder{
     TextureLoadBuilder { 
-      options: TextureLoadOptions::rgb_from_path(path)
+      options:TextureLoadOptions::rgb_from_path(path)
     }
   }
 
@@ -30,7 +30,7 @@ impl Texture {
     } 
   }
   
-  //I still feel like something is supposed to be calling this externally since Necury had it publick in his crate but idk how
+  //I still feel like something is supposed to be calling this externally since Necury had it public in his crate but idk how
   fn from_path<'a>(
     options: TextureLoadOptions<'a>,
     gl:&Gl,

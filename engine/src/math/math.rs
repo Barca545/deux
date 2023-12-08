@@ -1,13 +1,15 @@
 use super::gl_data::F32Tuple3;
 use std::f32::consts::PI;
 use cgmath::{Vector3, Matrix4, Vector4};
-use glm::{TVec3, TMat4, TVec4};
+use glm::{TVec3, TMat4, TVec4, distance};
+use nalgebra::Point;
 
 //When multiplying matrices the right-most matrix is first multiplied with the vector so you should read the multiplications from right to left.
 
 pub type Vec3 = TVec3<f32>;
 pub type Vec4 = TVec4<f32>;
 pub type Mat4 = TMat4<f32>;
+pub type Point3 = Point<f32,3>;
 
 pub enum Axis{
   X,

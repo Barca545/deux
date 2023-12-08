@@ -8,7 +8,8 @@ use engine::{
   ecs::{
     World, 
     world_resources::ScreenDimensions,
-    component_lib::{Model, Position}
+    component_lib::{Model, Position, Destination, Speed, Velocity, Controllable, GroundModel},
+    systems::{resolve_movement, set_destination}
   }, 
   view::{
     render_gl::{Viewport, UncoloredTexturedVertex, RenderableObject, ColorBuffer, DepthBuffer}, 
@@ -18,7 +19,6 @@ use engine::{
 };
 
 use glfw::{Context, fail_on_errors, Key, Action, MouseButton};
-use glm::vec3;
 use gl::{Gl,DEPTH_TEST};
 use eyre::Result;
 use std::env;
@@ -30,6 +30,8 @@ fn main() -> Result<()>  {
   let mut server_time = ServerTime::new();
   
   world.add_resource().from_user_defined_data(ScreenDimensions::new(720,1280));
+  //the structure of this resource will need to be adjusted once I need more than one texture
+  world.add_resource().path_to_asset_folder_from_relative_exe_path("assets");
   // world.add_resource().from_user_defined_data(MousePicker::new());
 
   //maybe I make events a or a component and query it? Might need to slap it in an RC if I want to pass it down to other functions
@@ -53,14 +55,18 @@ fn main() -> Result<()>  {
     world.immut_get_resource::<ScreenDimensions>().unwrap().height,
     world.immut_get_resource::<ScreenDimensions>().unwrap().width
   );
-  world
-    .register_component::<Model>()
-    .register_component::<Position>();
-
   
-  let vertices = vec![    
-    UncoloredTexturedVertex::from((-0.5, -0.5, -0.5,  0.0, 0.0,)),
-    UncoloredTexturedVertex::from((0.5, -0.5, -0.5,  1.0, 0.0,)),
+  world
+    // .register_component::<Model>()
+    .register_component::<Position>()
+    .register_component::<Destination>()
+    .register_component::<Speed>()
+    .register_component::<Velocity>()
+    .register_component::<Controllable>();
+  
+  let sprite_model = vec![    
+    UncoloredTexturedVertex::from((-0.5, -0.5, -0.5,  0.0, 0.0)),
+    UncoloredTexturedVertex::from((0.5, -0.5, -0.5,  1.0, 0.0)),
     UncoloredTexturedVertex::from((0.5,  0.5, -0.5,  1.0, 1.0)),
     UncoloredTexturedVertex::from((0.5,  0.5, -0.5,  1.0, 1.0)),
     UncoloredTexturedVertex::from((-0.5,  0.5, -0.5,  0.0, 1.0)),
@@ -101,31 +107,36 @@ fn main() -> Result<()>  {
     UncoloredTexturedVertex::from((-0.5,  0.5,  0.5,  0.0, 0.0)),
     UncoloredTexturedVertex::from((-0.5,  0.5, -0.5,  0.0, 1.0))
   ];
+  let sprite = Model(sprite_model);
 
-  let model = Model(vertices);
-  
-  let positions:Vec<Vec3> =vec![
-    vec3( 3.0,  0.0,  0.0),
-    vec3( -3.0,  0.0,  0.0),
-    vec3( 0.0,  0.0,  3.0),
-    vec3(0.0, 0.0, -3.0)
+  let ground_model = vec![
+    UncoloredTexturedVertex::from((1.0, 0.0, 1.0,  1.0, 1.0)),
+    UncoloredTexturedVertex::from((1.0, 0.0, -1.0,  0.0, 0.0)),
+    UncoloredTexturedVertex::from((-1.0, 0.0, 1.0,  0.0, 1.0)),
+    UncoloredTexturedVertex::from((-1.0, 0.0, -1.0,  0.0, 0.0)),
   ];
 
-  let mut player_position:Vec3 = vec3( 0.0,  0.0,  0.0);
-  
-  //the structure of this resource will need to be adjusted once I need more than one texture
-  world.add_resource().path_to_asset_folder_from_relative_exe_path("assets");
-  
-  //instead of giving it ownership of verticies maybe just make this a "Renderer" 
-  //or something and have it take in a refrence to the model component
-  
+  let ground = Model(ground_model);
+  let ground_position:Vec3 = Vec3::new(0.0, 0.0, 0.0);
+
+  //create the player entity
+  world.create_entity()
+    .with_component(Position::new(0.0, 0.0, 0.0))?
+    .with_component(Destination::new(0.0, 0.0, 0.0))?
+    .with_component(Speed(0.5))?
+    .with_component(Velocity::new(&Position::new(0.0, 0.0, 0.0), &Destination::new(0.0, 0.0, 0.0),&Speed(0.5)))?
+    .with_component(Controllable)?;
+
   let color_buffer = ColorBuffer::from_color(0.3,0.3,0.5,0.1);
   color_buffer.set_used(&gl);
   viewport.set_used(&gl);
   
+  //this whole camera/transform section needs to be its own system
   let aspect = world.immut_get_resource::<ScreenDimensions>().unwrap().aspect;
   let camera = Camera::new();
   let transforms = Transforms::new(&aspect,&camera);
+  
+  
   let mut frame_inputs = FrameInputs::new();
   
   //main loop
@@ -144,19 +155,12 @@ fn main() -> Result<()>  {
             //eventually use for selection
         // }
         glfw::WindowEvent::MouseButton(MouseButton::Button2, Action::Press,..)=>{
+          let (x,y) = window.get_cursor_pos();   
+          let event = engine::input::user_inputs::UserInputs::MouseClick(MousePosition{x,y}); 
           
-          let (x,y) = window.get_cursor_pos();
-          
-          let event = engine::input::user_inputs::UserInputs::MouseClick(MousePosition{x,y});
-          
-          let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
-         
-          let mouse_ray = MouseRay::new(x,y, &screen_dimensions, &transforms).0;
-          
-          let intersection:Vec3 = mouse_ray.calculate_ray_ground_intersection();
-    
-          player_position = intersection;
-
+          //this needs to go into the update section.
+          //the transforms and mouse coordinates need to become queryable from world
+          set_destination(&mut world,x,y,&transforms)?;
           frame_inputs.add_event(event);
         }
         _ => {},
@@ -236,8 +240,10 @@ fn main() -> Result<()>  {
     //Update
     if server_time.should_update()==true{
     let interpolation_factor = server_time.get_interpolation_factor();
-    let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
-    let (mouse_x,mouse_y) = window.get_cursor_pos();
+
+    //add picking system
+    // set_destination(&mut world,x,y,&transforms)?;
+    resolve_movement(&world)?;
     
     //my concern is that clearing the frame inputs means it won't update properly 
     //it will just lerp for one frame but not move the full amount
@@ -251,29 +257,23 @@ fn main() -> Result<()>  {
     //Render
     //Can I clear the buffers before binding or do they need to be cleared after binding? Binding currently happens in their own functions.
     if server_time.should_render(){
-      //Picking Phase
-      // ColorBuffer::clear(&gl);
-      // DepthBuffer::clear(&gl);
-
-      // let selectable_object = SelectableObject::new(&gl,&world,"picking",&ScreenDimensions::new(720,1280));
-      
-      // for position in positions.clone().into_iter(){
-      //   selectable_object.render()?;
-      // }
-
-      
       //Render Phase
       ColorBuffer::clear(&gl);
       DepthBuffer::clear(&gl);
 
-      let object = RenderableObject::new(&gl,&world,"textured",model.0.clone())?;
-      
-      for position in positions.clone().into_iter(){
-        object.render(&gl, &transforms, &position);
+      let object = RenderableObject::new(&gl,&world,"textured",sprite.0.clone(),"wall.jpg")?;
+
+      let mut query = world.query();
+      let entites = query.with_component::<Position>()?.run_entity();
+
+      for entity in entites {
+        let player_position:Vec3 = entity.immut_get_component::<Position>()?.0;
+        object.render(&gl, &transforms, &player_position);
       }
 
-      object.render(&gl, &transforms, &player_position);
-
+      let ground_obj = RenderableObject::new(&gl, &world, "textured", ground.0.clone(),"wall.jpg")?;
+      ground_obj.render(&gl, &transforms, &ground_position);
+      
       window.swap_buffers();
       server_time.decrimint_seconds_since_render()
     }

@@ -152,9 +152,6 @@ impl World{
 
 }
 
-//might make sense to make a separate components module
-//Resources
-
 
 #[cfg(test)]
 mod tests {}

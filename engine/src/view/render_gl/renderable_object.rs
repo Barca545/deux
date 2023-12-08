@@ -33,7 +33,7 @@ impl RenderableObject{
 Builds a `RenderableObject` by taking in data and drawing it into the VBO, 
 EBO and constructing the VAO.
 */
-  pub fn new(gl:&Gl,world:&World,name:&str,vertices:Vec<UncoloredTexturedVertex>) -> Result<RenderableObject>{
+  pub fn new(gl:&Gl,world:&World,name:&str,vertices:Vec<UncoloredTexturedVertex>,texture_path:&str) -> Result<RenderableObject>{
     let shader_program = Program::from_shader_files(&gl,world,name);
     
     //let transform_uniform_loc = shader_program.get_uniform_location("transform");
@@ -42,8 +42,12 @@ EBO and constructing the VAO.
     let projection_uniform_loc = shader_program.get_uniform_location("projection");
     
     //this actually loads the texture beforehand which feels like it might be faster I'm not sure I love it doing all the texture binding logic before I actually tell it to render
-    let txt_path = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
-    let texture = Texture::rgb_from_path(txt_path).with_mipmaps().load(gl)?;
+    //texture is being bound but not unbound (I think, so I'm only able to use one at a time)
+    //issue seems to be that the from path function binds the texture 
+    //I think I just want to load the texture into memory
+    //generate the texture object and store those then when rendering use each as appropriate
+    let path = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/".to_owned() + texture_path;
+    let texture = Texture::rgb_from_path(path.as_str()).with_mipmaps().load(gl)?;
     
     // let indices = [
     //   0, 1, 3,  // first Triangle
@@ -65,6 +69,7 @@ EBO and constructing the VAO.
 }
 
 impl Renderable for RenderableObject{
+  ///render should be a separate system not a method
   fn render(&self, gl:&Gl,transforms:&Transforms,position:&Vec3){
     let vbo = ArrayBuffer::new(&gl);
     vbo.bind();

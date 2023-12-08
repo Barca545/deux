@@ -47,7 +47,8 @@ impl RayCast{
     let distance = numerator/denominator;
   
     //scale is the same as multiplying by distance so benchmark which is faster
-    let intersection_point:Vec3= self.origin + self.direction.scale(distance);
+    let mut intersection_point:Vec3= self.origin + self.direction.scale(distance);
+    intersection_point.y = 0.0;
     intersection_point
   }
 

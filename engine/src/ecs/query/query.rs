@@ -220,11 +220,11 @@ mod test {
   #[test]
   fn query_for_entity_mutable() -> Result<()>{
     let mut entities = Entities::default();
-    entities.register_component::<u32>();
+    entities.register_component::<Health>();
     entities.register_component::<f32>();
 
     entities.create_entity()
-      .with_component(100_u32)?;
+      .with_component(Health(100))?;
 
     entities.create_entity()
       .with_component(10.0_f32)?;
@@ -232,26 +232,28 @@ mod test {
     let mut query = Query::new(&entities);
     
     let entities: Vec<QueryEntity> = query
-    .with_component::<u32>()?
+    .with_component::<Health>()?
     .run_entity();
 
   assert_eq!(entities.len(),1);
   
   for entity in entities {
     assert_eq!(entity.id, 0);
-    let mut health: RefMut<u32> = entity.mut_get_component::<u32>()?;
-    assert_eq!(*health, 100);
-    *health += 1;
+    let mut health: RefMut<Health> = entity.mut_get_component::<Health>()?;
+    assert_eq!(health.0, 100);
+    health.0 += 1;
   }
 
   let entities: Vec<QueryEntity> = query
-    .with_component::<u32>()?
+    .with_component::<Health>()?
     .run_entity();
   
   for entity in entities {
-    let health: Ref<u32> = entity.immut_get_component::<u32>()?;
-    assert_eq!(*health, 101);
+    let health: Ref<Health> = entity.immut_get_component::<Health>()?;
+    assert_eq!(health.0, 101);
   }
   Ok(())
   }
+
+  struct Health(pub i32);
 }
