@@ -1,9 +1,9 @@
-pub mod math;
 pub mod gl_data;
-mod transforms;
+pub mod math;
 mod raycasting;
+mod transforms;
 
 pub use self::{
-  transforms::{Renderable,Transforms},
-  raycasting::{RayCast,MouseRay}
+	raycasting::{MouseRay, RayCast},
+	transforms::{Renderable, Transforms},
 };

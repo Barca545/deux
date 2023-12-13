@@ -1,115 +1,128 @@
-use std::{ptr, ffi::c_void};
+use std::{ffi::c_void, ptr};
 
-use gl::{types::{GLuint, GLint}, Gl, TEXTURE_2D, RGB32I, RGB_INTEGER, UNSIGNED_INT, TEXTURE_MIN_FILTER, NEAREST, FRAMEBUFFER, TEXTURE_MAG_FILTER, COLOR_ATTACHMENT0, DEPTH_COMPONENT, FLOAT, DEPTH_ATTACHMENT, READ_FRAMEBUFFER, NONE, RGB32UI, DRAW_FRAMEBUFFER};
+use crate::{
+	ecs::{world_resources::ScreenDimensions, World},
+	math::{
+		math::{Mat4, Vec3},
+		Transforms,
+	},
+};
+use gl::{
+	types::{GLint, GLuint},
+	Gl, COLOR_ATTACHMENT0, DEPTH_ATTACHMENT, DEPTH_COMPONENT, DRAW_FRAMEBUFFER, FLOAT, FRAMEBUFFER,
+	NEAREST, NONE, READ_FRAMEBUFFER, RGB32I, RGB32UI, RGB_INTEGER, TEXTURE_2D, TEXTURE_MAG_FILTER,
+	TEXTURE_MIN_FILTER, UNSIGNED_INT,
+};
 use image::Pixel;
 use nalgebra::Perspective3;
-use crate::{ecs::{world_resources::ScreenDimensions, World}, math::{Transforms, math::{Mat4, Vec3}}};
 
-use super::{pixel_info::PixelInfo, FrameBuffer, Texture, TextureAttachment, Program, PickingProgram};
+use super::{
+	pixel_info::PixelInfo, FrameBuffer, PickingProgram, Program, Texture, TextureAttachment,
+};
 use eyre::Result;
 
 //I think I need another struct that lists the object index and their pixel info together
-pub struct SelectableObject{
-  fbo:FrameBuffer,
-  program:PickingProgram,
-  picking_texture:TextureAttachment,
-  depth_texture:TextureAttachment,
-  object_index:GLint,
-  pixel_info:PixelInfo,
-  screen_dimensions:ScreenDimensions
+pub struct SelectableObject {
+	fbo: FrameBuffer,
+	program: PickingProgram,
+	picking_texture: TextureAttachment,
+	depth_texture: TextureAttachment,
+	object_index: GLint,
+	pixel_info: PixelInfo,
+	screen_dimensions: ScreenDimensions,
 }
 
-impl SelectableObject{
-  pub fn new(gl:&Gl,world:&World,name:&str,screen_dimensions:&ScreenDimensions)->Self{
-    let fbo = FrameBuffer::new(&gl);
-    let program = PickingProgram::new(gl, world, name);
-    let picking_texture = TextureAttachment::new(&gl, 0);
-    let depth_texture = TextureAttachment::new(&gl, 0);
-    let object_index = 0;
-    let pixel_info = PixelInfo::default();
-    let screen_dimensions = screen_dimensions.clone();
-    
-    SelectableObject { 
-      fbo, 
-      program, 
-      picking_texture, 
-      depth_texture,
-      object_index, 
-      pixel_info, 
-      screen_dimensions 
-    }
-  }
+impl SelectableObject {
+	pub fn new(gl: &Gl, world: &World, name: &str, screen_dimensions: &ScreenDimensions) -> Self {
+		let fbo = FrameBuffer::new(&gl);
+		let program = PickingProgram::new(gl, world, name);
+		let picking_texture = TextureAttachment::new(&gl, 0);
+		let depth_texture = TextureAttachment::new(&gl, 0);
+		let object_index = 0;
+		let pixel_info = PixelInfo::default();
+		let screen_dimensions = screen_dimensions.clone();
 
-  // I think I need to delete the frame buffer at the end?
-  pub fn render(&self)->Result<()>{
-    self.program.set_object_index(self.object_index);
-    
-    self.fbo.enable_writing();
-    self.fbo.bind();
+		SelectableObject {
+			fbo,
+			program,
+			picking_texture,
+			depth_texture,
+			object_index,
+			pixel_info,
+			screen_dimensions,
+		}
+	}
 
-    self.generate_information_buffer();
-    self.generate_depth_buffer();
+	// I think I need to delete the frame buffer at the end?
+	pub fn render(&self) -> Result<()> {
+		self.program.set_object_index(self.object_index);
 
-    self.fbo.bind_default();
+		self.fbo.enable_writing();
+		self.fbo.bind();
 
-    self.fbo.check_framebuffer_status()
-  }
+		self.generate_information_buffer();
+		self.generate_depth_buffer();
 
-  ///Creates and attaches the texture object for the primitive information buffer.
-  fn generate_information_buffer(&self){
-    //unsure if this should be in the main update function
-    self.picking_texture.generate_texture_attachment(
-      &self.screen_dimensions,
-      RGB32UI,
-      RGB_INTEGER,
-      UNSIGNED_INT
-    );
+		self.fbo.bind_default();
 
-    let attachment = COLOR_ATTACHMENT0;
-    let texture_obj = self.picking_texture.get_texture_obj();
-    self.fbo.attach_2d_texture(attachment, texture_obj);
-  }
+		self.fbo.check_framebuffer_status()
+	}
 
-  ///Creates and attaches the texture object for the depth buffer.
-  fn generate_depth_buffer(&self){
-    //unsure if this should be in the main update function
-    //do I want to use integers instead of floating points in order to avoid imprecision?
-    self.depth_texture.generate_texture_attachment(
-      &self.screen_dimensions,
-      DEPTH_COMPONENT,
-      DEPTH_COMPONENT,
-      FLOAT
-    );
-    
-    let attachment = DEPTH_ATTACHMENT;
-    let texture_obj = self.depth_texture.get_texture_obj();
-    self.fbo.attach_2d_texture(attachment, texture_obj);
-  }
+	///Creates and attaches the texture object for the primitive information buffer.
+	fn generate_information_buffer(&self) {
+		//unsure if this should be in the main update function
+		self.picking_texture.generate_texture_attachment(
+			&self.screen_dimensions,
+			RGB32UI,
+			RGB_INTEGER,
+			UNSIGNED_INT,
+		);
 
-  pub fn read_pixel_info(&self,gl:&Gl){
-    unsafe{
-      gl.BindFramebuffer(READ_FRAMEBUFFER, self.fbo.get_buffer_obj());
+		let attachment = COLOR_ATTACHMENT0;
+		let texture_obj = self.picking_texture.get_texture_obj();
+		self.fbo.attach_2d_texture(attachment, texture_obj);
+	}
 
-      gl.ReadBuffer(COLOR_ATTACHMENT0);
+	///Creates and attaches the texture object for the depth buffer.
+	fn generate_depth_buffer(&self) {
+		//unsure if this should be in the main update function
+		//do I want to use integers instead of floating points in order to avoid imprecision?
+		self.depth_texture.generate_texture_attachment(
+			&self.screen_dimensions,
+			DEPTH_COMPONENT,
+			DEPTH_COMPONENT,
+			FLOAT,
+		);
 
-      let pixel:i128 = 1;
-      gl.ReadPixels(1, 1, 1, 1, RGB_INTEGER, UNSIGNED_INT, pixel as *mut c_void);
+		let attachment = DEPTH_ATTACHMENT;
+		let texture_obj = self.depth_texture.get_texture_obj();
+		self.fbo.attach_2d_texture(attachment, texture_obj);
+	}
 
-      gl.ReadBuffer(NONE);
+	pub fn read_pixel_info(&self, gl: &Gl) {
+		unsafe {
+			gl.BindFramebuffer(READ_FRAMEBUFFER, self.fbo.get_buffer_obj());
 
-      gl.BindFramebuffer(READ_FRAMEBUFFER, 0);
+			gl.ReadBuffer(COLOR_ATTACHMENT0);
 
-      dbg!(pixel);
+			let pixel: i128 = 1;
+			gl.ReadPixels(1, 1, 1, 1, RGB_INTEGER, UNSIGNED_INT, pixel as *mut c_void);
 
-    // return Pixel;
-  }
-    todo!()
-  }
+			gl.ReadBuffer(NONE);
 
-  //I think the render for this should go into the Renderable Object render logic
-  // pub fn render(&self){
-  //   // Create the FBO
-  //   let fbo:FrameBuffer = FrameBuffer::new(&gl);
-  //   self.generate_information_buffer();
-  // }
+			gl.BindFramebuffer(READ_FRAMEBUFFER, 0);
+
+			dbg!(pixel);
+
+			// return Pixel;
+		}
+		todo!()
+	}
+
+	//I think the render for this should go into the Renderable Object render logic
+	// pub fn render(&self){
+	//   // Create the FBO
+	//   let fbo:FrameBuffer = FrameBuffer::new(&gl);
+	//   self.generate_information_buffer();
+	// }
 }

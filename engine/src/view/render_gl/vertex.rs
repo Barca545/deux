@@ -1,160 +1,63 @@
-use crate::math::gl_data::{F32Tuple3, F32Tuple2};
-use gl::{Gl, types::{GLuint, GLint, GLvoid}, FALSE, FLOAT};
+use crate::math::{
+  gl_data::{F32Tuple2, F32Tuple3},
+  math::{Vec2, Vec3},
+};
+use gl::{
+  types::{GLint, GLuint, GLvoid},
+  Gl, FALSE, FLOAT,
+};
 use std::mem::size_of;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
-pub struct TexturedVertex{
-  pos:F32Tuple3,
-  clr:F32Tuple3,
-  txt: F32Tuple2
+pub struct Vertex {
+  pos: Vec3,
+  txt: Vec2,
 }
 
-impl Vertex for TexturedVertex{}
-impl From<(f32,f32,f32,f32,f32,f32,f32,f32)> for TexturedVertex{
-  fn from(value: (f32,f32,f32,f32,f32,f32,f32,f32)) -> Self {
-    let pos = (value.0,value.1,value.2);
-    let clr = (value.3,value.4,value.5);
-    let txt = (value.6,value.7);
-    Self::new(pos, clr, txt)
-  }
-}
-impl TexturedVertex{
-  pub fn new(pos:(f32,f32,f32),clr:(f32,f32,f32),txt:(f32,f32))->Self{
-    TexturedVertex{
-      pos: F32Tuple3::from(pos),
-      clr: F32Tuple3::from(clr),
-      txt: F32Tuple2::from(txt)
-    }
-  }
-  
-  pub fn vertex_attrib_pointers(gl:&Gl){
-    let stride = size_of::<Self>();
-    let size = F32Tuple3::size();
-
-    //shape
-    let position = 0; 
-    let position_offset = 0;
-    unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, position, position_offset,3);
-    }
-
-    //color
-    let color = 1;
-    let color_offset = position_offset + size;
-    unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, color, color_offset,3);
-    }
-
-    //texture
-    let texture = 2;
-    let texture_offset = color_offset + size;
-    unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset,2);
-    }
-  }
-}
-
-
-#[derive(Copy, Clone, Debug)]
-#[repr(C, packed)]
-pub struct UntexturedVertex{
-  pos:F32Tuple3,
-  clr:F32Tuple3,
-}
-
-impl Vertex for UntexturedVertex {}
-impl From<(f32,f32,f32,f32,f32,f32)> for UntexturedVertex{
-  fn from(value: (f32,f32,f32,f32,f32,f32)) -> Self {
-    let pos = (value.0,value.1,value.2);
-    let clr = (value.3,value.4,value.5);
-    Self::new(pos, clr)
-  }
-}
-impl UntexturedVertex{
-  pub fn new(pos:(f32,f32,f32),clr:(f32,f32,f32))->Self{
-    UntexturedVertex{
-      pos: F32Tuple3::from(pos),
-      clr: F32Tuple3::from(clr),
-    }
-  }
-   
-  pub fn vertex_attrib_pointers(gl:&Gl){
-    let stride = size_of::<Self>();
-    let size = size_of::<F32Tuple3>();
-    
-    let location = 0; //is location position?
-    let location_offset = 0;
-    
-    //shape
-    unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, location, location_offset,3);
-    }
-
-    let color = 1;
-    let color_offset = location_offset + size;
-    
-    //color
-    unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, color, color_offset,3);
-    }
-  }
-}
-
-#[derive(Copy, Clone, Debug)]
-#[repr(C, packed)]
-pub struct UncoloredTexturedVertex{
-  pos:F32Tuple3,
-  txt:F32Tuple2
-}
-
-impl Vertex for UncoloredTexturedVertex{}
-impl From<(f32,f32,f32,f32,f32)> for UncoloredTexturedVertex{
-  fn from(value: (f32,f32,f32,f32,f32)) -> Self {
-    let pos = (value.0,value.1,value.2);
-    let txt = (value.3,value.4);
+impl From<(f32, f32, f32, f32, f32)> for Vertex {
+  fn from(value: (f32, f32, f32, f32, f32)) -> Self {
+    let pos = Vec3::new(value.0, value.1, value.2);
+    let txt = Vec2::new(value.3, value.4);
     Self::new(pos, txt)
   }
 }
-impl UncoloredTexturedVertex{
-  pub fn new(pos:(f32,f32,f32),txt:(f32,f32))->Self{
-    UncoloredTexturedVertex{
-      pos: F32Tuple3::from(pos),
-      txt: F32Tuple2::from(txt)
-    }
+impl Vertex {
+  pub fn new(pos: Vec3, txt: Vec2) -> Self {
+    Vertex { pos, txt }
   }
-  
-  pub fn vertex_attrib_pointers(gl:&Gl){
+
+  pub fn init_attrib_pointers(gl: &Gl) {
     let stride = size_of::<Self>();
-    let size = F32Tuple3::size();
+    let size = size_of::<Vec3>();
     //shape
-    let position = 0; 
+    let position = 0;
     let position_offset = 0;
     unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, position, position_offset,3);
+      define_vertex_attrib_pointer(gl, stride, position, position_offset, 3);
     }
 
     //texture
     let texture = 2;
     let texture_offset = position_offset + size;
     unsafe {
-      Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset,2);
+      define_vertex_attrib_pointer(gl, stride, texture, texture_offset, 2);
     }
-  }
-}
 
-//make a derive for this?
-//maybe eventually move new here once I figure out trait obj
-pub trait Vertex {
-  unsafe fn define_vertex_attrib_pointer(gl:&Gl, stride:usize, location:usize, offset:usize,tuple_size:GLint){
-    gl.EnableVertexAttribArray(location as GLuint);
-    gl.VertexAttribPointer(
-      location as GLuint,
-      tuple_size, 
-      FLOAT,
-      FALSE, 
-      stride as GLint,
-      offset as *const GLvoid
-    );
+    unsafe fn define_vertex_attrib_pointer(
+      gl: &Gl, stride: usize, location: usize, offset: usize, tuple_size: GLint,
+    ) {
+      //why does GITGD (https://github.com/amengede/OpenGL-for-Beginners/blob/main/week%2006%20design%20patterns/4%20entity%20component%20system/src/controller/app.cpp#L12)
+      //have EnableVertexAttribArray after VertexAttribPointer?
+      gl.EnableVertexAttribArray(location as GLuint);
+      gl.VertexAttribPointer(
+        location as GLuint,
+        tuple_size,
+        FLOAT,
+        FALSE,
+        stride as GLint,
+        offset as *const GLvoid,
+      );
+    }
   }
 }

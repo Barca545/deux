@@ -1,3 +1,3 @@
 mod loader;
 
-pub use self::loader::{FileLoader,ImageLoader};
+pub use self::loader::{load_cstring, load_image, FileLoader, ImageLoader};

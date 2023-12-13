@@ -20,6 +20,7 @@ cgmath = "0.18.0"
 image = "0.24.7"
 nalgebra-glm = "0.18.0"
 
+
 [workspace.dependencies.winapi]
 version = "0.3.9"
 default-features = false

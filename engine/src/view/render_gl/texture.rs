@@ -1,196 +1,79 @@
 use std::ptr;
 
-use crate::{errors::{FilesystemErrors,RenderErrors, FramebufferErrors}, filesystem::ImageLoader, ecs::world_resources::ScreenDimensions};
+use crate::{
+	ecs::world_resources::ScreenDimensions,
+	errors::{FilesystemErrors, FramebufferErrors, RenderErrors},
+	filesystem::{load_image, ImageLoader},
+};
 
 use eyre::Result;
-use gl::{TEXTURE_2D, Gl, UNSIGNED_BYTE, RGB, RGBA, types::{GLvoid,GLenum, GLuint, GLint, GLsizei}, RGB8, TEXTURE_BASE_LEVEL, TEXTURE_MAX_LEVEL, RGBA8, TEXTURE0,TEXTURE_WRAP_S,TEXTURE_WRAP_T,REPEAT,TEXTURE_MIN_FILTER,TEXTURE_MAG_FILTER,LINEAR, RGB_INTEGER, RG32I, RGB32I,UNSIGNED_INT, FRAMEBUFFER, NEAREST, COLOR_ATTACHMENT0, FRAMEBUFFER_COMPLETE};
+use gl::{
+	types::{GLenum, GLint, GLsizei, GLuint, GLvoid},
+	Gl, COLOR_ATTACHMENT0, FRAMEBUFFER, FRAMEBUFFER_COMPLETE, LINEAR, LINEAR_MIPMAP_LINEAR, NEAREST,
+	REPEAT, RG32I, RGB, RGB32I, RGB8, RGBA, RGBA8, RGB_INTEGER, TEXTURE0, TEXTURE_2D,
+	TEXTURE_BASE_LEVEL, TEXTURE_MAG_FILTER, TEXTURE_MAX_LEVEL, TEXTURE_MIN_FILTER, TEXTURE_WRAP_S,
+	TEXTURE_WRAP_T, UNSIGNED_BYTE, UNSIGNED_INT,
+};
 
-pub struct Texture{
-  gl:Gl,
-  texture_obj:GLuint //is this the object actually containing all the texture data?
+#[derive(Default, Debug)]
+pub struct Texture {
+	pub id: u32,
 }
 
 impl Texture {
-  fn default(gl:&Gl)->Texture{
-    Texture {
-      gl: gl.clone(),
-      texture_obj: 0
-    }
-  }
-  
-  pub fn rgb_from_path(path:&str)->TextureLoadBuilder{
-    TextureLoadBuilder { 
-      options:TextureLoadOptions::rgb_from_path(path)
-    }
-  }
+	pub fn new(gl: &Gl, name: &str) -> Result<Self> {
+		let image = load_image(&name)?;
+		let image_pixels = image.to_rgba8().into_raw();
 
-  pub fn rgba_from_path(path:&str)->TextureLoadBuilder{
-    TextureLoadBuilder { 
-      options: TextureLoadOptions::rgba_from_path(path)
-    } 
-  }
-  
-  //I still feel like something is supposed to be calling this externally since Necury had it public in his crate but idk how
-  fn from_path<'a>(
-    options: TextureLoadOptions<'a>,
-    gl:&Gl,
-  )->Result<Self>{
-    let mut texture_obj:GLuint = 0;
-    
-    unsafe{gl.GenTextures(1,&mut texture_obj)}
+		let mut id = 0;
 
-    let texture = Texture::default(gl);
-    texture.update(options)?;
+		unsafe {
+			//make the texture
+			gl.GenTextures(1, &mut id);
+			gl.BindTexture(TEXTURE_2D, id);
 
-    Ok(texture)
-  }
+			//load data
+			gl.TexImage2D(
+				TEXTURE_2D,
+				0,
+				RGBA8 as GLint,
+				image.width() as GLsizei,
+				image.height() as GLsizei,
+				0,
+				RGBA,
+				UNSIGNED_BYTE,
+				&image_pixels[0] as *const u8 as *const GLvoid,
+			);
 
-  pub fn update<'a>(
-    &self,
-    options: TextureLoadOptions<'a>,
-  )->Result<()>{
-    let gl = &self.gl;
-    
-    unsafe{
-      gl.BindTexture(TEXTURE_2D,self.texture_obj);
-      // set the texture wrapping parameters (default wrapping method)
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_S, REPEAT as GLint); 
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_T, REPEAT as GLint);
-    }
-    
-    match options.format{
-      RGB => {
-        let image = options.image_from_path(options.path)?;
-        let image_pixels = image.to_rgb8().into_raw();
-        unsafe{
-          gl.TexImage2D(
-            TEXTURE_2D, 
-            0,
-            RGB8 as GLint, 
-            image.width() as GLsizei, 
-            image.height() as GLsizei, 
-            0, 
-            RGB, 
-            UNSIGNED_BYTE, 
-            &image_pixels[0] as *const u8 as *const GLvoid
-          );
-        }
-        if options.gen_mipmaps {
-          unsafe{
-            gl.GenerateMipmap(TEXTURE_2D)
-          }
-        }
-        else{
-          unsafe{   
-            // set texture filtering parameters   
-            gl.TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR as GLint);
-            gl.TexParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, LINEAR as GLint);
-          }
-        }
-      }
-    RGBA => {
-      let image = options.image_from_path(options.path)?;
-      let image_pixels = image.to_rgba8().into_raw();
-      unsafe{
-        gl.TexImage2D(
-          TEXTURE_2D, 
-          0,
-          RGBA8 as GLint, 
-          image.width() as GLsizei, 
-          image.height() as GLsizei, 
-          0, 
-          RGBA, 
-          UNSIGNED_BYTE, 
-          &image_pixels[0] as *const u8 as *const GLvoid
-        );
-      }
-      if options.gen_mipmaps {
-        unsafe{
-          gl.GenerateMipmap(TEXTURE_2D)
-        }
-      }
-      else{
-        unsafe{
-          // set texture filtering parameters
-          gl.TexParameteri(TEXTURE_2D,TEXTURE_BASE_LEVEL,LINEAR as GLint);
-          gl.TexParameteri(TEXTURE_2D,TEXTURE_MAX_LEVEL,LINEAR as GLint);
-        }
-      }
-    }
-    _=> unreachable!("{}",FilesystemErrors::IllegalTextureFormat) 
-    }
+			//create mipmaps
+			gl.GenerateMipmap(TEXTURE_2D);
 
-    unsafe{gl.BindTexture(TEXTURE_2D,0)}
+			//Configure sampler
+			gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_S, REPEAT as GLint);
+			gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_T, REPEAT as GLint);
+			gl.TexParameteri(
+				TEXTURE_2D,
+				TEXTURE_MIN_FILTER,
+				LINEAR_MIPMAP_LINEAR as GLint,
+			);
+			gl.TexParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, LINEAR as GLint);
+		};
 
-    Ok(())
-  }
+		Ok(Texture { id })
+	}
 
-  pub fn bind(&self){
-    unsafe{
-      self.gl.BindTexture(TEXTURE_2D,self.texture_obj)
-    }
-  }
-  //why does unbind call bind?
-  pub fn unbind(&self){
-    unsafe{
-      self.gl.BindTexture(TEXTURE_2D,0)
-    }
-  }
-  
-  //what does this do?
-  pub fn bind_at(&self,index:u32){
-    unsafe{
-      self.gl.ActiveTexture(TEXTURE0+index)
-    }
-    self.bind()
-  }
+	//I think the reason I can only use 1 texture is because thre
+	pub fn bind(&self, gl: &Gl) {
+		unsafe { gl.BindTexture(TEXTURE_2D, self.id) }
+	}
+
+	pub fn unbind(&self, gl: &Gl) {
+		unsafe { gl.BindTexture(TEXTURE_2D, 0) }
+	}
 }
 
-
-impl Drop for Texture{
-  fn drop(&mut self){
-    unsafe{self.gl.DeleteTextures(1,&mut self.texture_obj)}
-  }
-}
-
-pub struct TextureLoadBuilder<'a> {
-  options: TextureLoadOptions<'a>,
-}
-
-impl<'a> TextureLoadBuilder<'a>{
-  pub fn load(self,gl:&Gl)->Result<Texture>{
-    Texture::from_path(self.options, gl)
-  }
-  
-  pub fn with_mipmaps(mut self)->Self{
-    self.options.gen_mipmaps = true;
-    self
-  }
-}
-
-pub struct TextureLoadOptions<'a>{
-  path: &'a str,
-  format: GLenum,
-  gen_mipmaps: bool //is this needed if I do not want mipmaps?
-}
-
-impl<'a> ImageLoader<'a> for TextureLoadOptions<'a>{}
-
-impl<'a> TextureLoadOptions<'a>{
-
-  pub fn rgb_from_path(path: &'a str)->Self{
-    TextureLoadOptions { 
-      path,
-      format:RGB,
-      gen_mipmaps:true
-    }
-  }
-  
-  pub fn rgba_from_path(path: &'a str)->Self{
-    TextureLoadOptions { 
-      path,
-      format:RGBA,
-      gen_mipmaps:true
-    }
-  }
-}
+// impl Drop for Texture{
+//   fn drop(&mut self){
+//     unsafe{self.gl.DeleteTextures(1,&mut self.texture_obj)}
+//   }
+// }

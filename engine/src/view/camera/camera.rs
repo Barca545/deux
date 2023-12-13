@@ -1,58 +1,49 @@
 extern crate nalgebra_glm as glm;
-use glm::vec3;
 use crate::math::math::{radians, Vec3};
+use glm::vec3;
 
 #[derive(Debug)]
-pub struct Camera{
-  pub position:Vec3,
-  pub target:Vec3,
-  pub up:Vec3,
-  front:Vec3,
+pub struct Camera {
+	pub position: Vec3,
+	pub target: Vec3,
+	pub up: Vec3,
+	front: Vec3,
 }
 
-impl Camera{
-  pub fn new()->Self{
-    let world_up:Vec3 = vec3(0.0,1.0,0.0);
+impl Camera {
+	pub fn new() -> Self {
+		let world_up: Vec3 = vec3(0.0, 1.0, 0.0);
 
-    let x = 0.0;
-    let z = -5.0;
-    let y = -z*radians(55.0).tan();
-    
-    let front:Vec3 = vec3(
-      -x,
-      -y,
-      -z
-    );
+		let x = 0.0;
+		let z = -5.0;
+		let y = -z * radians(55.0).tan();
 
-    let position:Vec3 = vec3(
-      x,
-      y,
-      z
-    );
+		let front: Vec3 = vec3(-x, -y, -z);
 
-    // let up:Vec3 = vec3(0.0,1.0,0.0);
-    let right:Vec3 = front.cross(&world_up).normalize();
-    let up:Vec3 = right.cross(&front).normalize();
-    let target:Vec3 = position+front;
+		let position: Vec3 = vec3(x, y, z);
 
-    Camera { 
-      position, 
-      target,
-      up,
-      front
-    }
-  }
+		// let up:Vec3 = vec3(0.0,1.0,0.0);
+		let right: Vec3 = front.cross(&world_up).normalize();
+		let up: Vec3 = right.cross(&front).normalize();
+		let target: Vec3 = position + front;
 
-  pub fn front(&self)->Vec3{
-    self.front
-  }
+		Camera {
+			position,
+			target,
+			up,
+			front,
+		}
+	}
 
+	pub fn front(&self) -> Vec3 {
+		self.front
+	}
 }
 
-impl Default for Camera{
-  fn default() -> Self {
-    Self::new()
-  }
+impl Default for Camera {
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 // #[derive(Debug)]
@@ -62,7 +53,7 @@ impl Default for Camera{
 //   fov: f32,
 //   camera_up:TVec3<f32>,
 //   right:TVec3<f32>,
-//   vertical_move:TVec3<f32>,  
+//   vertical_move:TVec3<f32>,
 //   projection:TMat4<f32>,
 //   horizontal_speed:f32,
 //   vertical_speed:f32,
@@ -91,16 +82,16 @@ impl Default for Camera{
 //       0.0,
 //       y,
 //       z
-//     );    
-    
+//     );
+
 //     let right:TVec3<f32> = camera_front.cross(&world_up).normalize();
 //     let camera_up:TVec3<f32> = right.cross(&camera_front).normalize();
 
 //     let vertical_move:TVec3<f32> = vec3(0.0, 0.0, -1.0);
 
-//     Camera { 
-//       camera_position, 
-//       camera_front, 
+//     Camera {
+//       camera_position,
+//       camera_front,
 //       fov,
 //       camera_up,
 //       right,
@@ -117,24 +108,23 @@ impl Default for Camera{
 
 //   pub fn get_camera_view(&self)->TMat4<f32>{
 //     let center:TVec3<f32> = self.camera_position+self.camera_front;
-    
+
 //     let view:TMat4<f32> = look_at(
-//       &self.camera_position, 
-//       &center, 
+//       &self.camera_position,
+//       &center,
 //       &self.camera_up
 //     );
 //     view
 //   }
-  
+
 //   pub fn update_projection(&mut self,aspect:f32){
 //     //what does the FOV do here?
 //     self.projection = perspective(aspect, self.fov, 0.1, 100.0);
 //   }
 
-  
 //   //why does horizontal movement happen faster than vertical movement
 //   pub fn new_position(&mut self,frame_inputs:&mut FrameInputs){
-//     for input in frame_inputs.get_inputs(){     
+//     for input in frame_inputs.get_inputs(){
 //       match input{
 //         UserInputs::MoveCameraUp => {
 //           self.camera_position += self.vertical_move*self.vertical_speed;
@@ -178,7 +168,7 @@ impl Default for Camera{
 //   //what I can do is have the update update some target position and then move it by the speed each frame
 //   //I think the new position is just the delta time * the speed
 //   //not sure I need to interpolate at all
-//   //but check the article since it might explain why I need to 
+//   //but check the article since it might explain why I need to
 //   // pub fn update(&self,interpolation_factor:f64){
 //   //   let interpolation_factor = interpolation_factor as f32;
 //   // }

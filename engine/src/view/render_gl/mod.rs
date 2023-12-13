@@ -1,27 +1,27 @@
 pub mod buffer;
-mod shader;
-mod vertex;
-mod viewport;
-mod depth_buffer;
-mod renderable_object;
 mod color_buffer;
-mod texture;
-mod selectable_object;
+mod depth_buffer;
+mod framebuffer;
 mod picking_program;
 mod pixel_info;
-mod framebuffer;
+mod renderable_object;
+mod selectable_object;
+mod shader;
+mod texture;
 mod texture_attatchment;
+mod vertex;
+mod viewport;
 
 pub use self::{
-  color_buffer::ColorBuffer,
-  depth_buffer::DepthBuffer,
-  renderable_object::RenderableObject,
-  viewport::Viewport,
-  vertex::{UntexturedVertex,TexturedVertex,UncoloredTexturedVertex},
-  shader::{Shader,Program},
-  texture::Texture,
-  selectable_object::SelectableObject,
-  framebuffer::FrameBuffer,
-  texture_attatchment::TextureAttachment,
-  picking_program::PickingProgram
+	color_buffer::ColorBuffer,
+	depth_buffer::DepthBuffer,
+	framebuffer::FrameBuffer,
+	picking_program::PickingProgram,
+	renderable_object::RenderableObject,
+	selectable_object::SelectableObject,
+	shader::{Program, Shader},
+	texture::Texture,
+	texture_attatchment::TextureAttachment,
+	vertex::Vertex,
+	viewport::Viewport,
 };

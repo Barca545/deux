@@ -1,6 +1,8 @@
 {
+  "editor.detectIndentation": true,
+  "editor.insertSpaces": true,
   "editor.tabSize": 2,
-  "editor.detectIndentation": false,
+  "editor.indentSize": "tabSize",
 
   "rust-analyzer.linkedProjects": [
     "gl/Cargo.toml",
