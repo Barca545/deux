@@ -4,46 +4,46 @@ use glm::vec3;
 
 #[derive(Debug)]
 pub struct Camera {
-	pub position: Vec3,
-	pub target: Vec3,
-	pub up: Vec3,
-	front: Vec3,
+  pub position:Vec3,
+  pub target:Vec3,
+  pub up:Vec3,
+  front:Vec3
 }
 
 impl Camera {
-	pub fn new() -> Self {
-		let world_up: Vec3 = vec3(0.0, 1.0, 0.0);
+  pub fn new() -> Self {
+    let world_up:Vec3 = vec3(0.0, 1.0, 0.0);
 
-		let x = 0.0;
-		let z = -5.0;
-		let y = -z * radians(55.0).tan();
+    let x = 0.0;
+    let z = -5.0;
+    let y = -z * radians(55.0).tan();
 
-		let front: Vec3 = vec3(-x, -y, -z);
+    let front:Vec3 = vec3(-x, -y, -z);
 
-		let position: Vec3 = vec3(x, y, z);
+    let position:Vec3 = vec3(x, y, z);
 
-		// let up:Vec3 = vec3(0.0,1.0,0.0);
-		let right: Vec3 = front.cross(&world_up).normalize();
-		let up: Vec3 = right.cross(&front).normalize();
-		let target: Vec3 = position + front;
+    // let up:Vec3 = vec3(0.0,1.0,0.0);
+    let right:Vec3 = front.cross(&world_up).normalize();
+    let up:Vec3 = right.cross(&front).normalize();
+    let target:Vec3 = position + front;
 
-		Camera {
-			position,
-			target,
-			up,
-			front,
-		}
-	}
+    Camera {
+      position,
+      target,
+      up,
+      front
+    }
+  }
 
-	pub fn front(&self) -> Vec3 {
-		self.front
-	}
+  pub fn front(&self) -> Vec3 {
+    self.front
+  }
 }
 
 impl Default for Camera {
-	fn default() -> Self {
-		Self::new()
-	}
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 // #[derive(Debug)]
@@ -165,9 +165,9 @@ impl Default for Camera {
 //     }
 //   }
 
-//   //what I can do is have the update update some target position and then move it by the speed each frame
-//   //I think the new position is just the delta time * the speed
-//   //not sure I need to interpolate at all
+//   //what I can do is have the update update some target position and then
+// move it by the speed each frame   //I think the new position is just the
+// delta time * the speed   //not sure I need to interpolate at all
 //   //but check the article since it might explain why I need to
 //   // pub fn update(&self,interpolation_factor:f64){
 //   //   let interpolation_factor = interpolation_factor as f32;

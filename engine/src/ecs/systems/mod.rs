@@ -1,9 +1,10 @@
 mod movement;
 mod render;
 mod selection;
+mod mouse;
 
 pub use self::{
-	movement::{resolve_movement, set_destination},
-	render::render,
-	selection::set_selection,
+  movement::{resolve_movement, update_destination},
+  render::render,
+  selection::update_selection
 };

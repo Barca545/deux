@@ -6,30 +6,27 @@ extern crate nalgebra_glm as glm;
 use engine::{
   ecs::{
     component_lib::{
-      Controllable, Destination, GroundModel, Model, ModelUniformLocation, Position,
-      ProjectionUniformLocation, Speed, Velocity, ViewUniformLocation,
+      Controllable, Destination, ModelUniformLocation, Position, ProjectionUniformLocation, Speed, Velocity,
+      ViewUniformLocation, Hitbox
     },
-    systems::{render, resolve_movement, set_destination},
-    world_resources::ScreenDimensions,
-    World,
+    systems::{render, resolve_movement, update_destination, update_selection},
+    world_resources::{ScreenDimensions, ShaderPrograms, Selected},
+    World
   },
-  input::user_inputs::{FrameInputs, MousePosition},
-  math::{math::Vec3, MouseRay, Renderable, Transforms},
+  input::user_inputs::{FrameInputs, MousePosition, UserInputs},
+  math::{Transforms, Vec3},
   time::ServerTime,
   view::{
     camera::Camera,
-    render::Mesh,
-    render_gl::{
-      buffer::{ArrayBuffer, VertexArray},
-      ColorBuffer, DepthBuffer, Program, RenderableObject, Texture, Vertex, Viewport,
-    },
-  },
+    render_gl::{ColorBuffer, Program, Vertex, Viewport}, SkinnedMesh, StaticMesh
+  }
 };
 
 use eyre::Result;
-use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST};
-use glfw::{fail_on_errors, Action, Context, Key, MouseButton};
-use std::{any::TypeId, env};
+use gl::{Gl, DEPTH_TEST, LESS, NOTEQUAL, STENCIL_TEST, KEEP, REPLACE};
+use glfw::{fail_on_errors, Action, Context, Key, MouseButton,WindowHint::{ContextVersionMinor,ContextVersionMajor,OpenGlProfile}, OpenGlProfileHint};
+use glm::vec3;
+use std::env;
 
 fn main() -> Result<()> {
   env::set_var("RUST_BACKTRACE", "FULL");
@@ -37,57 +34,56 @@ fn main() -> Result<()> {
   let mut server_time = ServerTime::new();
 
   world
-    .add_resource()
-    .from_user_defined_data(ScreenDimensions::new(720, 1280));
-  // world.add_resource().path_to_asset_folder_from_relative_exe_path("assets");
+    .add_resource(ScreenDimensions::new(720, 1280));
 
-  // world.add_resource().from_user_defined_data(MousePicker::new());
-
-  //maybe I make events a or a component and query it? Might need to slap it in an RC if I want to pass it down to other functions
+  //maybe I make events a or a component and query it? Might need to slap it in
+  // an RC if I want to pass it down to other functions
   let mut glfw = glfw::init(fail_on_errors!()).unwrap();
+  glfw.window_hint(ContextVersionMajor(3));
+  glfw.window_hint(ContextVersionMinor(3));
+  glfw.window_hint(OpenGlProfile(OpenGlProfileHint::Core));
   let (mut window, events) = glfw
     .create_window(
-      world
-        .immut_get_resource::<ScreenDimensions>()
-        .unwrap()
-        .width as u32,
-      world
-        .immut_get_resource::<ScreenDimensions>()
-        .unwrap()
-        .height as u32,
+      world.immut_get_resource::<ScreenDimensions>().unwrap().width as u32,
+      world.immut_get_resource::<ScreenDimensions>().unwrap().height as u32,
       "Project: Deux",
-      glfw::WindowMode::Windowed,
+      glfw::WindowMode::Windowed
     )
     .expect("Failed to create GLFW window.");
 
+  
   window.make_current();
-  window.set_all_polling(true); //maybe just use the polling for specific keys and then poll the mouse separately
+  //maybe just use the polling for specific keys and then poll the mouse separately
+  window.set_all_polling(true); 
 
   let _gl_context = window.get_context_version();
 
   let gl = Gl::load_with(&mut |s| window.get_proc_address(s) as *const std::os::raw::c_void);
-  unsafe { gl.Enable(DEPTH_TEST) }
+  //configure gloabl OpenGL state
+  unsafe { 
+    gl.Enable(DEPTH_TEST);
+    gl.DepthFunc(LESS);
+    gl.Enable(STENCIL_TEST);
+    gl.StencilFunc(NOTEQUAL, 1, 0xFF);
+    gl.StencilOp(KEEP, KEEP, REPLACE);
+  }
 
-  world.add_resource().from_user_defined_data(gl.clone());
+  world.add_resource(gl.clone());
 
   let viewport = Viewport::for_window(
-    world
-      .immut_get_resource::<ScreenDimensions>()
-      .unwrap()
-      .height,
-    world
-      .immut_get_resource::<ScreenDimensions>()
-      .unwrap()
-      .width,
+    world.immut_get_resource::<ScreenDimensions>().unwrap().height,
+    world.immut_get_resource::<ScreenDimensions>().unwrap().width
   );
 
   world
-    .register_component::<Mesh>()
+    .register_component::<SkinnedMesh>()
+    .register_component::<StaticMesh>()
     .register_component::<Position>()
     .register_component::<Destination>()
     .register_component::<Speed>()
     .register_component::<Velocity>()
-    .register_component::<Controllable>();
+    .register_component::<Controllable>()
+    .register_component::<Hitbox>();
 
   let sprite_model = vec![
     Vertex::from((-0.5, -0.5, -0.5, 0.0, 0.0)),
@@ -130,58 +126,80 @@ fn main() -> Result<()> {
 
   //why do they need to be at -1, why does putting them at -1 not put them on the ground
   let ground_model = vec![
-    Vertex::from((1.0, -1.0, 1.0, 1.0, 1.0)),
-    Vertex::from((1.0, -1.0, -1.0, 0.0, 0.0)),
-    Vertex::from((-1.0, -1.0, 1.0, 0.0, 1.0)),
-    Vertex::from((-1.0, -1.0, -1.0, 0.0, 0.0)),
+    Vertex::from((5.0, -0.5,  5.0,  2.0, 0.0)),
+    Vertex::from((-5.0, -0.5,  5.0,  0.0, 0.0)),
+    Vertex::from((-5.0, -0.5, -5.0,  0.0, 2.0)),
+
+    Vertex::from((5.0, -0.5,  5.0,  2.0, 0.0)),
+    Vertex::from((-5.0, -0.5, -5.0,  0.0, 2.0)),
+    Vertex::from((5.0, -0.5, -5.0,  2.0, 2.0))
   ];
 
+  // create the ground entity
+  let ground_position_vec:Vec3 = vec3(0.0, 0.0, 0.0);
+  let ground_position = Position::new(ground_position_vec, ground_position_vec);
+  
   world
     .create_entity()
-    .with_component(Mesh::new(&gl, "ground.jpg", ground_model))?
-    .with_component(Position::new(3.0, 0.0, 0.0))?;
+    .with_component(StaticMesh::new(&gl, "ground.jpg", ground_model))?
+    .with_component(ground_position)?;
 
   // create the player entity
+  let player_position_vec:Vec3 = vec3(0.0, 0.0, 0.0);
+  let player_position = Position::new(player_position_vec, player_position_vec);
+  let player_hitbox = Hitbox::new(player_position_vec, 0.5,0.5, 0.5);
+  
   world
     .create_entity()
-    .with_component(Mesh::new(&gl, "wall.jpg", sprite_model))?
-    .with_component(Position::new(0.0, 0.0, 0.0))?
+    .with_component(SkinnedMesh::new(&gl, "wall.jpg", sprite_model.clone()))?
+    .with_component(player_position)?
     .with_component(Destination::new(0.0, 0.0, 0.0))?
-    .with_component(Speed(0.5))?
+    .with_component(Speed(0.05))?
     .with_component(Velocity::new(
-      &Position::new(0.0, 0.0, 0.0),
+      &player_position,
       &Destination::new(0.0, 0.0, 0.0),
-      &Speed(0.5),
+      &Speed(0.5)
     ))?
-    .with_component(Controllable)?;
+    .with_component(Controllable)?
+    .with_component(player_hitbox)?;
 
-  let color_buffer = ColorBuffer::from_color(0.3, 0.3, 0.5, 0.1);
-  color_buffer.set_used(&gl);
+
+  // create the dummy entity
+  let dummy_position_vec:Vec3 = vec3(-3.0, 0.0, 0.0);
+  let dummy_position = Position::new(dummy_position_vec, dummy_position_vec);
+  let dummy_hitbox = Hitbox::new(dummy_position_vec, 0.5,0.5, 0.5);
+  
+  world
+    .create_entity()
+    .with_component(SkinnedMesh::new(&gl, "wall.jpg", sprite_model))?
+    .with_component(dummy_position)?
+    .with_component(Destination::new(-3.0, 0.0, 0.0))?
+    .with_component(Speed(0.05))?
+    .with_component(Velocity::new(
+      &dummy_position,
+      &Destination::new(-3.0, 0.0, 0.0),
+      &Speed(0.5)
+    ))?
+    .with_component(dummy_hitbox)?;  
   viewport.set_used(&gl);
 
   //this whole camera/transform section needs to be its own system
-  let aspect = world
-    .immut_get_resource::<ScreenDimensions>()
-    .unwrap()
-    .aspect;
+  let aspect = world.immut_get_resource::<ScreenDimensions>().unwrap().aspect;
   let camera = Camera::new();
-  let transforms = Transforms::new(&aspect, &camera);
+
+  //refactor the Program so it can reuse the "textured.vert" for the highlight Program
+  let programs = ShaderPrograms{
+    normal: Program::from_shader_files(&gl, "textured"),
+    highlight: Program::from_shader_files(&gl, "highlight")
+  };
 
   world
-    .add_resource()
-    .from_user_defined_data(Transforms::new(&aspect, &camera));
-  world
-    .add_resource()
-    .from_user_defined_data(Program::from_shader_files(&gl, "textured"));
-  world
-    .add_resource()
-    .from_user_defined_data(ModelUniformLocation(0));
-  world
-    .add_resource()
-    .from_user_defined_data(ViewUniformLocation(3));
-  world
-    .add_resource()
-    .from_user_defined_data(ProjectionUniformLocation(2));
+    .add_resource(Transforms::new(&aspect, &camera))  
+    .add_resource(programs)
+    .add_resource(ModelUniformLocation(0))
+    .add_resource(ViewUniformLocation(3))
+    .add_resource(ProjectionUniformLocation(2))
+    .add_resource(Selected::NONE);
 
   let mut frame_inputs = FrameInputs::new();
 
@@ -190,32 +208,24 @@ fn main() -> Result<()> {
     //For some reason if this is not here I get a black screen
     server_time.tick();
 
+    //I don't think I want to poll events, I want to put them into an event pump?
     glfw.poll_events();
     for (_, event) in glfw::flush_messages(&events) {
-      // println!("{:?}", event);
       match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-        // glfw::WindowEvent::CursorPos(x,y)=>{
-        //eventually use for selection
-        // }
         glfw::WindowEvent::MouseButton(MouseButton::Button2, Action::Press, ..) => {
           let (x, y) = window.get_cursor_pos();
-          let event = engine::input::user_inputs::UserInputs::MouseClick(MousePosition { x, y });
+          let event = UserInputs::MouseClick(MousePosition { x, y });
 
           //this needs to go into the update section.
           //the transforms and mouse coordinates need to become queryable from world
-          set_destination(&mut world, x, y, &transforms)?;
+          update_destination(&mut world, x, y)?;
           frame_inputs.add_event(event);
         }
         _ => {}
       }
     }
     // for event in event_pump.poll_iter() {
-    //   match event {
-    //     Event::Quit {..} |
-    //     Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-    //       break 'game;
-    //     },
     //     Event::Window {
     //       win_event: WindowEvent::Resized(w,h), ..} => {
     //         /*currently this does not update
@@ -257,9 +267,9 @@ fn main() -> Result<()> {
     //       },
     //       // //need to add an event to track the mouse location
     //       // //and update the camera based on it
-    //       // //I might need to break out glfw here since sdl does not track the z position
-    //       //I need to figure why this part of the input capture causes the program to lag out
-    //       // Event::MouseMotion { x, y,..}=>{
+    //       // //I might need to break out glfw here since sdl does not track the z
+    // position       //I need to figure why this part of the input capture
+    // causes the program to lag out       // Event::MouseMotion { x, y,..}=>{
     //       //   // while x <5{
     //       //   //   let event = UserInputs::MoveCameraLeft;
     //       //   //   frame_inputs.add_event(event);
@@ -283,13 +293,16 @@ fn main() -> Result<()> {
 
     //Update
     if server_time.should_update() == true {
-      //add picking system
+      let (x, y) = window.get_cursor_pos();
+      update_selection(&mut world, x, y)?;
+
       // set_destination(&mut world,x,y,&transforms)?;
       resolve_movement(&world)?;
 
       //my concern is that clearing the frame inputs means it won't update properly
       //it will just lerp for one frame but not move the full amount
-      //what I could do is instead of updating the position directly, I have the move command set a target position and then lerp between those two
+      //what I could do is instead of updating the position directly, I have the move
+      // command set a target position and then lerp between those two
       frame_inputs.clear();
 
       //I think this is where I update the delta timer
@@ -297,20 +310,13 @@ fn main() -> Result<()> {
     }
 
     //Render
-    //Can I clear the buffers before binding or do they need to be cleared after binding? Binding currently happens in their own functions.
+    //Can I clear the buffers before binding or do they need to be cleared after
+    // binding? Binding currently happens in their own functions.
     if server_time.should_render() {
-      //this is where I need to use this factor 
-      //probably what I do is make an endtickposition and starttickposition in the position component
-      //interpolate between those
-      //end tick is the position + velocity
-      //start tick is the
+      //can maybe make the render function handle the swapbuffers
+      //possibly find another way to get the interpolation factor
       let interpolation_factor = server_time.get_interpolation_factor();
-      
-      //Render Phase
-      render(&world)?;
-
-      // let ground_obj = RenderableObject::new(&gl, &world, "textured", ground.0.clone(),"wall.jpg")?;
-      // ground_obj.render(&gl, &transforms, &ground_position);
+      render(&world, interpolation_factor)?;
 
       window.swap_buffers();
       server_time.decrimint_seconds_since_render()

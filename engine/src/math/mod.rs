@@ -4,6 +4,7 @@ mod raycasting;
 mod transforms;
 
 pub use self::{
-	raycasting::{MouseRay, RayCast},
-	transforms::{Renderable, Transforms},
+  math::{Vec2, Vec3, Vec4},
+  raycasting::{MouseRay, RayCast},
+  transforms::{Renderable, Transforms}
 };
