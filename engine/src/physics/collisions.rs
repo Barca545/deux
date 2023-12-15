@@ -1,12 +1,6 @@
-use std::cmp::max;
-
-use glm::vec3;
-use crate::math::{Vec3, RayCast};
+use crate::math::RayCast;
 
 use super::bounding_box::AABB3D;
-
-
-
 
 //refactor to use the slab algorithm and avoid branches
 pub fn check_ray_aabb3d_collision(aabb:AABB3D,ray:RayCast)->bool{

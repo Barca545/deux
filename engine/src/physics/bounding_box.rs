@@ -1,6 +1,6 @@
 use glm::vec3;
 
-use crate::math::{math::Vec3, RayCast};
+use crate::{math::{math::Vec3, RayCast}, view::{SkinnedMesh, render_gl::DebugVertex}};
 
 ///A square shaped 2D AABB.
 pub struct AABB2D {
@@ -53,7 +53,7 @@ pub struct AABB3D {
   height:f32,
   radius:f32,
   pub min:Vec3,
-  pub max:Vec3
+  pub max:Vec3,
 }
 
 
@@ -61,15 +61,13 @@ impl AABB3D {
   pub fn new(position:Vec3, height:f32, radius:f32) -> Self {
     let min:Vec3 = vec3(position.x - radius, height, position.z - radius);
     let max:Vec3 = vec3(position.x + radius, 0.0, position.z + radius);
-
     AABB3D { height, radius, min, max }
   }
 }
 
-
 #[cfg(test)]
 mod test{
-    use crate::{math::{Vec3, MouseRay, Transforms, RayCast}, ecs::world_resources::ScreenDimensions, view::camera::Camera};
+    use crate::math::{Vec3, RayCast};
     use super::AABB2D;
 
   #[test]

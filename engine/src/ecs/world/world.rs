@@ -1,7 +1,7 @@
-use crate::ecs::{entities::Entities, query::Query, resources::Resource};
+use crate::{ecs::{entities::Entities, query::Query, resources::Resource}, errors::EcsErrors};
 
 use eyre::Result;
-use std::{any::Any, ffi::CString};
+use std::{any::{Any, TypeId}, ffi::CString, cell::Ref};
 
 /*
 Questions
@@ -39,6 +39,7 @@ pub struct World {
   entities:Entities
 }
 
+//could I set up the immut_get_resource to return a result without needing to unwrap?
 impl World {
   /**
   Generates a new world with default settings.
@@ -98,6 +99,26 @@ impl World {
   // unwrap?
   pub fn immut_get_resource<T:Any>(&self) -> Option<&T> {
     self.resources.get_ref::<T>()
+  }
+
+  pub fn immut_get_component_by_entity_id<T:Any>(&self, id:usize) -> Result<Ref<T>> {
+    let typid = TypeId::of::<T>();
+    
+    let components = self
+      .entities
+      .components
+      .get(&typid)
+      .ok_or(EcsErrors::ComponentNotRegistered)?;
+
+
+    let borrowed_component = components[id]
+      .as_ref()
+      .ok_or(EcsErrors::ComponentDataDoesNotExist)?
+      .borrow();
+    
+    Ok(Ref::map(borrowed_component, |any| {
+      any.downcast_ref::<T>().unwrap()
+    }))
   }
 
   pub fn load_resource_from_cstring(&self, resource_name:&str) -> Result<CString> {

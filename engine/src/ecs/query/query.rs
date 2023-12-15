@@ -41,6 +41,8 @@ impl<'a> Query<'a> {
     Ok(self)
   }
 
+  //can turn `run` into a way of querying entity by id.
+
   ///Returns entities from entities containing all of the components in a whose
   /// bitmask matches the query's bitmask
   #[deprecated(since = "Forever", note = "Query Entity method does it better")]

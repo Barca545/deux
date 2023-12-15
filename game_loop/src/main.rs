@@ -6,11 +6,10 @@ extern crate nalgebra_glm as glm;
 use engine::{
   ecs::{
     component_lib::{
-      Controllable, Destination, ModelUniformLocation, Position, ProjectionUniformLocation, Speed, Velocity,
-      ViewUniformLocation, Hitbox
+      Controllable, Destination, Position, Speed, Velocity, Hitbox, TestComponent
     },
     systems::{render, resolve_movement, update_destination, update_selection},
-    world_resources::{ScreenDimensions, ShaderPrograms, Selected},
+    world_resources::{ScreenDimensions, ShaderPrograms, Selected, RenderUniformLocations, DbgShaderProgram},
     World
   },
   input::user_inputs::{FrameInputs, MousePosition, UserInputs},
@@ -18,12 +17,12 @@ use engine::{
   time::ServerTime,
   view::{
     camera::Camera,
-    render_gl::{ColorBuffer, Program, Vertex, Viewport}, SkinnedMesh, StaticMesh
+    render_gl::{Program, Vertex, Viewport}, SkinnedMesh, StaticMesh, AABB3DDebugMesh
   }
 };
 
 use eyre::Result;
-use gl::{Gl, DEPTH_TEST, LESS, NOTEQUAL, STENCIL_TEST, KEEP, REPLACE};
+use gl::{Gl, DEPTH_TEST, LESS, NOTEQUAL, STENCIL_TEST, KEEP, REPLACE, VERTEX_SHADER, FRAGMENT_SHADER};
 use glfw::{fail_on_errors, Action, Context, Key, MouseButton,WindowHint::{ContextVersionMinor,ContextVersionMajor,OpenGlProfile}, OpenGlProfileHint};
 use glm::vec3;
 use std::env;
@@ -83,7 +82,9 @@ fn main() -> Result<()> {
     .register_component::<Speed>()
     .register_component::<Velocity>()
     .register_component::<Controllable>()
-    .register_component::<Hitbox>();
+    .register_component::<Hitbox>()
+    .register_component::<TestComponent>()
+    .register_component::<AABB3DDebugMesh>();
 
   let sprite_model = vec![
     Vertex::from((-0.5, -0.5, -0.5, 0.0, 0.0)),
@@ -141,17 +142,18 @@ fn main() -> Result<()> {
   
   world
     .create_entity()
-    .with_component(StaticMesh::new(&gl, "ground.jpg", ground_model))?
+    .with_component(StaticMesh::new(&gl, "ground", ground_model))?
     .with_component(ground_position)?;
 
   // create the player entity
   let player_position_vec:Vec3 = vec3(0.0, 0.0, 0.0);
   let player_position = Position::new(player_position_vec, player_position_vec);
   let player_hitbox = Hitbox::new(player_position_vec, 0.5,0.5, 0.5);
-  
+  let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, player_hitbox.inner);
+
   world
     .create_entity()
-    .with_component(SkinnedMesh::new(&gl, "wall.jpg", sprite_model.clone()))?
+    .with_component(SkinnedMesh::new(&gl, "wall", sprite_model.clone()))?
     .with_component(player_position)?
     .with_component(Destination::new(0.0, 0.0, 0.0))?
     .with_component(Speed(0.05))?
@@ -161,7 +163,9 @@ fn main() -> Result<()> {
       &Speed(0.5)
     ))?
     .with_component(Controllable)?
-    .with_component(player_hitbox)?;
+    .with_component(player_hitbox)?
+    .with_component(TestComponent("test"))?
+    .with_component(player_hitbox_mesh)?;
 
 
   // create the dummy entity
@@ -171,7 +175,7 @@ fn main() -> Result<()> {
   
   world
     .create_entity()
-    .with_component(SkinnedMesh::new(&gl, "wall.jpg", sprite_model))?
+    .with_component(SkinnedMesh::new(&gl, "wall", sprite_model))?
     .with_component(dummy_position)?
     .with_component(Destination::new(-3.0, 0.0, 0.0))?
     .with_component(Speed(0.05))?
@@ -187,18 +191,18 @@ fn main() -> Result<()> {
   let aspect = world.immut_get_resource::<ScreenDimensions>().unwrap().aspect;
   let camera = Camera::new();
 
-  //refactor the Program so it can reuse the "textured.vert" for the highlight Program
   let programs = ShaderPrograms{
-    normal: Program::from_shader_files(&gl, "textured"),
-    highlight: Program::from_shader_files(&gl, "highlight")
+    normal: Program::new(&gl, "textured","textured").unwrap(),
+    highlight: Program::new(&gl, "textured", "highlight").unwrap()
   };
+
+  let dbg_program = DbgShaderProgram::new(Program::new(&gl, "textured","textured").unwrap());
 
   world
     .add_resource(Transforms::new(&aspect, &camera))  
     .add_resource(programs)
-    .add_resource(ModelUniformLocation(0))
-    .add_resource(ViewUniformLocation(3))
-    .add_resource(ProjectionUniformLocation(2))
+    .add_resource(dbg_program)
+    .add_resource(RenderUniformLocations::new(0, 3, 2))
     .add_resource(Selected::NONE);
 
   let mut frame_inputs = FrameInputs::new();
@@ -314,7 +318,7 @@ fn main() -> Result<()> {
     // binding? Binding currently happens in their own functions.
     if server_time.should_render() {
       //can maybe make the render function handle the swapbuffers
-      //possibly find another way to get the interpolation factor
+
       let interpolation_factor = server_time.get_interpolation_factor();
       render(&world, interpolation_factor)?;
 

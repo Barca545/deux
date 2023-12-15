@@ -1,6 +1,7 @@
 use gl::Gl;
 
 //not sure I need Z since I am never letting ppl move the camera in or out
+//make a new viewport mod and have it also handle the window/context creation
 pub struct Viewport {
   pub x:i32,
   pub y:i32,

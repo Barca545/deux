@@ -1,4 +1,4 @@
-use crate::{math::math::Vec3, view::render_gl::Vertex, physics::{AABB2D, AABB3D}};
+use crate::{math::math::Vec3, view::render_gl::Vertex, physics::AABB3D};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -86,6 +86,5 @@ pub enum CrowdControlState {
 
 pub type CrowdControlList = Vec<CrowdControlState>;
 
-pub struct ModelUniformLocation(pub i32);
-pub struct ViewUniformLocation(pub i32);
-pub struct ProjectionUniformLocation(pub i32);
+#[derive(Debug,Clone,Copy)]
+pub struct TestComponent<'a>(pub &'a str);

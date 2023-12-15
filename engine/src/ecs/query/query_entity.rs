@@ -1,4 +1,4 @@
-use crate::{ecs::{entities::Entities, World}, errors::EcsErrors};
+use crate::{ecs::entities::Entities, errors::EcsErrors};
 use eyre::Result;
 use std::{
   any::{Any, TypeId},
@@ -28,8 +28,7 @@ impl<'a> QueryEntity<'a> {
     Ok(components)
   }
 
-  //could I set up the immut_get_resource to return a result without needing to
-  // unwrap?
+  
   pub fn immut_get_component<T:Any>(&self) -> Result<Ref<T>> {
     let components = self.extract_components::<T>()?;
 

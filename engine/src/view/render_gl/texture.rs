@@ -13,8 +13,9 @@ pub struct Texture {
 }
 
 impl Texture {
+  //eventually will need to change when I settle on a texture filetype
   pub fn new(gl:&Gl, name:&str) -> Result<Self> {
-    let image = load_image(&name)?;
+    let image = load_image(&name,"jpg")?;
     let image_pixels = image.to_rgba8().into_raw();
 
     let mut id = 0;
@@ -62,6 +63,6 @@ impl Texture {
 
 // impl Drop for Texture{
 //   fn drop(&mut self){
-//     unsafe{self.gl.DeleteTextures(1,&mut self.texture_obj)}
+//     unsafe{self.gl.DeleteTextures(1,&mut self.id)}
 //   }
 // }
