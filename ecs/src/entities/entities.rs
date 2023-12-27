@@ -48,10 +48,7 @@ impl Entities {
     if let Some((index, _)) = self.map.iter().enumerate().find(|(_index, mask)| **mask == 0) {
       self.inserting_into_index = index;
     } else {
-      self
-        .components
-        .iter_mut()
-        .for_each(|(_key, components)| components.push(None));
+      self.components.iter_mut().for_each(|(_key, components)| components.push(None));
       self.map.push(0);
       self.inserting_into_index = self.map.len() - 1;
     }
@@ -66,9 +63,7 @@ impl Entities {
     let index = self.inserting_into_index;
 
     if let Some(components) = self.components.get_mut(&typeid) {
-      let component = components
-        .get_mut(index)
-        .ok_or(CustomErrors::CreateComponentNeverCalled)?;
+      let component = components.get_mut(index).ok_or(CustomErrors::CreateComponentNeverCalled)?;
       *component = Some(Rc::new(RefCell::new(data)));
 
       let bitmask = self.bitmasks.get(&typeid).unwrap();
@@ -175,10 +170,7 @@ mod tests {
     let mut entities:Entities = Entities::default();
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
-    entities
-      .create_entity()
-      .with_component(Health(100))?
-      .with_component(Speed(15))?;
+    entities.create_entity().with_component(Health(100))?.with_component(Speed(15))?;
 
     let first_health = &entities.components.get(&TypeId::of::<Health>()).unwrap()[0];
     let wrapped_health = first_health.as_ref().unwrap();
@@ -195,10 +187,7 @@ mod tests {
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
 
-    entities
-      .create_entity()
-      .with_component(Health(100))?
-      .with_component(Speed(15))?;
+    entities.create_entity().with_component(Health(100))?.with_component(Speed(15))?;
 
     let entity_map = entities.map[0];
     assert_eq!(entity_map, 3);
@@ -218,10 +207,7 @@ mod tests {
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
 
-    entities
-      .create_entity()
-      .with_component(Health(100))?
-      .with_component(Speed(50))?;
+    entities.create_entity().with_component(Health(100))?.with_component(Speed(50))?;
 
     entities.delete_component_by_entity_id::<Health>(0)?;
 
@@ -288,10 +274,7 @@ mod tests {
     assert_eq!(entities.map[0], 1);
 
     let typeid = TypeId::of::<Health>();
-    let borrowed_health = entities.components.get(&typeid).unwrap()[0]
-      .as_ref()
-      .unwrap()
-      .borrow();
+    let borrowed_health = entities.components.get(&typeid).unwrap()[0].as_ref().unwrap().borrow();
 
     let health = borrowed_health.downcast_ref::<Health>().unwrap();
 

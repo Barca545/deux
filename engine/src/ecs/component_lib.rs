@@ -1,4 +1,7 @@
-use crate::{math::math::Vec3, view::render_gl::Vertex, physics::AABB3D};
+use gl::Gl;
+use serde::{Deserialize, Serialize};
+
+use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -8,8 +11,9 @@ use crate::{math::math::Vec3, view::render_gl::Vertex, physics::AABB3D};
 pub struct Controllable;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Health(i64);
+pub struct Health(i32);
 
+//I think I want to separate these into two components
 #[derive(Debug, Clone, Copy)]
 pub struct Position {
   pub tick_start:Vec3,
@@ -30,8 +34,9 @@ impl Destination {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Velocity(pub Vec3);
+
 impl Velocity {
   pub fn new(position:&Position, destination:&Destination, speed:&Speed) -> Self {
     let velocity:Vec3 = (destination.0 - position.tick_end).normalize().scale(speed.0);
@@ -39,7 +44,7 @@ impl Velocity {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Speed(pub f32);
 
 // #[derive(Debug,Clone,Copy)]
@@ -47,30 +52,32 @@ pub struct Model(pub Vec<Vertex>);
 
 pub struct GroundModel(pub Vec<Vertex>);
 
-#[derive(Debug,Clone,Copy)]
-//this should be the inner and outer bounding box
-pub struct Hitbox {
-  pub inner:AABB3D,
-  pub outer:AABB3D
-}
+#[derive(Debug, Clone, Copy)]
+///3D AABB to be used for unit selection.
+pub struct SelectionRadius(pub AABB3D);
 
-impl Hitbox {
-  pub fn new(position:Vec3, height:f32, inner_radius:f32,outer_radius:f32) -> Self {
-    let inner = AABB3D::new(position, height, inner_radius);
-    let outer = AABB3D::new(position, height, outer_radius);
+impl SelectionRadius {
+  pub fn new(position:Vec3, height:f32, radius:f32) -> Self {
+    let aabb3d = AABB3D::new(position, height, radius);
 
-    Hitbox{
-      inner,
-      outer
-    }
+    SelectionRadius(aabb3d)
   }
 }
+
+#[derive(Debug, Clone, Copy)]
+///Radius for edge-to-edge gameplay logic.
+pub struct GameplayRadius(pub f32);
+
+///Radius for unit collision and pathing logic.
+#[derive(Debug, Clone, Copy)]
+pub struct PathingRadius(pub f32);
 
 //Can use the following two to construct a ward entity.
 //Duration can be reused for other stuff too.
 pub struct VisionRange(i32);
 pub struct Duration(f64);
 
+//these probably need to hold a duration so the can be timed
 pub enum MovementState {
   DASHING,
   WALKING
@@ -86,5 +93,11 @@ pub enum CrowdControlState {
 
 pub type CrowdControlList = Vec<CrowdControlState>;
 
-#[derive(Debug,Clone,Copy)]
-pub struct TestComponent<'a>(pub &'a str);
+
+//rendering
+pub struct SkinnedMesh(pub Mesh);
+impl SkinnedMesh{
+  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
+    SkinnedMesh(Mesh::new(gl, vertices, indices, texture_name))
+  }
+}

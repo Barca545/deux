@@ -1,7 +1,7 @@
 use gl;
 use gl::{
-  types::{GLsizeiptr, GLuint, GLvoid},
-  Gl, ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER,
+  types::{GLsizeiptr, GLuint, GLvoid, GLenum},
+  Gl, ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER
 };
 use std::{marker::PhantomData, mem::size_of};
 
@@ -55,13 +55,13 @@ where B: BufferType
     }
   }
 
-  pub fn static_draw_data<T>(&self, data:&[T]) {
+  pub fn buffer_data<T>(&self, data:&[T], usage:GLenum) {
     unsafe {
       self.gl.BufferData(
         B::BUFFER_TYPE,
         (data.len() * size_of::<T>()) as GLsizeiptr,
         data.as_ptr() as *const GLvoid,
-        gl::STATIC_DRAW
+        usage
       )
     }
   }

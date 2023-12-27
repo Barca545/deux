@@ -145,9 +145,7 @@ mod tests {
   #[test]
   fn load_cstring() {
     let mut resources = Resource::default();
-    resources
-      .add()
-      .path_to_asset_folder_from_relative_exe_path("ecs\\src\\");
+    resources.add().path_to_asset_folder_from_relative_exe_path("ecs\\src\\");
     let root_path:&PathBuf = resources.get_ref::<PathBuf>().unwrap();
     let test_relative_path = resource_name_to_path(root_path, "triangle.frag");
 

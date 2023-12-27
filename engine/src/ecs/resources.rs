@@ -17,7 +17,7 @@ pub struct Resource {
 
 //add documentation
 impl Resource {
-  pub fn add_resource(&mut self, data:impl Any){
+  pub fn add_resource(&mut self, data:impl Any) {
     let typeid:TypeId = data.type_id();
     self.data.insert(typeid, Box::new(data));
   }

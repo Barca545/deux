@@ -1,10 +1,11 @@
+mod mouse;
 mod movement;
 mod render;
 mod selection;
-mod mouse;
+mod combat;
 
 pub use self::{
-  movement::{resolve_movement, update_destination},
+  movement::{movement,update_destination},
   render::render,
   selection::update_selection
 };

@@ -13,6 +13,10 @@ pub type Vec4 = TVec4<f32>;
 pub type Mat4 = TMat4<f32>;
 pub type Point3 = Point<f32, 3>;
 
+
+// #[derive(Debug, Clone, Copy)]
+//make wrappers around the vec structures so I can add deserialize to them
+
 pub enum Axis {
   X,
   Y,
@@ -65,9 +69,7 @@ pub fn normalize(vec:Vector3<f32>) -> Vector3<f32> {
   Vector3 { x, y, z }
 }
 
-pub fn look_at(
-  right:Vector3<f32>, up:Vector3<f32>, direction:Vector3<f32>, position:Vector3<f32>
-) -> Matrix4<f32> {
+pub fn look_at(right:Vector3<f32>, up:Vector3<f32>, direction:Vector3<f32>, position:Vector3<f32>) -> Matrix4<f32> {
   Matrix4 {
     x:Vector4 {
       x:right.x,
@@ -87,12 +89,7 @@ pub fn look_at(
       z:direction.z,
       w:position.z
     },
-    w:Vector4 {
-      x:0.0,
-      y:0.0,
-      z:0.0,
-      w:1.0
-    }
+    w:Vector4 { x:0.0, y:0.0, z:0.0, w:1.0 }
   }
 }
 

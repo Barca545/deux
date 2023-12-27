@@ -189,11 +189,7 @@ pub struct ScreenDimensions {
 impl ScreenDimensions {
   pub fn new(height:i32, width:i32) -> Self {
     let aspect = width as f32 / height as f32;
-    ScreenDimensions {
-      height,
-      width,
-      aspect
-    }
+    ScreenDimensions { height, width, aspect }
   }
 }
 //components

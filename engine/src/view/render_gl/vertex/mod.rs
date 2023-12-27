@@ -1,8 +1,5 @@
-mod vertex;
 mod dbg_vertex;
 mod define_attributes;
+mod vertex;
 
-pub use self::{
-  vertex::Vertex,
-  dbg_vertex::DebugVertex
-};
+pub use self::{dbg_vertex::UntexturedVertex, vertex::Vertex};

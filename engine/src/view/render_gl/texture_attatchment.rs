@@ -29,9 +29,7 @@ impl TextureAttachment {
     self.texture_obj
   }
 
-  pub fn generate_texture_attachment(
-    &self, screen_dimensions:&ScreenDimensions, internal_format:GLenum, format:GLenum, texture_type:GLenum
-  ) {
+  pub fn generate_texture_attachment(&self, screen_dimensions:&ScreenDimensions, internal_format:GLenum, format:GLenum, texture_type:GLenum) {
     unsafe {
       self.gl.BindTexture(TEXTURE_2D, self.texture_obj);
       self.gl.TexImage2D(
@@ -47,12 +45,8 @@ impl TextureAttachment {
       );
 
       if format == RGB_INTEGER {
-        self
-          .gl
-          .TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, NEAREST as GLint);
-        self
-          .gl
-          .TexParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, NEAREST as GLint);
+        self.gl.TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, NEAREST as GLint);
+        self.gl.TexParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, NEAREST as GLint);
       }
     }
   }

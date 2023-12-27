@@ -4,7 +4,7 @@ use glm::{self, inverse, vec3, vec4};
 use super::math::{Mat4, Vec3, Vec4};
 use super::Transforms;
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct RayCast {
   pub(crate) origin:Vec3,
   pub(crate) direction:Vec3,
@@ -52,9 +52,10 @@ impl RayCast {
   ///The negative signs are different between the two tutorials
   pub fn ray_ground_intersection(&self) -> Vec3 {
     //I think the normal to plane xz is this
-    let plane_normal:Vec3 = vec3(0.0, 1.0, 0.0); 
-    //this is "plane_point" in the tutorial. I think it can just be any point on the plane?
-    let plane_origin:Vec3 = vec3(0.0, 0.0, 0.0); 
+    let plane_normal:Vec3 = vec3(0.0, 1.0, 0.0);
+    //this is "plane_point" in the tutorial. I think it can just be any point on
+    // the plane?
+    let plane_origin:Vec3 = vec3(0.0, 0.0, 0.0);
 
     //checks for the distance where the ray has a point on the plane
     let numerator = (plane_origin - self.origin).dot(&plane_normal);
@@ -66,16 +67,9 @@ impl RayCast {
     intersection_point.y = 0.0;
     intersection_point
   }
-
-  //I think the intersection should be here and take in the AABB rather than on the
-
-  pub fn update_direction(&mut self, new_direction:&Vec3) {
-    //unsure if this should be normalized
-    self.direction = new_direction.clone();
-  }
 }
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct MouseRay(pub RayCast);
 
 impl MouseRay {
@@ -117,14 +111,14 @@ impl MouseRay {
 #[cfg(test)]
 mod test {
   use super::MouseRay;
-  use crate::{ecs::world_resources::ScreenDimensions, math::Transforms, view::camera::Camera};
+  use crate::{ecs::world_resources::ScreenDimensions, math::Transforms};
   use glm::{vec3, Vec3};
   #[test]
   fn ray_plane_intersection() {
     let ray_direction:Vec3 = vec3(0.0, -1.0, -1.0);
     let ray_origin:Vec3 = vec3(0.0, 0.0, 10.0);
     let plane_normal:Vec3 = vec3(0.0, 0.0, 1.0); //I think the normal to plane xz is this
-    let plane_origin:Vec3 = vec3(0.0, 0.0, 5.0); //this is "plane_point" in the tutorial. 
+    let plane_origin:Vec3 = vec3(0.0, 0.0, 5.0); //this is "plane_point" in the tutorial.
 
     let numerator = (plane_origin - ray_origin).dot(&plane_normal);
     let denominator = ray_direction.dot(&plane_normal);
@@ -141,11 +135,10 @@ mod test {
     let y = 720.0 / 2.0;
 
     let screen_dimensions = ScreenDimensions::new(720, 1280);
-    let camera = Camera::new();
-    let transforms = Transforms::new(&screen_dimensions.aspect, &camera);
+    let transforms = Transforms::new(&screen_dimensions.aspect);
 
     let mut mouse_ray = MouseRay::new(x, y, &screen_dimensions, &transforms).0;
-    mouse_ray.update_direction(&vec3(0.0, -1.0, 0.0));
+    mouse_ray.direction = vec3(0.0, -1.0, 0.0);
 
     dbg!(mouse_ray.origin);
     dbg!(mouse_ray.direction);

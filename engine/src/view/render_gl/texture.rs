@@ -3,8 +3,8 @@ use crate::filesystem::load_image;
 use eyre::Result;
 use gl::{
   types::{GLint, GLsizei, GLvoid},
-  Gl, LINEAR, LINEAR_MIPMAP_LINEAR, REPEAT, RGBA, RGBA8, TEXTURE_2D, TEXTURE_MAG_FILTER, TEXTURE_MIN_FILTER,
-  TEXTURE_WRAP_S, TEXTURE_WRAP_T, UNSIGNED_BYTE
+  Gl, LINEAR, LINEAR_MIPMAP_LINEAR, REPEAT, RGBA, RGBA8, TEXTURE_2D, TEXTURE_MAG_FILTER, TEXTURE_MIN_FILTER, TEXTURE_WRAP_S, TEXTURE_WRAP_T,
+  UNSIGNED_BYTE
 };
 
 #[derive(Default, Debug)]
@@ -15,7 +15,7 @@ pub struct Texture {
 impl Texture {
   //eventually will need to change when I settle on a texture filetype
   pub fn new(gl:&Gl, name:&str) -> Result<Self> {
-    let image = load_image(&name,"jpg")?;
+    let image = load_image(&name, "jpg")?;
     let image_pixels = image.to_rgba8().into_raw();
 
     let mut id = 0;

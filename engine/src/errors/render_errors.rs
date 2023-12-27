@@ -9,9 +9,7 @@ pub enum RenderErrors {
 #[derive(Debug, Error)]
 #[allow(non_camel_case_types)]
 pub enum FramebufferErrors {
-  #[error(
-    "Framebuffer is the default read or draw framebuffer, but the default framebuffer does not exist."
-  )]
+  #[error("Framebuffer is the default read or draw framebuffer, but the default framebuffer does not exist.")]
   GL_FRAMEBUFFER_UNDEFINED,
   #[error("The framebuffer attachment points are framebuffer incomplete.")]
   GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT,
@@ -32,7 +30,6 @@ pub enum FramebufferErrors {
   #[error("Framebuffer was not zero or the name of an existing framebuffer object.")]
   GL_INVALID_OPERATION
 }
-
 
 #[derive(Debug, Error)]
 #[allow(non_camel_case_types)]

@@ -1,18 +1,82 @@
-use crate::{view::render_gl::{
-  buffer::{ArrayBuffer, VertexArray},
-  Texture, Vertex
-}, physics::AABB3D};
-use gl::Gl;
+use crate::{
+  math::Vec3,
+  physics::AABB3D,
+  view::render_gl::{
+    buffer::{ArrayBuffer, VertexArray},
+    Texture, Vertex
+  }
+};
+use gl::{Gl, STATIC_DRAW};
 
-use super::render_gl::DebugVertex;
+use super::render_gl::{UntexturedVertex, buffer::ElementArrayBuffer};
 
 //try making mesh as trait
 //split into crates
 //make mesh only public to crate and then make the components pub generally
 
+
+
+//let's just have the one mesh structure and then wrap it in skinned mesh/static mesh etc
+pub struct Mesh {
+  pub vertices:Vec<Vertex>,
+  pub indices:Vec<u32>,
+  pub texture:Texture,
+  pub vao:VertexArray,
+  pub vbo:ArrayBuffer,
+  pub ebo:ElementArrayBuffer
+}
+
+impl Mesh {
+  pub fn new(gl:&Gl, vertices:Vec<Vertex>, indices:Vec<u32>, texture_name:&str) -> Self {
+    let texture = Texture::new(gl, texture_name).unwrap();
+    let (vao, vbo, ebo) = Self::init_mesh(gl, &vertices, &indices);
+  
+    Mesh {vertices, indices, texture, vao, vbo, ebo }
+  }
+
+  fn init_mesh(gl:&Gl, vertices:&Vec<Vertex>, indices:&Vec<u32>,) -> (VertexArray, ArrayBuffer, ElementArrayBuffer) {
+    let vao = VertexArray::new(&gl);
+    let vbo = ArrayBuffer::new(&gl);
+    let ebo = ElementArrayBuffer::new(&gl);
+
+    // vbo.bind();
+    // vbo.buffer_data(&vertices, STATIC_DRAW);
+    // vbo.unbind();
+
+    // vao.bind();
+    // vbo.bind();
+    // Vertex::init_attrib_pointers(&gl);
+
+    // vao.unbind();
+    // vbo.unbind();
+    // vao
+
+    vao.bind(); 
+    
+    vbo.bind();
+    vbo.buffer_data(&vertices, STATIC_DRAW);
+    
+    ebo.bind();
+    ebo.buffer_data(&indices, STATIC_DRAW);
+    
+    Vertex::init_attrib_pointers(&gl);
+    
+    //am I not supposed to unbind these?
+    //https://learnopengl.com/Model-Loading/Mesh does not seem to unbind but I am unclear if that is an oversight
+    //https://gamedev.stackexchange.com/questions/90471/should-unbind-buffers this disagrees
+    vbo.unbind();
+    ebo.unbind();
+    
+    vao.unbind();
+    
+    (vao,vbo,ebo)
+  }
+}
+
+
 pub struct SkinnedMesh {
   pub texture:Texture,
-  pub vao:VertexArray
+  pub vao:VertexArray,
 }
 
 //this needs worlds because I made load resource from cstring a method on
@@ -25,23 +89,20 @@ impl SkinnedMesh {
     let texture = Texture::new(gl, texture_name).unwrap();
     let vao = Self::init_mesh(gl, &vertices);
 
-    SkinnedMesh {
-      texture,
-      vao
-    }
+    SkinnedMesh { texture, vao }
   }
 
+  //I think I need to redo the glsl vert
   fn init_mesh(gl:&Gl, vertices:&Vec<Vertex>) -> VertexArray {
     let vao = VertexArray::new(&gl);
     let vbo = ArrayBuffer::new(&gl);
 
     vbo.bind();
-    vbo.static_draw_data(&vertices);
+    vbo.buffer_data(&vertices, STATIC_DRAW);
     vbo.unbind();
 
     vao.bind();
     vbo.bind();
-    //this defines the vertex attribute pointers for position and color
     Vertex::init_attrib_pointers(&gl);
 
     vao.unbind();
@@ -49,7 +110,6 @@ impl SkinnedMesh {
     vao
   }
 }
-
 
 pub struct StaticMesh {
   pub texture:Texture,
@@ -65,89 +125,106 @@ impl StaticMesh {
     let texture = Texture::new(gl, texture_name).unwrap();
     let vao = Self::init_mesh(gl, &vertices);
 
-    StaticMesh {
-      texture,
-      vao
-    }
+    StaticMesh { texture, vao }
   }
 
   fn init_mesh(gl:&Gl, vertices:&Vec<Vertex>) -> VertexArray {
     let vao = VertexArray::new(&gl);
     let vbo = ArrayBuffer::new(&gl);
 
-    vbo.bind();
-    vbo.static_draw_data(&vertices);
-    vbo.unbind();
+    // vbo.bind();
+    // vbo.buffer_data(&vertices, STATIC_DRAW);
+    // vbo.unbind();
 
-    vao.bind();
+    // vao.bind();
+    // vbo.bind();
+    // Vertex::init_attrib_pointers(&gl);
+
+    // vao.unbind();
+    // vbo.unbind();
+    // vao
+    vao.bind(); 
     vbo.bind();
-    //this defines the vertex attribute pointers for position and color
+    vbo.buffer_data(&vertices, STATIC_DRAW);
     Vertex::init_attrib_pointers(&gl);
-
-    vao.unbind();
     vbo.unbind();
+    vao.unbind();
+    
     vao
   }
 }
 
-
-pub struct AABB3DDebugMesh{
+pub struct AABB3DDebugMesh {
   pub vao:VertexArray
 }
 
 impl AABB3DDebugMesh {
-  pub fn new(gl:&Gl, aabb:AABB3D) -> Self {
+  pub fn new(gl:&Gl, aabb:AABB3D, position:Vec3) -> Self {
     //will need to refactor the vertex struct for non-textured rendering
+    //need to add the position of the object
+
+    let aabb_min_x = aabb.min.x - position.x;
+    let aabb_max_x = aabb.max.x - position.x;
+
+    let aabb_min_y = aabb.min.y - position.y;
+    let aabb_max_y = aabb.max.y - position.y;
+
+    let aabb_min_z = aabb.min.z - position.z;
+    let aabb_max_z = aabb.max.z - position.z;
+
     let vertices = vec![
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.max.z)),
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.max.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.max.z)),
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.max.z)),
-
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.max.z)),
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.max.z)),
-
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.max.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.max.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.min.z)),
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.min.z)),
-
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.min.z)),
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.max.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.min.z)),
-
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.min.z)),
-      DebugVertex::from((aabb.max.x, aabb.min.y, aabb.max.z)),
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.max.z)),
-
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.min.z)),
-      DebugVertex::from((aabb.min.x, aabb.min.y, aabb.max.z)),
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.max.z)),
-      DebugVertex::from((aabb.min.x, aabb.max.y, aabb.min.z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_max_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_max_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_min_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_min_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_max_z)),
+      UntexturedVertex::from((aabb_min_x, aabb_max_y, aabb_min_z)),
     ];
     let vao = Self::init_mesh(gl, &vertices);
-    AABB3DDebugMesh{vao}
+    AABB3DDebugMesh { vao }
   }
 
-  fn init_mesh(gl:&Gl, vertices:&Vec<DebugVertex>) -> VertexArray {
+  fn init_mesh(gl:&Gl, vertices:&Vec<UntexturedVertex>) -> VertexArray {
     let vao = VertexArray::new(&gl);
     let vbo = ArrayBuffer::new(&gl);
 
+    // vbo.bind();
+    // vbo.buffer_data(&vertices, STATIC_DRAW);
+    // vbo.unbind();
+
+    // vao.bind();
+    // vbo.bind();
+    // UntexturedVertex::init_attrib_pointers(&gl);
+
+    // vao.unbind();
+    // vbo.unbind();
+    // vao
+
+    vao.bind(); 
     vbo.bind();
-    vbo.static_draw_data(&vertices);
+    vbo.buffer_data(&vertices, STATIC_DRAW);
+    UntexturedVertex::init_attrib_pointers(&gl);
     vbo.unbind();
-
-    vao.bind();
-    vbo.bind();
-    //this defines the vertex attribute pointers for position and color
-    DebugVertex::init_attrib_pointers(&gl);
-
     vao.unbind();
-    vbo.unbind();
+    
     vao
   }
 }

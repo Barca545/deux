@@ -75,12 +75,12 @@ impl ServerTime {
       current_count:start,
       previous_count:start,
       game_duration:GameDuration::new(),
-      /* 
+      /*
       Should this actually be intialized to zero? I think it should
       for consistency. Worst case it just get's overwritten to the
-      accurate state the next count 
+      accurate state the next count
       */
-      seconds_since_render:0.0, 
+      seconds_since_render:0.0,
       seconds_since_update:0.0,
       counts_per_second:Self::get_counts_per_second(),
       tick_frequency:1.0 / 60.0,

@@ -9,10 +9,7 @@ fn create_entity() -> Result<()> {
   world.register_component::<Location>();
   world.register_component::<Size>();
   //what is this syntax
-  world
-    .create_entity()
-    .with_component(Location(42.0, 44.3))?
-    .with_component(Size(32.0))?;
+  world.create_entity().with_component(Location(42.0, 44.3))?.with_component(Size(32.0))?;
   Ok(())
 }
 
@@ -23,25 +20,15 @@ fn query_for_entites() -> Result<()> {
   world.register_component::<Location>();
   world.register_component::<Size>();
 
-  world
-    .create_entity()
-    .with_component(Location(42.0, 42.3))?
-    .with_component(Size(32.0))?;
+  world.create_entity().with_component(Location(42.0, 42.3))?.with_component(Size(32.0))?;
 
   world.create_entity().with_component(Location(55.0, 55.0))?;
 
   world.create_entity().with_component(Size(88.0))?;
 
-  world
-    .create_entity()
-    .with_component(Location(77.0, 77.3))?
-    .with_component(Size(99.0))?;
+  world.create_entity().with_component(Location(77.0, 77.3))?.with_component(Size(99.0))?;
 
-  let query = world
-    .query()
-    .with_component::<Location>()?
-    .with_component::<Size>()?
-    .run();
+  let query = world.query().with_component::<Location>()?.with_component::<Size>()?.run();
 
   let locations:&Vec<Rc<RefCell<dyn Any>>> = &query.1[0];
   let sizes:&Vec<Rc<RefCell<dyn Any>>> = &query.1[1];
@@ -77,23 +64,13 @@ fn delete_component_from_entitiy() -> Result<()> {
   world.register_component::<Size>();
   world.register_component::<Location>();
 
-  world
-    .create_entity()
-    .with_component(Location(10.0, 11.00))?
-    .with_component(Size(10.0))?;
+  world.create_entity().with_component(Location(10.0, 11.00))?.with_component(Size(10.0))?;
 
-  world
-    .create_entity()
-    .with_component(Location(20.0, 21.00))?
-    .with_component(Size(20.0))?;
+  world.create_entity().with_component(Location(20.0, 21.00))?.with_component(Size(20.0))?;
 
   world.delete_component_by_entity_id::<Size>(0)?;
 
-  let query = world
-    .query()
-    .with_component::<Size>()?
-    .with_component::<Location>()?
-    .run();
+  let query = world.query().with_component::<Size>()?.with_component::<Location>()?.run();
 
   assert_eq!(query.0.len(), 1);
   assert_eq!(query.0[0], 1);
@@ -112,11 +89,7 @@ fn add_component_to_entity() -> Result<()> {
 
   world.add_component_to_entity_by_id(Size(20.0), 0)?;
 
-  let query = world
-    .query()
-    .with_component::<Location>()?
-    .with_component::<Size>()?
-    .run();
+  let query = world.query().with_component::<Location>()?.with_component::<Size>()?.run();
 
   assert_eq!(query.0.len(), 1);
 

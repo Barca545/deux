@@ -1,7 +1,14 @@
-use crate::{ecs::{entities::Entities, query::Query, resources::Resource}, errors::EcsErrors};
+use crate::{
+  ecs::{entities::Entities, query::Query, resources::Resource},
+  errors::EcsErrors
+};
 
 use eyre::Result;
-use std::{any::{Any, TypeId}, ffi::CString, cell::Ref};
+use std::{
+  any::{Any, TypeId},
+  cell::Ref,
+  ffi::CString
+};
 
 /*
 Questions
@@ -39,7 +46,8 @@ pub struct World {
   entities:Entities
 }
 
-//could I set up the immut_get_resource to return a result without needing to unwrap?
+//could I set up the immut_get_resource to return a result without needing to
+// unwrap?
 impl World {
   /**
   Generates a new world with default settings.
@@ -103,22 +111,12 @@ impl World {
 
   pub fn immut_get_component_by_entity_id<T:Any>(&self, id:usize) -> Result<Ref<T>> {
     let typid = TypeId::of::<T>();
-    
-    let components = self
-      .entities
-      .components
-      .get(&typid)
-      .ok_or(EcsErrors::ComponentNotRegistered)?;
 
+    let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
 
-    let borrowed_component = components[id]
-      .as_ref()
-      .ok_or(EcsErrors::ComponentDataDoesNotExist)?
-      .borrow();
-    
-    Ok(Ref::map(borrowed_component, |any| {
-      any.downcast_ref::<T>().unwrap()
-    }))
+    let borrowed_component = components[id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow();
+
+    Ok(Ref::map(borrowed_component, |any| any.downcast_ref::<T>().unwrap()))
   }
 
   pub fn load_resource_from_cstring(&self, resource_name:&str) -> Result<CString> {
@@ -153,6 +151,9 @@ impl World {
     self.entities.create_entity()
   }
 
+  //if I want to create a spawm probably just modify create entity to give the id and then add components to that entity
+  //just doublecheck first
+
   ///Creates a query to access entities in a `World` instance.
   pub fn query(&self) -> Query {
     Query::new(&self.entities)
@@ -170,7 +171,8 @@ impl World {
   }
 
   ///Deletes an entity from the entities list matching the index.
-  /// Leaves the slot open -- the next entity added will overwrite the emptied slot.
+  /// Leaves the slot open -- the next entity added will overwrite the emptied
+  /// slot.
   pub fn delete_entity_by_id(&mut self, index:usize) -> Result<()> {
     self.entities.delete_entity_by_id(index)
   }

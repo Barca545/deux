@@ -53,13 +53,7 @@ impl<'a> Query<'a> {
       .map
       .iter()
       .enumerate()
-      .filter_map(|(index, entity_map)| {
-        if entity_map & self.map == self.map {
-          Some(index)
-        } else {
-          None
-        }
-      })
+      .filter_map(|(index, entity_map)| if entity_map & self.map == self.map { Some(index) } else { None })
       .collect();
 
     let mut result = vec![];
@@ -125,19 +119,13 @@ mod test {
     entities.register_component::<u32>();
     entities.register_component::<f32>();
 
-    entities
-      .create_entity()
-      .with_component(32_u32)?
-      .with_component(40.0_f32)?;
+    entities.create_entity().with_component(32_u32)?.with_component(40.0_f32)?;
 
     entities.create_entity().with_component(5.0_f32)?;
 
     entities.create_entity().with_component(87_u32)?;
 
-    entities
-      .create_entity()
-      .with_component(15_u32)?
-      .with_component(25.0_f32)?;
+    entities.create_entity().with_component(15_u32)?.with_component(25.0_f32)?;
 
     let mut query:Query<'_> = Query::new(&entities);
 

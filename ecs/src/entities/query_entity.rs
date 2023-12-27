@@ -21,35 +21,21 @@ impl<'a> QueryEntity<'a> {
 
   fn extract_components<T:Any>(&self) -> ExtractedComponents {
     let typid = TypeId::of::<T>();
-    let components = self
-      .entities
-      .components
-      .get(&typid)
-      .ok_or(CustomErrors::ComponentNotRegistered)?;
+    let components = self.entities.components.get(&typid).ok_or(CustomErrors::ComponentNotRegistered)?;
     Ok(components)
   }
 
   pub fn immut_get_component<T:Any>(&self) -> Result<Ref<T>> {
     let components = self.extract_components::<T>()?;
 
-    let borrowed_component = components[self.id]
-      .as_ref()
-      .ok_or(CustomErrors::ComponentDataDoesNotExist)?
-      .borrow();
-    Ok(Ref::map(borrowed_component, |any| {
-      any.downcast_ref::<T>().unwrap()
-    }))
+    let borrowed_component = components[self.id].as_ref().ok_or(CustomErrors::ComponentDataDoesNotExist)?.borrow();
+    Ok(Ref::map(borrowed_component, |any| any.downcast_ref::<T>().unwrap()))
   }
 
   pub fn mut_get_component<T:Any>(&self) -> Result<RefMut<T>> {
     let components = self.extract_components::<T>()?;
 
-    let borrowed_component = components[self.id]
-      .as_ref()
-      .ok_or(CustomErrors::ComponentDataDoesNotExist)?
-      .borrow_mut();
-    Ok(RefMut::map(borrowed_component, |any| {
-      any.downcast_mut::<T>().unwrap()
-    }))
+    let borrowed_component = components[self.id].as_ref().ok_or(CustomErrors::ComponentDataDoesNotExist)?.borrow_mut();
+    Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
   }
 }

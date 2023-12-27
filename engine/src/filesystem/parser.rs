@@ -1,6 +1,5 @@
 use std::ffi::CString;
 
-
 //this might not belong in this mod
 ///Creates a whitespace CString of a given length.
 pub fn create_whitespace_cstring(len:usize) -> CString {

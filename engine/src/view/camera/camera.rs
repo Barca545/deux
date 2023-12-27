@@ -27,12 +27,7 @@ impl Camera {
     let up:Vec3 = right.cross(&front).normalize();
     let target:Vec3 = position + front;
 
-    Camera {
-      position,
-      target,
-      up,
-      front
-    }
+    Camera { position, target, up, front }
   }
 
   pub fn front(&self) -> Vec3 {
