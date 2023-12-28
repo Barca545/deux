@@ -7,5 +7,6 @@ mod combat;
 pub use self::{
   movement::{movement,update_destination},
   render::render,
-  selection::update_selection
+  selection::update_selection,
+  combat::combat
 };

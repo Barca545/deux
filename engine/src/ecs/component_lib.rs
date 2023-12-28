@@ -38,19 +38,14 @@ impl Destination {
 pub struct Velocity(pub Vec3);
 
 impl Velocity {
-  pub fn new(position:&Position, destination:&Destination, speed:&Speed) -> Self {
-    let velocity:Vec3 = (destination.0 - position.tick_end).normalize().scale(speed.0);
+  pub fn new(position:&Vec3, destination:&Vec3, speed:&f32) -> Self {
+    let velocity:Vec3 = (destination - position).normalize().scale(*speed);
     Velocity(velocity)
   }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Speed(pub f32);
-
-// #[derive(Debug,Clone,Copy)]
-pub struct Model(pub Vec<Vertex>);
-
-pub struct GroundModel(pub Vec<Vertex>);
 
 #[derive(Debug, Clone, Copy)]
 ///3D AABB to be used for unit selection.
@@ -83,15 +78,25 @@ pub enum MovementState {
   WALKING
 }
 
-pub type EntityId = i32; //probably can't be a number. This is a placeholder.
-
 pub enum CrowdControlState {
-  STUNNED(EntityId),
-  SLOWED(EntityId),
-  AIRBORNE(EntityId)
+  STUNNED(usize),
+  SLOWED(usize),
+  AIRBORNE(usize)
 }
 
 pub type CrowdControlList = Vec<CrowdControlState>;
+
+//Combat
+pub struct Target(pub Option<usize>);
+pub struct MissleSpeed(pub f32);
+
+//Identification
+#[derive(PartialEq)]
+pub enum Team{
+  BLUE,
+  RED,
+  NEUTRAL
+}
 
 
 //rendering

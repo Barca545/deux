@@ -15,8 +15,7 @@ pub fn update_velocity(world:&World) -> Result<()> {
       let position = entity.mut_get_component::<Position>()?;
       let speed = entity.immut_get_component::<Speed>()?;
       let mut velocity = entity.mut_get_component::<Velocity>()?;
-  
-      *velocity = Velocity::new(&position, &destination, &speed);
+      *velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
     }  
   Ok(())
 }

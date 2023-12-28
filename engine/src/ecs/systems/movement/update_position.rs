@@ -27,10 +27,9 @@ pub fn update_position(world:&World) -> Result<()> {
       
       let mut query2 = world.query();
 
+      //gameplay radius or something might be better
       let test_entities = query2
-        .with_component::<Position>()?
-        .with_component::<Velocity>()?
-        .with_component::<Destination>()?
+        .with_component::<PathingRadius>()?
         .run_entity();
   
       for test_entity in test_entities{

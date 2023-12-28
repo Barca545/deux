@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh},
-    systems::{movement, render, update_destination, update_selection},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team},
+    systems::{movement, render, update_destination, update_selection, combat},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
   },
@@ -66,7 +66,10 @@ fn main() -> Result<()> {
     .register_component::<Controllable>()
     .register_component::<SelectionRadius>()
     .register_component::<AABB3DDebugMesh>()
-    .register_component::<PathingRadius>();
+    .register_component::<PathingRadius>()
+    .register_component::<Target>()
+    .register_component::<Team>()
+    ;
 
   // create the ground entity
   let ground_position_vec:Vec3 = vec3(0.0, -0.5, 0.0);
@@ -89,6 +92,10 @@ fn main() -> Result<()> {
   let (sprite_vertices, sprite_indices) = load_object("warrior")?;
   let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture");
 
+  //combat info
+  let team = Team::BLUE;
+  let target = Target(None);
+
   world
     .create_entity()
     .with_component(Controllable)?
@@ -99,7 +106,35 @@ fn main() -> Result<()> {
     .with_component(Velocity::default())?
     .with_component(player_hitbox)?
     .with_component(player_hitbox_mesh)?
-    .with_component(PathingRadius(0.5))?;
+    .with_component(PathingRadius(0.5))?
+    .with_component(team)?
+    .with_component(target)?;
+
+  // create the dummy entity 
+  let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
+  let dummy_position = Position::new(dummy_position_vec, dummy_position_vec);
+  let dummy_hitbox = SelectionRadius::new(dummy_position_vec, 0.7, 0.7);
+  let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
+  
+  let (dummy_vertices, dummy_indices) = load_object("box")?;
+  let dummy_mesh = SkinnedMesh::new(&gl,dummy_vertices,dummy_indices,"wall");
+
+  //combat info
+  let dummy_team = Team::RED;
+  let dummy_target = Target(None);
+
+  world
+    .create_entity()
+    .with_component(dummy_mesh)?
+    .with_component(dummy_position)?
+    // .with_component(Destination::new(0.0, 0.0, 0.0))?
+    // .with_component(Speed(0.05))?
+    // .with_component(Velocity::default())?
+    .with_component(dummy_hitbox)?
+    .with_component(dummy_hitbox_mesh)?
+    .with_component(PathingRadius(0.5))?
+    .with_component(dummy_team)?
+    .with_component(dummy_target)?;
 
   let mut frame_inputs = FrameInputs::new();
 
@@ -196,6 +231,7 @@ fn main() -> Result<()> {
       let (x, y) = window.get_cursor_pos();
       update_selection(&mut world, x, y)?;
       movement(&world)?;
+      combat(&mut world)?;
 
       //my concern is that clearing the frame inputs means it won't update properly
       frame_inputs.clear();

@@ -31,11 +31,11 @@ mod test {
     let destination = Destination::new(3.0, 4.0, 0.0);
     let speed = Speed(1.0);
 
-    let velocity = Velocity::new(&position, &destination, &speed);
+    let velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
     dbg!(velocity.0);
 
     let new_destination = Destination::new(3.0, 3.0, 0.0);
-    let velocity = Velocity::new(&position, &new_destination, &speed);
+    let velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
 
     dbg!(velocity.0);
   }
@@ -45,7 +45,7 @@ mod test {
     let position = Position::new(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
     let destination = Destination::new(3.0, 0.0, 3.0);
     let speed = Speed(5.0);
-    let velocity = Velocity::new(&position, &destination, &speed);
+    let velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
     dbg!(velocity);
 
     let mut world = World::new();
