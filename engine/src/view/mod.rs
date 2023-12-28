@@ -5,7 +5,5 @@ pub mod window;
 
 pub use self::mesh::{
   AABB3DDebugMesh, 
-  // SkinnedMesh, 
   Mesh,
-  StaticMesh
 };

@@ -25,10 +25,5 @@ pub(crate) fn render_mesh(gl:&Gl, mesh:&Mesh){
       // 0 as *const GLvoid
     );
   }
-  //count should be indices.len()?
-  //still doesn't work for the ball
-  // unsafe {
-  //   gl.DrawArrays(TRIANGLES, 0, indices.len() as GLsizei);
-  // }
   vao.unbind();
 } 

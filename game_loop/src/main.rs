@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh},
     systems::{movement, render, update_destination, update_selection},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
@@ -14,9 +14,9 @@ use engine::{
   math::{Transforms, Vec3},
   time::ServerTime,
   view::{
-    render_gl::{Program, Vertex},
+    render_gl::Program,
     window::{create_gl, create_window},
-    AABB3DDebugMesh, StaticMesh
+    AABB3DDebugMesh,
   }, filesystem::load_object
 };
 
@@ -68,22 +68,16 @@ fn main() -> Result<()> {
     .register_component::<AABB3DDebugMesh>()
     .register_component::<PathingRadius>();
 
-  let ground_model = vec![
-    Vertex::from((10.0, -0.0, 10.0, 2.0, 0.0)),
-    Vertex::from((-10.0, -0.0, 10.0, 0.0, 0.0)),
-    Vertex::from((-10.0, -0.0, -10.0, 0.0, 2.0)),
-    Vertex::from((10.0, -0.0, 10.0, 2.0, 0.0)),
-    Vertex::from((-10.0, -0.0, -10.0, 0.0, 2.0)),
-    Vertex::from((10.0, -0.0, -10.0, 2.0, 2.0)),
-  ];
-
   // create the ground entity
   let ground_position_vec:Vec3 = vec3(0.0, -0.5, 0.0);
   let ground_position = Position::new(ground_position_vec, ground_position_vec);
+  let (ground_vertices, ground_indices) = load_object("ground")?;
+  let player_mesh = StaticMesh::new(&gl,ground_vertices,ground_indices,"ground");
+
 
   world
     .create_entity()
-    .with_component(StaticMesh::new(&gl, "ground", ground_model))?
+    .with_component(player_mesh)?
     .with_component(ground_position)?;
 
   // create the player entity 
@@ -91,8 +85,9 @@ fn main() -> Result<()> {
   let player_position = Position::new(player_position_vec, player_position_vec);
   let player_hitbox = SelectionRadius::new(player_position_vec, 0.7, 0.7);
   let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, player_hitbox.0, player_position_vec);
+  
   let (sprite_vertices, sprite_indices) = load_object("warrior")?;
-  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"wall");
+  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture");
 
   world
     .create_entity()

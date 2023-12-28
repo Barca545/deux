@@ -101,3 +101,10 @@ impl SkinnedMesh{
     SkinnedMesh(Mesh::new(gl, vertices, indices, texture_name))
   }
 }
+
+pub struct StaticMesh(pub Mesh);
+impl StaticMesh{
+  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
+    StaticMesh(Mesh::new(gl, vertices, indices, texture_name))
+  }
+}

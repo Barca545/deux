@@ -22,24 +22,8 @@ pub fn skinned_meshes(world:&World, program:&Program, interpolation_factor:f64) 
     let position = entity.immut_get_component::<Position>()?;
     //this is smoother but starts jerking around at high speeds
     let render_position:Vec3 = lerp(&position.tick_start, &position.tick_end, interpolation_factor as f32);
-
-    //I think I can abstract this into another function and share it between the skinned and static meshes
     let mesh = entity.immut_get_component::<SkinnedMesh>()?;
-    // let texture = &mesh.0.texture;
-    // let vao = &mesh.0.vao;
-
-    //do I bind texture before or after vao
-    // texture.bind(gl);
-    // vao.bind();
-
-    //bind the model transform
-    //experiment with binding this outside of the draw function
     program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.0));
-
-    // unsafe {
-    //   gl.DrawArrays(TRIANGLES, 0, 36);
-    // }
-    // vao.unbind();
     render_mesh(gl, &mesh.0)
   }
 
