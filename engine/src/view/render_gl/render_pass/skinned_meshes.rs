@@ -19,13 +19,14 @@ pub fn skinned_meshes(world:&World, program:&Program, interpolation_factor:f64) 
   let entities = query.with_component::<SkinnedMesh>()?.with_component::<Position>()?.run_entity();
 
   for entity in entities {
+    
     let position = entity.immut_get_component::<Position>()?;
     //this is smoother but starts jerking around at high speeds
     let render_position:Vec3 = lerp(&position.tick_start, &position.tick_end, interpolation_factor as f32);
     let mesh = entity.immut_get_component::<SkinnedMesh>()?;
     program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.0));
-    render_mesh(gl, &mesh.0)
+    render_mesh(gl, &mesh.0);
   }
-
+  
   Ok(())
 }

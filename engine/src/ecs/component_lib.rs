@@ -1,7 +1,7 @@
 use gl::Gl;
 use serde::{Deserialize, Serialize};
 
-use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
+use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh, MeshInfo}};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -88,7 +88,25 @@ pub type CrowdControlList = Vec<CrowdControlState>;
 
 //Combat
 pub struct Target(pub Option<usize>);
+
+#[derive(Debug, Clone, Copy)]
 pub struct MissleSpeed(pub f32);
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AutoAttack;
+
+#[derive(Debug, Clone, Copy)]
+//use the seconds thing imported from the timer mod
+pub struct AutoAttackCooldown{
+  pub duration:f64,
+  pub remaining:f64
+}
+
+impl AutoAttackCooldown{
+  pub fn new(duration:f64,remaining:f64) -> Self {
+    AutoAttackCooldown{duration,remaining}
+  }
+}
 
 //Identification
 #[derive(PartialEq)]
@@ -111,5 +129,21 @@ pub struct StaticMesh(pub Mesh);
 impl StaticMesh{
   pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
     StaticMesh(Mesh::new(gl, vertices, indices, texture_name))
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct AutoAttackMeshCreator(pub MeshInfo);
+impl AutoAttackMeshCreator{
+  pub fn new(vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: String) -> Self{
+    let texture_name = texture_name.to_string();
+    AutoAttackMeshCreator(MeshInfo{vertices, indices, texture_name})
+  }
+}
+
+pub struct AutoAttackMesh(pub Mesh);
+impl AutoAttackMesh{
+  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
+    AutoAttackMesh(Mesh::new(gl, vertices, indices, texture_name))
   }
 }

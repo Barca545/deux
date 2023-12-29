@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackMeshCreator, AutoAttackCooldown, AutoAttack},
     systems::{movement, render, update_destination, update_selection, combat},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
@@ -40,6 +40,7 @@ fn main() -> Result<()> {
     //add MouseRay resource
     //add physics acceleration structure resource
     //add events resource
+    .add_resource(server_time)
     .add_resource(DebugElements::new(true));
 
   let (mut glfw, mut window, events) = create_window(&world);
@@ -69,7 +70,11 @@ fn main() -> Result<()> {
     .register_component::<PathingRadius>()
     .register_component::<Target>()
     .register_component::<Team>()
-    ;
+    .register_component::<MissleSpeed>()
+    .register_component::<AutoAttackMeshCreator>()
+    .register_component::<AutoAttackCooldown>()
+    .register_component::<AutoAttack>();
+    // .register_component::<Team>();
 
   // create the ground entity
   let ground_position_vec:Vec3 = vec3(0.0, -0.5, 0.0);
@@ -89,12 +94,16 @@ fn main() -> Result<()> {
   let player_hitbox = SelectionRadius::new(player_position_vec, 0.7, 0.7);
   let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, player_hitbox.0, player_position_vec);
   
-  let (sprite_vertices, sprite_indices) = load_object("warrior")?;
+  let (sprite_vertices, sprite_indices) = load_object("box")?;
   let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture");
 
   //combat info
   let team = Team::BLUE;
   let target = Target(None);
+  let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
+  let auto_attack_mesh_info = AutoAttackMeshCreator::new(auto_attack_vertices, auto_attack_indices, "allied_attack".to_owned());
+  let missle_speed = MissleSpeed(0.07);
+  let auto_attack_cooldown = AutoAttackCooldown::new(1.0, 0.0);
 
   world
     .create_entity()
@@ -108,7 +117,10 @@ fn main() -> Result<()> {
     .with_component(player_hitbox_mesh)?
     .with_component(PathingRadius(0.5))?
     .with_component(team)?
-    .with_component(target)?;
+    .with_component(target)?
+    .with_component(auto_attack_mesh_info)?
+    .with_component(missle_speed)?
+    .with_component(auto_attack_cooldown)?;
 
   // create the dummy entity 
   let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
@@ -121,7 +133,8 @@ fn main() -> Result<()> {
 
   //combat info
   let dummy_team = Team::RED;
-  let dummy_target = Target(None);
+  // let dummy_target = Target(None);
+  
 
   world
     .create_entity()
@@ -133,15 +146,18 @@ fn main() -> Result<()> {
     .with_component(dummy_hitbox)?
     .with_component(dummy_hitbox_mesh)?
     .with_component(PathingRadius(0.5))?
-    .with_component(dummy_team)?
-    .with_component(dummy_target)?;
+    .with_component(dummy_team)?;
+    // .with_component(dummy_target)?;
 
   let mut frame_inputs = FrameInputs::new();
 
   //main loop
   while !window.should_close() {
     //For some reason if this is not here I get a black screen
-    server_time.tick();
+    {
+      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
+      server_time.tick();
+    }
 
     //I don't think I want to poll events, I want to put them into an event pump?
     glfw.poll_events();
@@ -225,6 +241,9 @@ fn main() -> Result<()> {
     //       _ => {}
     //   }
     // }
+    
+    
+    let server_time = world.immut_get_resource::<ServerTime>().unwrap().clone();
 
     //Update
     if server_time.should_update() == true {
@@ -237,6 +256,7 @@ fn main() -> Result<()> {
       frame_inputs.clear();
 
       //I think this is where I update the delta timer
+      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
       server_time.decrimint_seconds_since_update()
     }
 
@@ -249,6 +269,7 @@ fn main() -> Result<()> {
       render(&world, interpolation_factor)?;
 
       window.swap_buffers();
+      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
       server_time.decrimint_seconds_since_render()
     }
   }

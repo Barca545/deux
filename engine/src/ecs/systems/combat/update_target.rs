@@ -1,4 +1,4 @@
-use crate::ecs::{World, world_resources::{Selected, Selected::HOVERED}, component_lib::{Target, Team}};
+use crate::ecs::{World, world_resources::{Selected, Selected::{HOVERED,NONE}}, component_lib::{Target, Team}};
 use eyre::Result;
 
 //this needs to be updated to used CLICKED instead of hovered
@@ -18,7 +18,17 @@ pub fn update_target(world:&World) -> Result<()>{
       //check if the selection is *not* the same team as the entity, if so set it as the target
       if *team != *selected_entity_team {
         *target = Target(Some(*selected_id));
+        dbg!(target.0);
       }
+    }
+  }
+  else if let NONE = selection{
+    let mut query = world.query();
+
+    let entities = query.with_component::<Target>()?.run_entity();
+    for entity in entities{
+      let mut target = entity.mut_get_component::<Target>()?;
+      *target = Target(None);
     }
   }
   Ok(())

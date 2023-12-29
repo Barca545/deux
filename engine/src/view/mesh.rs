@@ -10,10 +10,12 @@ use gl::{Gl, STATIC_DRAW};
 
 use super::render_gl::{UntexturedVertex, buffer::ElementArrayBuffer};
 
-//try making mesh as trait
-//split into crates
-//make mesh only public to crate and then make the components pub generally
-
+#[derive(Debug, Clone)]
+pub struct MeshInfo{ 
+  pub vertices:Vec<Vertex>,
+  pub indices:Vec<u32>,
+  pub texture_name:String
+}
 
 
 //let's just have the one mesh structure and then wrap it in skinned mesh/static mesh etc

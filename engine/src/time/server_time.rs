@@ -6,7 +6,7 @@ type PerSecond = f64;
 type Count = f64;
 
 //I kinda don't love this being it's own struct
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct GameDuration {
   minutes:Minutes,
   seconds_in_current_minute:i32,
@@ -50,7 +50,7 @@ impl GameDuration {
 //if I later find out it is bad to use custom types this way just make the
 // types a comment next to the line might eventually need a ClientTime and make
 // the methods into a trait or something
-
+#[derive(Debug, Clone, Copy)]
 pub struct ServerTime {
   start_count:Count,
   current_count:Count,
@@ -237,6 +237,10 @@ impl ServerTime {
 
   pub fn update_tick_frequency(&mut self, hz:u32) {
     self.tick_frequency = 1.0 / (hz as f64)
+  }
+
+  pub fn get_tick_frequency(&self) -> Seconds{
+    self.tick_frequency
   }
 }
 

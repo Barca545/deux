@@ -10,7 +10,6 @@ pub fn update_position(world:&World) -> Result<()> {
     .with_component::<Destination>()?
     .run_entity();
 
-
   for entity in entities {
     let mut position = entity.mut_get_component::<Position>()?;
     let velocity = entity.immut_get_component::<Velocity>()?;

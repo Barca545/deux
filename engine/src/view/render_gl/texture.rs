@@ -7,7 +7,7 @@ use gl::{
   UNSIGNED_BYTE
 };
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Texture {
   pub id:u32
 }
