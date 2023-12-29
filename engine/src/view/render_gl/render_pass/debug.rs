@@ -29,7 +29,7 @@ pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
     let mesh = entity.immut_get_component::<AABB3DDebugMesh>()?;
     let vao = &mesh.vao;
 
-    vao.bind();
+    vao.bind(gl);
 
     //bind the model transform
     dbg_program
@@ -41,7 +41,7 @@ pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
       gl.DrawArrays(LINES, 0, 36);
       gl.PolygonMode(FRONT, FILL);
     }
-    vao.unbind();
+    vao.unbind(gl);
   }
   Ok(())
 }

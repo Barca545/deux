@@ -10,15 +10,9 @@ use gl::{Gl, STATIC_DRAW};
 
 use super::render_gl::{UntexturedVertex, buffer::ElementArrayBuffer};
 
-#[derive(Debug, Clone)]
-pub struct MeshInfo{ 
-  pub vertices:Vec<Vertex>,
-  pub indices:Vec<u32>,
-  pub texture_name:String
-}
-
 
 //let's just have the one mesh structure and then wrap it in skinned mesh/static mesh etc
+#[derive(Debug, Clone)]
 pub struct Mesh {
   pub vertices:Vec<Vertex>,
   pub indices:Vec<u32>,
@@ -53,23 +47,23 @@ impl Mesh {
     // vbo.unbind();
     // vao
 
-    vao.bind(); 
+    vao.bind(gl); 
     
-    vbo.bind();
-    vbo.buffer_data(&vertices, STATIC_DRAW);
+    vbo.bind(gl);
+    vbo.buffer_data(gl, &vertices, STATIC_DRAW);
     
-    ebo.bind();
-    ebo.buffer_data(&indices, STATIC_DRAW);
+    ebo.bind(gl);
+    ebo.buffer_data(gl,&indices, STATIC_DRAW);
     
     Vertex::init_attrib_pointers(&gl);
     
     //am I not supposed to unbind these?
     //https://learnopengl.com/Model-Loading/Mesh does not seem to unbind but I am unclear if that is an oversight
     //https://gamedev.stackexchange.com/questions/90471/should-unbind-buffers this disagrees
-    vbo.unbind();
-    ebo.unbind();
+    vbo.unbind(gl);
+    ebo.unbind(gl);
     
-    vao.unbind();
+    vao.unbind(gl);
     
     (vao,vbo,ebo)
   }
@@ -139,12 +133,12 @@ impl AABB3DDebugMesh {
     // vbo.unbind();
     // vao
 
-    vao.bind(); 
-    vbo.bind();
-    vbo.buffer_data(&vertices, STATIC_DRAW);
+    vao.bind(gl); 
+    vbo.bind(gl);
+    vbo.buffer_data(gl,&vertices, STATIC_DRAW);
     UntexturedVertex::init_attrib_pointers(&gl);
-    vbo.unbind();
-    vao.unbind();
+    vbo.unbind(gl);
+    vao.unbind(gl);
     
     vao
   }

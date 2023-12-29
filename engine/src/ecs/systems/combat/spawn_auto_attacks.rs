@@ -1,6 +1,5 @@
-use crate::ecs::{World, component_lib::{Target, Position, Velocity, MissleSpeed, SkinnedMesh, AutoAttackMeshCreator, AutoAttackCooldown, AutoAttack}};
+use crate::ecs::{World, component_lib::{Target, Position, Velocity, MissleSpeed, SkinnedMesh, AutoAttackCooldown, AutoAttack, AutoAttackMesh}};
 use eyre::Result;
-use gl::Gl;
 
 //maybe this could be a resource but might be unnessecary 
 pub struct AutoAttackSpawner{
@@ -8,7 +7,8 @@ pub struct AutoAttackSpawner{
   positions:Vec<Position>,
   missle_speeds:Vec<MissleSpeed>,
   velocities:Vec<Velocity>,
-  meshes:Vec<AutoAttackMeshCreator>
+  // meshes:Vec<AutoAttackMeshCreator>
+  meshes:Vec<AutoAttackMesh>
 }
 
 impl Default for AutoAttackSpawner{
@@ -24,7 +24,7 @@ impl Default for AutoAttackSpawner{
 }
 
 impl AutoAttackSpawner{
-  pub fn add(&mut self, position:Position,missle_speed:MissleSpeed,velocity:Velocity,mesh:AutoAttackMeshCreator){
+  pub fn add(&mut self, position:Position,missle_speed:MissleSpeed,velocity:Velocity,mesh:AutoAttackMesh){
     let index = self.indices.len();
     self.indices.push(index);
     self.positions.push(position);
@@ -68,29 +68,21 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
         let velocity = Velocity::new(&position.tick_end, &destination.tick_end, &missle_speed.0);
       
         //get the mesh info
-        let auto_attack_mesh_info = entity.immut_get_component::<AutoAttackMeshCreator>()?;
-        let mesh_info = auto_attack_mesh_info.clone();
-        spawner.add(position.clone(), *missle_speed, velocity, mesh_info);
+        let auto_attack_mesh = entity.immut_get_component::<AutoAttackMesh>()?;
+        spawner.add(position.clone(), *missle_speed, velocity, auto_attack_mesh.clone());
+        
       }
     }
   }
   
   //loop through the auto attacks and spawn the attack
   for index in spawner.indices{
-    //get Gl for mesh creation
-    let gl = world.immut_get_resource::<Gl>().unwrap();
     
     // create the mesh
-    let auto_attack_mesh_info = &spawner.meshes[index];
-    let vertices = auto_attack_mesh_info.0.vertices.clone();
-    let indices = auto_attack_mesh_info.0.indices.clone();
-    let texture_name = &auto_attack_mesh_info.0.texture_name;
-    let mesh = SkinnedMesh::new(&gl,vertices,indices,texture_name); 
+    let auto_attack_mesh = spawner.meshes[index].clone();
+    let mesh = SkinnedMesh::from(auto_attack_mesh);
 
     //create the entity
-    //creating the entity causes a *massive* lag spike
-    //possibly because generating and binding a new vao takes a long time
-    //set up mesh/rendering to use an existing vao 
     world
       .create_entity()
       .with_component(spawner.positions[index])?

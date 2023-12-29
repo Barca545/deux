@@ -18,7 +18,6 @@ pub fn update_target(world:&World) -> Result<()>{
       //check if the selection is *not* the same team as the entity, if so set it as the target
       if *team != *selected_entity_team {
         *target = Target(Some(*selected_id));
-        dbg!(target.0);
       }
     }
   }

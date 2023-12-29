@@ -11,20 +11,20 @@ pub trait BufferType {
   const BUFFER_TYPE:GLuint;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Array;
 impl BufferType for Array {
   const BUFFER_TYPE:GLuint = ARRAY_BUFFER;
 }
-
+#[derive(Debug, Clone, Copy)]
 pub struct ElementArray;
 impl BufferType for ElementArray {
   const BUFFER_TYPE:GLuint = ELEMENT_ARRAY_BUFFER;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Buffer<B> {
-  gl:Gl,
+  // gl:Gl,
   pub buffer_obj:GLuint,
   _marker:PhantomData<B>
 }
@@ -37,41 +37,48 @@ where B: BufferType
     unsafe { gl.GenBuffers(1, &mut buffer_obj) }
 
     Buffer {
-      gl:gl.clone(),
+      // gl:gl.clone(),
       buffer_obj, //can be a vbo or ebo
       _marker:PhantomData
     }
   }
 
-  pub fn bind(&self) {
-    unsafe {
-      self.gl.BindBuffer(B::BUFFER_TYPE, self.buffer_obj);
-    }
+  pub fn bind(&self,gl:&Gl) {
+    unsafe {gl.BindBuffer(B::BUFFER_TYPE, self.buffer_obj)}
+    // unsafe {self.gl.BindBuffer(B::BUFFER_TYPE, self.buffer_obj)}
   }
 
-  pub fn unbind(&self) {
-    unsafe {
-      self.gl.BindBuffer(B::BUFFER_TYPE, 0);
-    }
+  pub fn unbind(&self,gl:&Gl) {
+    // unsafe {self.gl.BindBuffer(B::BUFFER_TYPE, 0)}
+    unsafe {gl.BindBuffer(B::BUFFER_TYPE, 0)}
   }
 
-  pub fn buffer_data<T>(&self, data:&[T], usage:GLenum) {
+  pub fn buffer_data<T>(&self, gl:&Gl, data:&[T], usage:GLenum) {
     unsafe {
-      self.gl.BufferData(
+      gl.BufferData(
         B::BUFFER_TYPE,
         (data.len() * size_of::<T>()) as GLsizeiptr,
         data.as_ptr() as *const GLvoid,
         usage
       )
     }
+    
+    // unsafe {
+    //   self.gl.BufferData(
+    //     B::BUFFER_TYPE,
+    //     (data.len() * size_of::<T>()) as GLsizeiptr,
+    //     data.as_ptr() as *const GLvoid,
+    //     usage
+    //   )
+    // }
   }
 }
 
-impl<B> Drop for Buffer<B> {
-  fn drop(&mut self) {
-    unsafe { self.gl.DeleteBuffers(1, &mut self.buffer_obj) }
-  }
-}
+// impl<B> Drop for Buffer<B> {
+//   fn drop(&mut self) {
+//     unsafe { self.gl.DeleteBuffers(1, &mut self.buffer_obj) }
+//   }
+// }
 
 pub type ArrayBuffer = Buffer<Array>;
 pub type ElementArrayBuffer = Buffer<ElementArray>;
@@ -85,44 +92,45 @@ Simplest way I can think of to remedy this would be to avoid all the lies
 and make another struct named ArrayBuffers, plural,
 which would always generate multiple buffers,
 but store one reference to Gl for all of them, and match OpenGL API 1:1:
+
+can use a hashmap like with the loader to make this work
 */
 
 // pub struct ArrayBuffers {
 //     gl: gl::Gl,
 //     vbo: Vec<gl::types::GLuint>,
 // }
-
+#[derive(Debug, Clone)]
 pub struct VertexArray {
-  gl:Gl,
+  // gl:Gl,
   vao:GLuint
 }
 
 impl VertexArray {
   pub fn new(gl:&Gl) -> VertexArray {
     let mut vao:GLuint = 0;
-    unsafe {
-      gl.GenVertexArrays(1, &mut vao);
-    }
-    VertexArray { gl:gl.clone(), vao }
-  }
-
-  pub fn bind(&self) {
-    unsafe {
-      self.gl.BindVertexArray(self.vao);
+    unsafe {gl.GenVertexArrays(1, &mut vao)}
+    VertexArray {
+      // gl:gl.clone(), 
+      vao 
     }
   }
 
-  pub fn unbind(&self) {
-    unsafe {
-      self.gl.BindVertexArray(0);
-    }
+  pub fn bind(&self, gl:&Gl) {
+    unsafe {gl.BindVertexArray(self.vao)}
+    // unsafe {self.gl.BindVertexArray(self.vao)}
+  }
+
+  pub fn unbind(&self, gl:&Gl) {
+    unsafe {gl.BindVertexArray(0)}
+    // unsafe {self.gl.BindVertexArray(0)}
   }
 }
 
-impl Drop for VertexArray {
-  fn drop(&mut self) {
-    unsafe {
-      self.gl.DeleteVertexArrays(1, &mut self.vao);
-    }
-  }
-}
+// impl Drop for VertexArray {
+//   fn drop(&mut self) {
+//     unsafe {
+//       self.gl.DeleteVertexArrays(1, &mut self.vao);
+//     }
+//   }
+// }

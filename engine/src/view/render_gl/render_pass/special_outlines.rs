@@ -30,7 +30,7 @@ pub fn special_outlines(world:&World, program:&Program, interpolation_factor:f64
       let vao = &mesh.0.vao;
 
       texture.bind(gl);
-      vao.bind();
+      vao.bind(gl);
 
       //bind the model transform
       program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.1));
@@ -38,7 +38,7 @@ pub fn special_outlines(world:&World, program:&Program, interpolation_factor:f64
       unsafe {
         gl.DrawArrays(TRIANGLES, 0, 36);
       }
-      vao.unbind();
+      vao.unbind(gl);
     }
     _ => {}
   }

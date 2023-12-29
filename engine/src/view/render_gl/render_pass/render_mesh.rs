@@ -9,7 +9,7 @@ pub(crate) fn render_mesh(gl:&Gl, mesh:&Mesh){
   
   //do I bind texture before or after vao
   texture.bind(gl);
-  vao.bind();
+  vao.bind(gl);
   
   //make a file just holding the draw mode functions
 
@@ -25,5 +25,5 @@ pub(crate) fn render_mesh(gl:&Gl, mesh:&Mesh){
       // 0 as *const GLvoid
     );
   }
-  vao.unbind();
+  vao.unbind(gl);
 } 

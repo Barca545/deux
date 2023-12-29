@@ -1,5 +1,3 @@
-use crate::math::math::Vec3;
-
 use super::define_attributes::define_vertex_attrib_pointer;
 use gl::Gl;
 use std::mem::size_of;

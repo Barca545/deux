@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackMeshCreator, AutoAttackCooldown, AutoAttack},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh},
     systems::{movement, render, update_destination, update_selection, combat},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
@@ -29,7 +29,7 @@ use std::env;
 fn main() -> Result<()> {
   env::set_var("RUST_BACKTRACE", "FULL");
   let mut world = World::new();
-  let mut server_time = ServerTime::new();
+  let server_time = ServerTime::new();
   let screen_dimensions = ScreenDimensions::new(720, 1280);
 
   world
@@ -71,7 +71,7 @@ fn main() -> Result<()> {
     .register_component::<Target>()
     .register_component::<Team>()
     .register_component::<MissleSpeed>()
-    .register_component::<AutoAttackMeshCreator>()
+    .register_component::<AutoAttackMesh>()
     .register_component::<AutoAttackCooldown>()
     .register_component::<AutoAttack>();
     // .register_component::<Team>();
@@ -101,7 +101,8 @@ fn main() -> Result<()> {
   let team = Team::BLUE;
   let target = Target(None);
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  let auto_attack_mesh_info = AutoAttackMeshCreator::new(auto_attack_vertices, auto_attack_indices, "allied_attack".to_owned());
+  // let auto_attack_mesh_info = AutoAttackMeshCreator::new(auto_attack_vertices, auto_attack_indices, "allied_attack".to_owned());
+  let auto_attack_mesh_info = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack");
   let missle_speed = MissleSpeed(0.07);
   let auto_attack_cooldown = AutoAttackCooldown::new(1.0, 0.0);
 

@@ -1,7 +1,7 @@
 use gl::Gl;
 use serde::{Deserialize, Serialize};
 
-use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh, MeshInfo}};
+use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -125,6 +125,13 @@ impl SkinnedMesh{
   }
 }
 
+impl From<AutoAttackMesh> for SkinnedMesh{
+  fn from(value: AutoAttackMesh) -> Self {
+    let mesh = value.0;
+    SkinnedMesh(mesh)
+  }
+}
+
 pub struct StaticMesh(pub Mesh);
 impl StaticMesh{
   pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
@@ -133,14 +140,6 @@ impl StaticMesh{
 }
 
 #[derive(Debug, Clone)]
-pub struct AutoAttackMeshCreator(pub MeshInfo);
-impl AutoAttackMeshCreator{
-  pub fn new(vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: String) -> Self{
-    let texture_name = texture_name.to_string();
-    AutoAttackMeshCreator(MeshInfo{vertices, indices, texture_name})
-  }
-}
-
 pub struct AutoAttackMesh(pub Mesh);
 impl AutoAttackMesh{
   pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
