@@ -5,7 +5,10 @@ use eyre::Result;
 pub fn update_hitbox(world:&World) -> Result<()> {
   let mut query = world.query();
 
-  let entities = query.with_component::<Position>()?.with_component::<SelectionRadius>()?.run_entity();
+  let entities = query
+    .with_component::<Position>()?
+    .with_component::<SelectionRadius>()?
+    .run_entity();
 
   for entity in entities {
     let position = entity.immut_get_component::<Position>()?;

@@ -1,4 +1,4 @@
-use crate::ecs::{World, world_resources::{Selected, Selected::{HOVERED,NONE}}, component_lib::{Target, Team}};
+use crate::ecs::{World, world_resources::{Selected, Selected::{HOVERED,NONE}}, component_lib::{Target, Team, Player}};
 use eyre::Result;
 
 //this needs to be updated to used CLICKED instead of hovered
@@ -10,7 +10,7 @@ pub fn update_target(world:&World) -> Result<()>{
     
     let mut query = world.query();
 
-    let entities = query.with_component::<Target>()?.run_entity();
+    let entities = query.with_component::<Player>()?.run_entity();
     for entity in entities{
       let team = entity.immut_get_component::<Team>()?;
       let mut target = entity.mut_get_component::<Target>()?;
@@ -24,7 +24,7 @@ pub fn update_target(world:&World) -> Result<()>{
   else if let NONE = selection{
     let mut query = world.query();
 
-    let entities = query.with_component::<Target>()?.run_entity();
+    let entities = query.with_component::<Player>()?.run_entity();
     for entity in entities{
       let mut target = entity.mut_get_component::<Target>()?;
       *target = Target(None);

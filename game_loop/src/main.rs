@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player},
     systems::{movement, render, update_destination, update_selection, combat},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
@@ -73,8 +73,13 @@ fn main() -> Result<()> {
     .register_component::<MissleSpeed>()
     .register_component::<AutoAttackMesh>()
     .register_component::<AutoAttackCooldown>()
-    .register_component::<AutoAttack>();
-    // .register_component::<Team>();
+    .register_component::<AutoAttack>()
+    .register_component::<Owner>()
+    .register_component::<AttackDamage>()
+    .register_component::<Health>()
+    .register_component::<GameplayRadius>()
+    .register_component::<Player>();
+  
 
   // create the ground entity
   let ground_position_vec:Vec3 = vec3(0.0, -0.5, 0.0);
@@ -101,13 +106,14 @@ fn main() -> Result<()> {
   let team = Team::BLUE;
   let target = Target(None);
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  // let auto_attack_mesh_info = AutoAttackMeshCreator::new(auto_attack_vertices, auto_attack_indices, "allied_attack".to_owned());
   let auto_attack_mesh_info = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack");
   let missle_speed = MissleSpeed(0.07);
   let auto_attack_cooldown = AutoAttackCooldown::new(1.0, 0.0);
+  let attack_damage = AttackDamage(100);
 
   world
     .create_entity()
+    .with_component(Player)?
     .with_component(Controllable)?
     .with_component(player_mesh)?
     .with_component(player_position)?
@@ -121,7 +127,8 @@ fn main() -> Result<()> {
     .with_component(target)?
     .with_component(auto_attack_mesh_info)?
     .with_component(missle_speed)?
-    .with_component(auto_attack_cooldown)?;
+    .with_component(auto_attack_cooldown)?
+    .with_component(attack_damage)?;
 
   // create the dummy entity 
   let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
@@ -134,11 +141,12 @@ fn main() -> Result<()> {
 
   //combat info
   let dummy_team = Team::RED;
+  let dummy_health = Health::new(500);
   // let dummy_target = Target(None);
-  
 
   world
     .create_entity()
+    // .with_component(Player)?
     .with_component(dummy_mesh)?
     .with_component(dummy_position)?
     // .with_component(Destination::new(0.0, 0.0, 0.0))?
@@ -146,9 +154,10 @@ fn main() -> Result<()> {
     // .with_component(Velocity::default())?
     .with_component(dummy_hitbox)?
     .with_component(dummy_hitbox_mesh)?
-    .with_component(PathingRadius(0.5))?
-    .with_component(dummy_team)?;
-    // .with_component(dummy_target)?;
+    .with_component(PathingRadius(0.2))?
+    .with_component(GameplayRadius(0.1))?
+    .with_component(dummy_team)?
+    .with_component(dummy_health)?;
 
   let mut frame_inputs = FrameInputs::new();
 

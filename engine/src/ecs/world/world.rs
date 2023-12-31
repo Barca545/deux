@@ -6,7 +6,7 @@ use crate::{
 use eyre::Result;
 use std::{
   any::{Any, TypeId},
-  cell::Ref,
+  cell::{Ref, RefMut},
   ffi::CString
 };
 
@@ -117,6 +117,16 @@ impl World {
     let borrowed_component = components[id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow();
 
     Ok(Ref::map(borrowed_component, |any| any.downcast_ref::<T>().unwrap()))
+  }
+
+  pub fn mut_get_component_by_entity_id<T:Any>(&self, id:usize) -> Result<RefMut<T>> {
+    let typid = TypeId::of::<T>();
+
+    let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
+
+    let borrowed_component = components[id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow_mut();
+
+    Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
   }
 
   pub fn load_resource_from_cstring(&self, resource_name:&str) -> Result<CString> {

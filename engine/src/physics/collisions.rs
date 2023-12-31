@@ -78,6 +78,18 @@ pub fn circle_circle_collision_test(position_1:Vec3, radius_1:f32, position_2:Ve
   center_to_center <= edge_to_edge
 }
 
+///Returns `true` if a point is inside a radius.
+pub fn circle_point_collision_test(position_1:Vec3, position_2:Vec3, radius_2:f32) -> bool {
+  // let center_to_center = ((position_1.x - position_2.x).powi(2) + (position_1.z - position_2.z).powi(2)).sqrt();
+  // let edge_to_edge = radius_1 + radius_2;
+
+  // center_to_center <= edge_to_edge
+
+  //return true if center_to_center <= radius 2
+  let center_to_center = ((position_1.x - position_2.x).powi(2) + (position_1.z - position_2.z).powi(2)).sqrt();
+  center_to_center <= radius_2
+}
+
 #[cfg(test)]
 mod test {
   use crate::{

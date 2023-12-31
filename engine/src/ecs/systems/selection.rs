@@ -27,6 +27,7 @@ fn update_hovered(world:&mut World, x:f64, y:f64) -> Result<()> {
 
   let mut query = world.query();
   let entities = query.with_component::<SelectionRadius>()?.run_entity();
+  
   for entity in entities {
     let hitbox = entity.immut_get_component::<SelectionRadius>()?;
     let hit_check = ray_aabb3d_collision_test(hitbox.0, mouse_ray.0);

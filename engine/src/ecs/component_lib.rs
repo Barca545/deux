@@ -10,11 +10,8 @@ use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 #[derive(Debug, Clone, Copy)]
 pub struct Controllable;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Health(i32);
-
 //I think I want to separate these into two components
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Position {
   pub tick_start:Vec3,
   pub tick_end:Vec3
@@ -87,13 +84,18 @@ pub enum CrowdControlState {
 pub type CrowdControlList = Vec<CrowdControlState>;
 
 //Combat
+#[derive(Debug, Clone, Copy)]
 pub struct Target(pub Option<usize>);
+
+#[derive(Debug, Clone, Copy)]
+pub struct Owner{
+  pub id:usize
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct MissleSpeed(pub f32);
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct AutoAttack;
+
 
 #[derive(Debug, Clone, Copy)]
 //use the seconds thing imported from the timer mod
@@ -108,6 +110,24 @@ impl AutoAttackCooldown{
   }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AttackDamage(pub i32);
+
+#[derive(Debug, Clone, Copy)]
+pub struct Health{
+  pub max:i32,
+  pub remaining:i32
+}
+
+impl Health{
+  pub fn new(max:i32) -> Self {
+    Health { 
+      max, 
+      remaining: max
+    }
+  }
+}
+
 //Identification
 #[derive(PartialEq)]
 pub enum Team{
@@ -115,6 +135,12 @@ pub enum Team{
   RED,
   NEUTRAL
 }
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AutoAttack;
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Player;
 
 
 //rendering

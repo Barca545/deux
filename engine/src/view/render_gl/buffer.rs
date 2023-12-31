@@ -98,6 +98,7 @@ can use a hashmap like with the loader to make this work
 
 // pub struct ArrayBuffers {
 //     gl: gl::Gl,
+      //I think 
 //     vbo: Vec<gl::types::GLuint>,
 // }
 #[derive(Debug, Clone)]
