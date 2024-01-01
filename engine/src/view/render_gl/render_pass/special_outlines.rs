@@ -4,7 +4,7 @@ use crate::{
     world_resources::{RenderUniformLocations, Selected, Selected::HOVERED},
     World
   },
-  math::{Transforms, Vec3},
+  math::{Transforms, Vec3, calculate_model_transform},
   view::render_gl::Program
 };
 use eyre::Result;
@@ -26,14 +26,15 @@ pub fn special_outlines(world:&World, program:&Program, interpolation_factor:f64
 
       let render_position:Vec3 = lerp(&position.tick_start, &position.tick_end, interpolation_factor as f32);
 
-      let texture = &mesh.0.texture;
-      let vao = &mesh.0.vao;
+      let texture = &mesh.mesh.texture;
+      let vao = &mesh.mesh.vao;
 
       texture.bind(gl);
       vao.bind(gl);
 
       //bind the model transform
-      program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.1));
+      let model_transform = calculate_model_transform(&render_position, 1.1);
+      program.set_uniform_matrix4fv(gl, uniform_locations.model, &model_transform);
 
       unsafe {
         gl.DrawArrays(TRIANGLES, 0, 36);

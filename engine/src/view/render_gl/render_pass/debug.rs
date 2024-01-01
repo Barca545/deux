@@ -4,7 +4,7 @@ use crate::{
     world_resources::{DbgShaderProgram, RenderUniformLocations},
     World
   },
-  math::{Transforms, Vec3},
+  math::{Vec3, calculate_model_transform},
   view::AABB3DDebugMesh
 };
 use eyre::Result;
@@ -13,7 +13,6 @@ use glm::lerp;
 
 pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
-  let transforms = world.immut_get_resource::<Transforms>().unwrap();
   let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
   let dbg_program = world.immut_get_resource::<DbgShaderProgram>().unwrap();
 
@@ -32,9 +31,10 @@ pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
     vao.bind(gl);
 
     //bind the model transform
+    let model_transform = calculate_model_transform(&render_position, 1.1);
     dbg_program
       .program
-      .set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.0));
+      .set_uniform_matrix4fv(gl, uniform_locations.model, &model_transform);
 
     unsafe {
       gl.PolygonMode(FRONT, LINE);

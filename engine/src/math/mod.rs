@@ -6,5 +6,5 @@ mod transforms;
 pub use self::{
   math::{Vec2, Vec3, Vec4},
   raycasting::{MouseRay, RayCast},
-  transforms::{Renderable, Transforms}
+  transforms::{Transforms,calculate_model_transform}
 };

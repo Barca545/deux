@@ -1,7 +1,7 @@
 use gl::Gl;
 use serde::{Deserialize, Serialize};
 
-use crate::{math::math::{Vec3, Mat4}, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
+use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -69,6 +69,7 @@ pub struct PathingRadius(pub f32);
 pub struct VisionRange(i32);
 pub struct Duration(f64);
 
+//Player State
 //these probably need to hold a duration so the can be timed
 pub enum MovementState {
   DASHING,
@@ -95,11 +96,10 @@ pub struct Owner{
 #[derive(Debug, Clone, Copy)]
 pub struct MissleSpeed(pub f32);
 
-
-
 #[derive(Debug, Clone, Copy)]
 //use the seconds thing imported from the timer mod
 pub struct AutoAttackCooldown{
+  //this type will be reused and probably should be its own struct
   pub duration:f64,
   pub remaining:f64
 }
@@ -128,6 +128,31 @@ impl Health{
   }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Gold(pub i32);
+
+//the different events should probably get a timestamp
+#[derive(Debug, Clone, Copy, Default)]
+pub struct KDA{
+  kills:u32,
+  deaths:u32,
+  assists:u32
+}
+
+impl KDA { 
+  pub fn kill(&mut self, number:u32){
+    self.kills += number;
+  }
+  
+  pub fn death(&mut self, number:u32){
+    self.deaths += number;
+  }
+
+  pub fn assist(&mut self, number:u32){
+    self.assists += number;
+  }
+}
+
 //Identification
 #[derive(PartialEq)]
 pub enum Team{
@@ -142,36 +167,50 @@ pub struct AutoAttack;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Player;
 
-
 //rendering
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ModelTransform(pub Mat4);
+pub struct SkinnedMesh{
+  pub mesh:Mesh,
+  pub scale_factor:f32
+}
 
-pub struct SkinnedMesh(pub Mesh);
 impl SkinnedMesh{
-  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
-    SkinnedMesh(Mesh::new(gl, vertices, indices, texture_name))
+  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str, scale_factor:f32) -> Self{
+    SkinnedMesh{
+      mesh:Mesh::new(gl, vertices, indices, texture_name).to_owned(),
+      scale_factor
+    }
   }
 }
 
 impl From<AutoAttackMesh> for SkinnedMesh{
   fn from(value: AutoAttackMesh) -> Self {
-    let mesh = value.0;
-    SkinnedMesh(mesh)
+    let mesh = value.mesh;
+    let scale_factor = value.scale_factor;
+    SkinnedMesh{
+      mesh,
+      scale_factor
+    }
   }
 }
+
+#[derive(Debug, Clone)]
+pub struct AutoAttackMesh{
+  pub mesh:Mesh,
+  pub scale_factor:f32
+}
+impl AutoAttackMesh{
+  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str, scale_factor:f32) -> Self{
+    AutoAttackMesh{
+      mesh:Mesh::new(gl, vertices, indices, texture_name).to_owned(),
+      scale_factor
+    }
+  }
+}
+
 
 pub struct StaticMesh(pub Mesh);
 impl StaticMesh{
   pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
     StaticMesh(Mesh::new(gl, vertices, indices, texture_name))
-  }
-}
-
-#[derive(Debug, Clone)]
-pub struct AutoAttackMesh(pub Mesh);
-impl AutoAttackMesh{
-  pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{
-    AutoAttackMesh(Mesh::new(gl, vertices, indices, texture_name))
   }
 }

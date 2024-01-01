@@ -1,4 +1,3 @@
-use gl::Gl;
 use glm::{identity, look_at, scale, translate, vec3};
 use nalgebra::Perspective3;
 
@@ -37,10 +36,6 @@ impl Transforms {
     self.view_transform = Self::calculate_view_transform(camera);
   }
 
-  pub fn get_model_transform(&self, position:&Vec3, scale:f32) -> Mat4 {
-    Self::calculate_model_transform(position, scale)
-  }
-
   pub fn get_projection_transform(&self) -> Perspective3<f32> {
     self.projection_transform
   }
@@ -59,16 +54,11 @@ impl Transforms {
     let view = look_at(&camera.position, &camera.target, &camera.up);
     view
   }
-
-  pub fn calculate_model_transform(position:&Vec3, scale_factor:f32) -> Mat4 {
-    let model:Mat4 = identity::<f32, 4>();
-    let model:Mat4 = translate(&model, position);
-    let model:Mat4 = scale(&model, &vec3(scale_factor, scale_factor, scale_factor));
-    model
-  }
 }
 
-//move this trait to the view crate
-pub trait Renderable {
-  fn render(&self, gl:&Gl, transforms:&Transforms, position:&Vec3);
+pub fn calculate_model_transform(position:&Vec3, scale_factor:f32) -> Mat4 {
+  let model:Mat4 = identity::<f32, 4>();
+  let model:Mat4 = translate(&model, position);
+  let model:Mat4 = scale(&model, &vec3(scale_factor, scale_factor, scale_factor));
+  model
 }

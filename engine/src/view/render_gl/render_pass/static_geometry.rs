@@ -1,6 +1,6 @@
 use crate::{
   ecs::{component_lib::{Position, StaticMesh}, world_resources::RenderUniformLocations, World},
-  math::{Transforms, Vec3},
+  math::{Transforms, Vec3, calculate_model_transform},
   view::render_gl::Program
 };
 use eyre::Result;
@@ -24,7 +24,8 @@ pub fn static_geometry(world:&World, program:&Program) -> Result<()> {
     let mesh = entity.immut_get_component::<StaticMesh>()?;
 
     //bind the model transform
-    program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.0));
+    let model_transform = calculate_model_transform(&render_position, 1.1);
+    program.set_uniform_matrix4fv(gl, uniform_locations.model, &model_transform);
     render_mesh(gl, &mesh.0);
   }
   Ok(())

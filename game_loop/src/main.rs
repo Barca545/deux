@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player, Gold, KDA},
     systems::{movement, render, update_destination, update_selection, combat},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
@@ -78,7 +78,9 @@ fn main() -> Result<()> {
     .register_component::<AttackDamage>()
     .register_component::<Health>()
     .register_component::<GameplayRadius>()
-    .register_component::<Player>();
+    .register_component::<Player>()
+    .register_component::<Gold>()
+    .register_component::<KDA>();
   
 
   // create the ground entity
@@ -100,13 +102,13 @@ fn main() -> Result<()> {
   let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, player_hitbox.0, player_position_vec);
   
   let (sprite_vertices, sprite_indices) = load_object("box")?;
-  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture");
+  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
 
   //combat info
   let team = Team::BLUE;
   let target = Target(None);
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  let auto_attack_mesh_info = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack");
+  let auto_attack_mesh_info = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
   let missle_speed = MissleSpeed(0.07);
   let auto_attack_cooldown = AutoAttackCooldown::new(1.0, 0.0);
   let attack_damage = AttackDamage(100);
@@ -128,7 +130,9 @@ fn main() -> Result<()> {
     .with_component(auto_attack_mesh_info)?
     .with_component(missle_speed)?
     .with_component(auto_attack_cooldown)?
-    .with_component(attack_damage)?;
+    .with_component(attack_damage)?
+    .with_component(Gold::default())?
+    .with_component(KDA::default())?;
 
   // create the dummy entity 
   let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
@@ -137,7 +141,7 @@ fn main() -> Result<()> {
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
   
   let (dummy_vertices, dummy_indices) = load_object("box")?;
-  let dummy_mesh = SkinnedMesh::new(&gl,dummy_vertices,dummy_indices,"wall");
+  let dummy_mesh = SkinnedMesh::new(&gl,dummy_vertices,dummy_indices,"wall", 1.0);
 
   //combat info
   let dummy_team = Team::RED;
@@ -157,7 +161,9 @@ fn main() -> Result<()> {
     .with_component(PathingRadius(0.2))?
     .with_component(GameplayRadius(0.1))?
     .with_component(dummy_team)?
-    .with_component(dummy_health)?;
+    .with_component(dummy_health)?
+    .with_component(Gold::default())?
+    .with_component(KDA::default())?;
 
   let mut frame_inputs = FrameInputs::new();
 
