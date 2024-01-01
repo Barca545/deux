@@ -2,6 +2,9 @@ use crate::{ecs::{World, component_lib::{AutoAttack, Target, GameplayRadius, Pos
 use eyre::Result;
 
 pub fn resolve_attacks(world:&mut World) -> Result<()>{
+ //vector holding the id of the attacks that hit and need to be removed at the end of this function
+ let mut attacks_to_delete = Vec::new();
+ 
  let mut query = world.query();
 
  let entities = query
@@ -26,10 +29,18 @@ pub fn resolve_attacks(world:&mut World) -> Result<()>{
       
       //If the attack and the target are colliding, apply damage
       if collision_check {
+        //if the attack hit, add it for deletion at the end of the function
+        attacks_to_delete.push(entity.id);
+        
         let mut target_health = world.mut_get_component_by_entity_id::<Health>(id)?;
         target_health.remaining -= attack_damage.0;
       }
     }
+  }
+
+  //delete all the attacks that hit
+  for id in attacks_to_delete{
+    world.delete_entity(id)?;
   }
   Ok(())
 }

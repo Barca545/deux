@@ -29,10 +29,10 @@ pub struct Entities {
   //what is this type
   pub components:Components,
   //using u32 limits us to 32 components per entity
-  pub bitmasks:HashMap<TypeId, u32>,
+  pub bitmasks:HashMap<TypeId, u128>,
   //this was not pub in the tutorial
   //contains the bitmaps for the registered components
-  pub map:Vec<u32>,
+  pub map:Vec<u128>,
   inserting_into_index:usize
 }
 
@@ -75,7 +75,7 @@ impl Entities {
     Ok(self)
   }
 
-  pub fn get_bitmask(&self, typeid:&TypeId) -> Option<u32> {
+  pub fn get_bitmask(&self, typeid:&TypeId) -> Option<u128> {
     return self.bitmasks.get(typeid).copied();
   }
 
@@ -112,7 +112,7 @@ impl Entities {
     Ok(())
   }
 
-  pub fn delete_entity_by_id(&mut self, index:usize) -> Result<()> {
+  pub fn delete_entity(&mut self, index:usize) -> Result<()> {
     if let Some(map) = self.map.get_mut(index) {
       *map = 0;
     } else {
@@ -254,7 +254,7 @@ mod tests {
 
     entities.create_entity().with_component(Health(100))?;
 
-    entities.delete_entity_by_id(0)?;
+    entities.delete_entity(0)?;
 
     assert_eq!(entities.map[0], 0);
 
@@ -271,7 +271,7 @@ mod tests {
 
     entities.create_entity().with_component(Health(50))?;
 
-    entities.delete_entity_by_id(0)?;
+    entities.delete_entity(0)?;
 
     entities.create_entity().with_component(Health(25))?;
 

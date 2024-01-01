@@ -183,15 +183,9 @@ impl World {
   ///Deletes an entity from the entities list matching the index.
   /// Leaves the slot open -- the next entity added will overwrite the emptied
   /// slot.
-  pub fn delete_entity_by_id(&mut self, index:usize) -> Result<()> {
-    self.entities.delete_entity_by_id(index)
+  pub fn delete_entity(&mut self, index:usize) -> Result<()> {
+    self.entities.delete_entity(index)
   }
-
-  pub fn init_opengl() {}
-
-  pub fn init_glfw() {}
-
-  pub fn quit() {}
 }
 
 #[cfg(test)]

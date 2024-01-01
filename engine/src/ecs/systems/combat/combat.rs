@@ -9,16 +9,7 @@ pub fn combat(world:&mut World) -> Result<()>{
   spawn_auto_attacks(world)?;
   decriment_cooldowns(world)?;
   move_attacks(world)?;
-  //need to add the feature to destroy the attack entity after the collision. 
-  //currently the damage keeps applying (x3) as the attack passes through
-  //destroying the entity will require me updating my index to be generational
+  //need a step in resolve attacks that kills anyone 0>health.remaing and gives gold to the owner of the attack that killed them
   resolve_attacks(world)?;
-
-  //if one hits, deal damage (for now more later) otherwise 
-  //check circle-circle collision of the attack and target
-  //if colliding check the id of the entity it is hitting
-  //if the id matches the target, get the attack damage from the owner and apply the damage to the target hp
-  //need an owner commponent, attack damage, and missle radius65
-  
   Ok(())
 }

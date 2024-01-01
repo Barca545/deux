@@ -15,7 +15,7 @@ pub type QueryComponents = Vec<Vec<Component>>;
 
 #[derive(Debug)]
 pub struct Query<'a> {
-  map:u32,
+  map:u128,
   entities:&'a Entities,
   typeids:Vec<TypeId>
 }
