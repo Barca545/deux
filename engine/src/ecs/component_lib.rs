@@ -1,7 +1,7 @@
 use gl::Gl;
 use serde::{Deserialize, Serialize};
 
-use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
+use crate::{math::math::{Vec3, Mat4}, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 //unsure if this is where I should store stuff like movespeed
 //why does making both dyn Any cause an issue? Says the size for both must be
 // known at compile time but I thought that defeated the point of any?
@@ -144,6 +144,9 @@ pub struct Player;
 
 
 //rendering
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ModelTransform(pub Mat4);
+
 pub struct SkinnedMesh(pub Mesh);
 impl SkinnedMesh{
   pub fn new(gl: &Gl, vertices: Vec<Vertex>, indices: Vec<u32>, texture_name: &str) -> Self{

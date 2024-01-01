@@ -171,7 +171,10 @@ mod tests {
     let mut entities:Entities = Entities::default();
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
-    entities.create_entity().with_component(Health(100))?.with_component(Speed(15))?;
+    entities
+      .create_entity()
+      .with_component(Health(100))?
+      .with_component(Speed(15))?;
 
     let first_health = &entities.components.get(&TypeId::of::<Health>()).unwrap()[0];
     let wrapped_health = first_health.as_ref().unwrap();

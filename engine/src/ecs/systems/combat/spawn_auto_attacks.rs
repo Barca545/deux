@@ -1,4 +1,4 @@
-use crate::ecs::{World, component_lib::{Target, Position, Velocity, MissleSpeed, SkinnedMesh, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, Destination, Controllable, Player}};
+use crate::ecs::{World, component_lib::{Target, Position, Velocity, MissleSpeed, SkinnedMesh, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, Player}};
 use eyre::Result;
 
 //maybe this could be a resource but might be unnessecary 

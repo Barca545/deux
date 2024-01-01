@@ -34,7 +34,7 @@ mod test {
     let velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
     dbg!(velocity.0);
 
-    let new_destination = Destination::new(3.0, 3.0, 0.0);
+    // let new_destination = Destination::new(3.0, 3.0, 0.0);
     let velocity = Velocity::new(&position.tick_end, &destination.0, &speed.0);
 
     dbg!(velocity.0);
