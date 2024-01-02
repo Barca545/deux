@@ -7,7 +7,7 @@ use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
 // known at compile time but I thought that defeated the point of any?
 
 ///Represents units the player can control.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Controllable;
 
 //I think I want to separate these into two components
@@ -28,6 +28,12 @@ pub struct Destination(pub Vec3);
 impl Destination {
   pub fn new(x:f32, y:f32, z:f32) -> Self {
     Destination(Vec3::new(x, y, z))
+  }
+}
+
+impl From<Vec3> for Destination{
+  fn from(value: Vec3) -> Self {
+    Destination(value)
   }
 }
 
@@ -56,26 +62,31 @@ impl SelectionRadius {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 ///Radius for edge-to-edge gameplay logic.
 pub struct GameplayRadius(pub f32);
 
 ///Radius for unit collision and pathing logic.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PathingRadius(pub f32);
 
 //Can use the following two to construct a ward entity.
 //Duration can be reused for other stuff too.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct VisionRange(i32);
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Duration(f64);
 
 //Player State
 //these probably need to hold a duration so the can be timed
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MovementState {
   DASHING,
   WALKING
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum CrowdControlState {
   STUNNED(usize),
   SLOWED(usize),
@@ -85,18 +96,18 @@ pub enum CrowdControlState {
 pub type CrowdControlList = Vec<CrowdControlState>;
 
 //Combat
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Target(pub Option<usize>);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Owner{
   pub id:usize
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MissleSpeed(pub f32);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 //use the seconds thing imported from the timer mod
 pub struct AutoAttackCooldown{
   //this type will be reused and probably should be its own struct
@@ -110,10 +121,10 @@ impl AutoAttackCooldown{
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AttackDamage(pub i32);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health{
   pub max:i32,
   pub remaining:i32
@@ -128,11 +139,24 @@ impl Health{
   }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+//Level and exp
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct Exp(pub u32);
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Level(pub u32);
+
+impl Default for Level{
+  fn default() -> Self {
+    Self(1)
+  }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct Gold(pub i32);
 
 //the different events should probably get a timestamp
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct KDA{
   kills:u32,
   deaths:u32,
@@ -154,18 +178,19 @@ impl KDA {
 }
 
 //Identification
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Team{
   BLUE,
   RED,
   NEUTRAL
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct AutoAttack;
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Player;
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+///Flags an entity as a player. 1-10 allowed as values.
+pub struct Player(pub u32);
 
 //rendering
 pub struct SkinnedMesh{
@@ -206,7 +231,6 @@ impl AutoAttackMesh{
     }
   }
 }
-
 
 pub struct StaticMesh(pub Mesh);
 impl StaticMesh{

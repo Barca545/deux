@@ -13,7 +13,6 @@ pub type Vec4 = TVec4<f32>;
 pub type Mat4 = TMat4<f32>;
 pub type Point3 = Point<f32, 3>;
 
-
 // #[derive(Debug, Clone, Copy)]
 //make wrappers around the vec structures so I can add deserialize to them
 

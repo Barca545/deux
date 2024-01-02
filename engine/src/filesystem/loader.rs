@@ -2,13 +2,15 @@ use crate::{errors::{EcsErrors, FilesystemErrors}, view::render_gl::Vertex};
 use eyre::Result;
 
 use image::{io::Reader, DynamicImage};
-use serde_json::Value;
+
 use std::{
   ffi::CString,
   fs::{File, self},
   io::Read,
   path::{PathBuf, Path}, collections::HashMap
 };
+
+use super::champion::Champion;
 
 pub fn load_image(name:&str, extension:&str) -> Result<DynamicImage> {
   let path = name_to_pathbuff(name, extension);
@@ -19,12 +21,12 @@ pub fn load_image(name:&str, extension:&str) -> Result<DynamicImage> {
   Ok(image)
 }
 
-pub fn load_components_json(name:&str)->Result<Value>{
+pub fn load_champion_json(name:&str)->Result<Champion>{
   let path = name_to_pathbuff(name, "json");
-  let json_string = fs::read_to_string(path)?;
+  let champion_string = fs::read_to_string(path)?;
   
-  let json_value = serde_json::from_str(&json_string)?;
-  Ok(json_value)
+  let champion:Champion = serde_json::from_str(&champion_string)?;
+  Ok(champion)
 }
 
 pub fn load_cstring(name:&str, extension:&str) -> Result<CString> {
@@ -133,7 +135,7 @@ mod test {
   use tobj;
   use std::path::Path;
 
-  use super::{load_shader, load_components_json};
+  use super::{load_shader, load_champion_json};
   #[test]
   fn load_image() -> Result<()> {
     let name = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
@@ -156,8 +158,21 @@ mod test {
 
   #[test]
   fn load_champion_components_from_json() -> Result<()> {
-    let json = load_components_json("test_champion")?;
-    dbg!(&json["Health"]);
+    let champion = load_champion_json("test_champion")?;
+    let health = champion.health;
+    dbg!(health);
+    let speed = champion.speed;
+    dbg!(speed);
+    let selection_radius = champion.selection_radius;
+    dbg!(selection_radius);
+    let pathing_radius = champion.pathing_radius;
+    dbg!(pathing_radius);
+    let auto_attack_missle_speed = champion.auto_attack_missle_speed;
+    dbg!(auto_attack_missle_speed);
+    let auto_attack_cooldown = champion.auto_attack_cooldown;
+    dbg!(auto_attack_cooldown);
+    let attack_damage = champion.attack_damage;
+    dbg!(attack_damage);
 
     Ok(())
   }

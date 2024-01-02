@@ -1,4 +1,4 @@
-use crate::{ecs::{World, component_lib::{AutoAttack, Target, GameplayRadius, Position, Health, Owner, AttackDamage, Gold, KDA}}, physics::circle_point_collision_test};
+use crate::{ecs::{World, component_lib::{AutoAttack, Target, GameplayRadius, Position, Health, Owner, AttackDamage, Gold, KDA, Exp}}, physics::circle_point_collision_test};
 use eyre::Result;
 
 pub fn resolve_attacks(world:&mut World) -> Result<()>{
@@ -47,6 +47,11 @@ pub fn resolve_attacks(world:&mut World) -> Result<()>{
           owner_kda.kill(1);
           target_kda.death(1);
 
+          //Update the exp
+          //100 is not necesarily what I will settle on
+          let mut owner_exp = world.mut_get_component_by_entity_id::<Exp>(owner.id)?;
+          owner_exp.0 += 100;
+          
           //set the entity state to dead and set the death timer
         }
       }

@@ -29,12 +29,12 @@ impl Transforms {
     }
   }
 
-  //can update functions like this be stuck on a trait?
   //when does this run
-  pub fn update(&mut self, aspect:&f32, camera:&Camera) {
-    self.projection_transform = Self::calculate_projection_transform(self.fov, aspect);
-    self.view_transform = Self::calculate_view_transform(camera);
-  }
+  //updating should be handled by a system
+  // pub fn update(&mut self, aspect:&f32, camera:&Camera) {
+  //   self.projection_transform = Self::calculate_projection_transform(self.fov, aspect);
+  //   self.view_transform = Self::calculate_view_transform(camera);
+  // }
 
   pub fn get_projection_transform(&self) -> Perspective3<f32> {
     self.projection_transform

@@ -4,7 +4,7 @@ use crate::{
     world_resources::{RenderUniformLocations, Selected, Selected::HOVERED},
     World
   },
-  math::{Transforms, Vec3, calculate_model_transform},
+  math::{Vec3, calculate_model_transform},
   view::render_gl::Program
 };
 use eyre::Result;
@@ -13,7 +13,6 @@ use glm::lerp;
 
 pub fn special_outlines(world:&World, program:&Program, interpolation_factor:f64) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
-  let transforms = world.immut_get_resource::<Transforms>().unwrap();
   let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
 
   let selection = world.immut_get_resource::<Selected>().unwrap();

@@ -1,6 +1,6 @@
 use crate::{
   ecs::{component_lib::{Position, StaticMesh}, world_resources::RenderUniformLocations, World},
-  math::{Transforms, Vec3, calculate_model_transform},
+  math::{Vec3, calculate_model_transform},
   view::render_gl::Program
 };
 use eyre::Result;
@@ -10,7 +10,6 @@ use super::render_mesh::render_mesh;
 
 pub fn static_geometry(world:&World, program:&Program) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
-  let transforms = world.immut_get_resource::<Transforms>().unwrap();
   let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
 
   let mut query = world.query();

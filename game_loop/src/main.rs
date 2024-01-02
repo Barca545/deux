@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player, Gold, KDA},
-    systems::{movement, render, update_destination, update_selection, combat},
+    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player, Gold, KDA, Exp, Level},
+    systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
   },
@@ -35,6 +35,7 @@ fn main() -> Result<()> {
   world
     .add_resource(screen_dimensions)
     .add_resource(Transforms::new(&screen_dimensions.aspect))
+    //can maybe add a function to get these automatically so I don't have to hard code it
     .add_resource(RenderUniformLocations::new(0, 3, 2))
     .add_resource(Selected::NONE)
     //add MouseRay resource
@@ -55,8 +56,12 @@ fn main() -> Result<()> {
   };
   let dbg_program = DbgShaderProgram::new(Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap());
 
-  world.add_resource(programs).add_resource(dbg_program).add_resource(gl.clone());
+  world
+    .add_resource(programs)
+    .add_resource(dbg_program)
+    .add_resource(gl.clone());
 
+  //this can probably also go in an init components function
   world
     .register_component::<SkinnedMesh>()
     .register_component::<StaticMesh>()
@@ -80,59 +85,15 @@ fn main() -> Result<()> {
     .register_component::<GameplayRadius>()
     .register_component::<Player>()
     .register_component::<Gold>()
-    .register_component::<KDA>();
-  
+    .register_component::<KDA>()
+    .register_component::<Exp>()
+    .register_component::<Level>();
 
-  // create the ground entity
-  let ground_position_vec:Vec3 = vec3(0.0, -0.5, 0.0);
-  let ground_position = Position::new(ground_position_vec, ground_position_vec);
-  let (ground_vertices, ground_indices) = load_object("ground")?;
-  let player_mesh = StaticMesh::new(&gl,ground_vertices,ground_indices,"ground");
+  //spawn the ground
+  spawn_enviroment(&mut world, "ground")?;
 
-
-  world
-    .create_entity()
-    .with_component(player_mesh)?
-    .with_component(ground_position)?;
-
-  // create the player entity 
-  let player_position_vec:Vec3 = vec3(0.0, 0.0, 0.0);
-  let player_position = Position::new(player_position_vec, player_position_vec);
-  let player_hitbox = SelectionRadius::new(player_position_vec, 0.7, 0.7);
-  let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, player_hitbox.0, player_position_vec);
-  
-  let (sprite_vertices, sprite_indices) = load_object("box")?;
-  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
-
-  //combat info
-  let team = Team::BLUE;
-  let target = Target(None);
-  let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  let auto_attack_mesh_info = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
-  let missle_speed = MissleSpeed(0.07);
-  let auto_attack_cooldown = AutoAttackCooldown::new(1.0, 0.0);
-  let attack_damage = AttackDamage(100);
-
-  world
-    .create_entity()
-    .with_component(Player)?
-    .with_component(Controllable)?
-    .with_component(player_mesh)?
-    .with_component(player_position)?
-    .with_component(Destination::new(0.0, 0.0, 0.0))?
-    .with_component(Speed(0.05))?
-    .with_component(Velocity::default())?
-    .with_component(player_hitbox)?
-    .with_component(player_hitbox_mesh)?
-    .with_component(PathingRadius(0.5))?
-    .with_component(team)?
-    .with_component(target)?
-    .with_component(auto_attack_mesh_info)?
-    .with_component(missle_speed)?
-    .with_component(auto_attack_cooldown)?
-    .with_component(attack_damage)?
-    .with_component(Gold::default())?
-    .with_component(KDA::default())?;
+  //spawn the player
+  spawn_player(&mut world, "warrior", 1)?;
 
   // create the dummy entity 
   let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
@@ -258,11 +219,22 @@ fn main() -> Result<()> {
     //   }
     // }
     
-    
     let server_time = world.immut_get_resource::<ServerTime>().unwrap().clone();
 
     //Update
     if server_time.should_update() == true {
+      //this does not work because I also need to update the transforms?
+      //the transforms are being used somewhere (probably in the shader program ) without getting fed the update
+      {
+        let (width,height) = window.get_size();
+        let dimensions = world.mut_get_resource::<ScreenDimensions>().unwrap();
+        *dimensions = ScreenDimensions::new(height, width);
+      }
+      
+      let dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap().clone();
+      let transforms = world.mut_get_resource::<Transforms>().unwrap();
+      *transforms = Transforms::new(&dimensions.aspect);
+      
       let (x, y) = window.get_cursor_pos();
       update_selection(&mut world, x, y)?;
       movement(&world)?;
