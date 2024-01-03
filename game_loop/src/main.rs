@@ -51,7 +51,7 @@ fn main() -> Result<()> {
   world.add_resource(gl.clone());
 
   //create the programs
-  let programs = ShaderPrograms::new(&world);
+  let programs = ShaderPrograms::new(&world)?;
   let dbg_program = DbgShaderProgram::new(&world);
 
   //add the programs as a resource

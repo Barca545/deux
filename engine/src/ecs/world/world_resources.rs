@@ -53,10 +53,6 @@ impl ShaderPrograms {
       .with_view(gl)?
       .with_projection(gl)?;
 
-    dbg!(normal);
-    dbg!(highlight);
-
-
     Ok(Self { normal, highlight })
   }
   
