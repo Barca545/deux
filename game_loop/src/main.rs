@@ -49,6 +49,7 @@ fn main() -> Result<()> {
   let gl = create_gl(&mut window);
 
   //add gl as a resource
+  //experiment with making window a resource
   world.add_resource(gl.clone());
 
   //create the programs
