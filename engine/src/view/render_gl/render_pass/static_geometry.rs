@@ -24,7 +24,11 @@ pub fn static_geometry(world:&World, program:&Program) -> Result<()> {
 
     //bind the model transform
     let model_transform = calculate_model_transform(&render_position, 1.1);
-    program.set_uniform_matrix4fv(gl, uniform_locations.model, &model_transform);
+    program.set_uniform_matrix4fv(
+      gl,
+      uniform_locations.model,
+      &model_transform
+    );
     render_mesh(gl, &mesh.0);
   }
   Ok(())

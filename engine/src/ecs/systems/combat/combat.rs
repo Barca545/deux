@@ -1,9 +1,10 @@
-use crate::ecs::{World, component_lib::{KDA, Gold}};
+use crate::ecs::{World, component_lib::{KDA, Gold}, world_resources::DebugElements};
 use eyre::Result;
 
 use super::{update_target::update_target, spawn_auto_attacks::spawn_auto_attacks, move_attacks::move_attacks, decriment_cooldowns::decriment_cooldowns, resolve_attacks::resolve_attacks};
 
 pub fn combat(world:&mut World) -> Result<()>{
+  
   //update the target to deselect the target when click to move instead of on hover
   update_target(world)?;
   spawn_auto_attacks(world)?;
@@ -11,11 +12,15 @@ pub fn combat(world:&mut World) -> Result<()>{
   move_attacks(world)?;
   //the actual gold value given on kill probably needs to vary based on external factors
   resolve_attacks(world)?;
-  confirm_attack(world)?;
+  //only run if debug attacks is enabled
+  let debug = world.immut_get_resource::<DebugElements>().unwrap();
+  if debug.attacks {
+    debug_combat(world)?;
+  }
   Ok(())
 }
 
-fn confirm_attack(world:&World) -> Result<()> {
+fn debug_combat(world:&World) -> Result<()> {
   let mut query = world.query();
 
   let entites = query.with_component::<KDA>()?.run_entity();

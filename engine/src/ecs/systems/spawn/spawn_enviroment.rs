@@ -16,6 +16,6 @@ pub fn spawn_enviroment(world:&mut World, name:&str) -> Result<()> {
     .create_entity()
     .with_component(mesh)?
     .with_component(position)?;
-  
+
   Ok(())
 }

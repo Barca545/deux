@@ -74,8 +74,8 @@ pub struct MouseRay(pub RayCast);
 
 impl MouseRay {
   pub fn new(x:f64, y:f64, screen_dimensions:&ScreenDimensions, transforms:&Transforms) -> Self {
-    let inverse_projection:Mat4 = transforms.get_projection_transform().inverse();
-    let inverse_view:Mat4 = inverse(&transforms.get_view_transform());
+    let inverse_projection:Mat4 = transforms.projection_transform.inverse();
+    let inverse_view:Mat4 = inverse(&transforms.view_transform);
 
     let ndc_x = 2.0 * x as f32 / screen_dimensions.width as f32 - 1.0; //range [-1,1]
     let ndc_y = 1.0 - (2.0 * y as f32) / screen_dimensions.height as f32; //range [-1,1]

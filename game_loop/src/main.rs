@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   ecs::{
-    component_lib::{Controllable, Destination, SelectionRadius, Position, Speed, Velocity, PathingRadius, SkinnedMesh, StaticMesh, Target, Team, MissleSpeed, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, AttackDamage, Health, GameplayRadius, Player, Gold, KDA, Exp, Level},
-    systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment},
+    component_lib::{SelectionRadius, Position, PathingRadius, SkinnedMesh, Team, Health, GameplayRadius, Gold, KDA},
+    systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment, register_components},
     world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
     World
   },
@@ -21,7 +21,7 @@ use engine::{
 };
 
 use eyre::Result;
-use gl::FRAGMENT_SHADER;
+use gl::{FRAGMENT_SHADER, Gl};
 use glfw::{Action, Context, Key, MouseButton};
 use glm::vec3;
 use std::env;
@@ -30,7 +30,8 @@ fn main() -> Result<()> {
   env::set_var("RUST_BACKTRACE", "FULL");
   let mut world = World::new();
   let server_time = ServerTime::new();
-  let screen_dimensions = ScreenDimensions::new(720, 1280);
+  //make a settings thing and load in from there
+  let screen_dimensions = ScreenDimensions::new(1280, 720);
 
   world
     .add_resource(screen_dimensions)
@@ -42,57 +43,30 @@ fn main() -> Result<()> {
     //add physics acceleration structure resource
     //add events resource
     .add_resource(server_time)
-    .add_resource(DebugElements::new(true));
+    .add_resource(DebugElements::new(false, false));
 
   let (mut glfw, mut window, events) = create_window(&world);
   let gl = create_gl(&mut window);
 
-  //make an update size system to handle this?
-  // let (width,heigth) = window.get_size();
+  //add gl as a resource
+  world.add_resource(gl.clone());
 
-  let programs = ShaderPrograms {
-    normal:Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap(),
-    highlight:Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER).unwrap()
-  };
+  //create the programs
+  let programs = ShaderPrograms::new(&world);
   let dbg_program = DbgShaderProgram::new(Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap());
 
+  //add the programs as a resource
   world
     .add_resource(programs)
-    .add_resource(dbg_program)
-    .add_resource(gl.clone());
+    .add_resource(dbg_program);
 
-  //this can probably also go in an init components function
-  world
-    .register_component::<SkinnedMesh>()
-    .register_component::<StaticMesh>()
-    .register_component::<Position>()
-    .register_component::<Destination>()
-    .register_component::<Speed>()
-    .register_component::<Velocity>()
-    .register_component::<Controllable>()
-    .register_component::<SelectionRadius>()
-    .register_component::<AABB3DDebugMesh>()
-    .register_component::<PathingRadius>()
-    .register_component::<Target>()
-    .register_component::<Team>()
-    .register_component::<MissleSpeed>()
-    .register_component::<AutoAttackMesh>()
-    .register_component::<AutoAttackCooldown>()
-    .register_component::<AutoAttack>()
-    .register_component::<Owner>()
-    .register_component::<AttackDamage>()
-    .register_component::<Health>()
-    .register_component::<GameplayRadius>()
-    .register_component::<Player>()
-    .register_component::<Gold>()
-    .register_component::<KDA>()
-    .register_component::<Exp>()
-    .register_component::<Level>();
+  //register the components the game uses with the world
+  register_components(&mut world);
 
   //spawn the ground
   spawn_enviroment(&mut world, "ground")?;
 
-  //spawn the player
+  //spawn the players
   spawn_player(&mut world, "warrior", 1)?;
 
   // create the dummy entity 
@@ -222,19 +196,7 @@ fn main() -> Result<()> {
     let server_time = world.immut_get_resource::<ServerTime>().unwrap().clone();
 
     //Update
-    if server_time.should_update() == true {
-      //this does not work because I also need to update the transforms?
-      //the transforms are being used somewhere (probably in the shader program ) without getting fed the update
-      {
-        let (width,height) = window.get_size();
-        let dimensions = world.mut_get_resource::<ScreenDimensions>().unwrap();
-        *dimensions = ScreenDimensions::new(height, width);
-      }
-      
-      let dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap().clone();
-      let transforms = world.mut_get_resource::<Transforms>().unwrap();
-      *transforms = Transforms::new(&dimensions.aspect);
-      
+    if server_time.should_update() == true {      
       let (x, y) = window.get_cursor_pos();
       update_selection(&mut world, x, y)?;
       movement(&world)?;
@@ -252,6 +214,29 @@ fn main() -> Result<()> {
     //Can I clear the buffers before binding or do they need to be cleared after
     // binding? Binding currently happens in their own functions.
     if server_time.should_render() {
+      //this does not work because I also need to update the transforms?
+      //the transforms are being used somewhere (probably in the shader program) without getting fed the update
+      let (width,height) = window.get_size();
+      {
+        let dimensions = world.mut_get_resource::<ScreenDimensions>().unwrap();
+        *dimensions = ScreenDimensions::new(width, height);
+        // dbg!((width,height));
+        // dbg!(width/height);
+      }
+      
+      {
+        let dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap().clone();
+        
+        let transforms = world.mut_get_resource::<Transforms>().unwrap();
+        
+        *transforms = Transforms::new(&dimensions.aspect);
+
+        let gl = world.immut_get_resource::<Gl>().unwrap();
+        unsafe{
+          gl.Viewport(0, 0, width, height);
+        }
+      }
+
       //can maybe make the render function handle the swapbuffers
       let interpolation_factor = server_time.get_interpolation_factor();
       render(&world, interpolation_factor)?;

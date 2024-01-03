@@ -49,6 +49,7 @@ impl Program {
     Ok(Program { id })
   }
 
+  //not working because use program does not actually use program, this is getting the location
   pub fn use_program(&self, gl:&Gl) {
     unsafe { gl.UseProgram(self.id) }
   }
@@ -68,7 +69,12 @@ impl Program {
   //figure out why I can't use f64
   pub fn set_uniform_matrix4fv(&self, gl:&Gl, uniform_location:i32, uniform_value:&Mat4) {
     unsafe {
-      gl.UniformMatrix4fv(uniform_location, 1, gl::FALSE, uniform_value.as_ptr() as *const f32);
+      gl.UniformMatrix4fv(
+        uniform_location,
+        1,
+        gl::FALSE,
+        uniform_value.as_ptr() as *const f32
+      );
     }
   }
 }
