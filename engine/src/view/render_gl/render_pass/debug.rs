@@ -1,7 +1,7 @@
 use crate::{
   ecs::{
     component_lib::Position,
-    world_resources::{DbgShaderProgram, RenderUniformLocations},
+    world_resources::DbgShaderProgram,
     World
   },
   math::{Vec3, calculate_model_transform},
@@ -13,8 +13,7 @@ use glm::lerp;
 
 pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
-  let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
-  let dbg_program = world.immut_get_resource::<DbgShaderProgram>().unwrap();
+  let program = world.immut_get_resource::<DbgShaderProgram>().unwrap().program;
 
   let mut query = world.query();
 
@@ -31,10 +30,8 @@ pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
     vao.bind(gl);
 
     //bind the model transform
-    let model_transform = calculate_model_transform(&render_position, 1.1);
-    dbg_program
-      .program
-      .set_uniform_matrix4fv(gl, uniform_locations.model, &model_transform);
+    // let model_transform = calculate_model_transform(&render_position, 1.1);
+    // program.set_model_matrix(gl, &model_transform);
 
     unsafe {
       gl.PolygonMode(FRONT, LINE);

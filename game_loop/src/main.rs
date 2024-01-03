@@ -7,21 +7,20 @@ use engine::{
   ecs::{
     component_lib::{SelectionRadius, Position, PathingRadius, SkinnedMesh, Team, Health, GameplayRadius, Gold, KDA},
     systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment, register_components},
-    world_resources::{DbgShaderProgram, DebugElements, RenderUniformLocations, ScreenDimensions, Selected, ShaderPrograms},
+    world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms},
     World
   },
   input::user_inputs::{FrameInputs, MousePosition, UserInputs},
   math::{Transforms, Vec3},
   time::ServerTime,
   view::{
-    render_gl::Program,
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }, filesystem::load_object
 };
 
 use eyre::Result;
-use gl::{FRAGMENT_SHADER, Gl};
+use gl::Gl;
 use glfw::{Action, Context, Key, MouseButton};
 use glm::vec3;
 use std::env;
@@ -30,18 +29,17 @@ fn main() -> Result<()> {
   env::set_var("RUST_BACKTRACE", "FULL");
   let mut world = World::new();
   let server_time = ServerTime::new();
-  //make a settings thing and load in from there
+  //make a settings file and load in from there
   let screen_dimensions = ScreenDimensions::new(1280, 720);
 
   world
     .add_resource(screen_dimensions)
     .add_resource(Transforms::new(&screen_dimensions.aspect))
-    //can maybe add a function to get these automatically so I don't have to hard code it
-    .add_resource(RenderUniformLocations::new(0, 3, 2))
     .add_resource(Selected::NONE)
     //add MouseRay resource
     //add physics acceleration structure resource
     //add events resource
+    //add window?
     .add_resource(server_time)
     .add_resource(DebugElements::new(false, false));
 
@@ -54,7 +52,7 @@ fn main() -> Result<()> {
 
   //create the programs
   let programs = ShaderPrograms::new(&world);
-  let dbg_program = DbgShaderProgram::new(Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap());
+  let dbg_program = DbgShaderProgram::new(&world);
 
   //add the programs as a resource
   world
@@ -215,14 +213,13 @@ fn main() -> Result<()> {
     //Can I clear the buffers before binding or do they need to be cleared after
     // binding? Binding currently happens in their own functions.
     if server_time.should_render() {
-      //this does not work because I also need to update the transforms?
-      //the transforms are being used somewhere (probably in the shader program) without getting fed the update
+      //move the resize thing into its own function
+      //to do this window needs to be a resource
+      //have some flag so it only runs if it was resized
       let (width,height) = window.get_size();
       {
         let dimensions = world.mut_get_resource::<ScreenDimensions>().unwrap();
         *dimensions = ScreenDimensions::new(width, height);
-        // dbg!((width,height));
-        // dbg!(width/height);
       }
       
       {

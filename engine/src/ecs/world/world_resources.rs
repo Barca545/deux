@@ -2,28 +2,22 @@ use gl::{Gl,FRAGMENT_SHADER};
 
 use crate::{ecs::World, math::Transforms, view::render_gl::Program};
 
-use super::world;
-
+use eyre::Result;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScreenDimensions {
   pub width:i32,
   pub height:i32,
   pub aspect:f32,
-  // pub int_aspect: i32
 }
 
 impl ScreenDimensions {
-  pub fn new(width:i32, height:i32, ) -> Self {
+  pub fn new(width:i32, height:i32) -> Self {
     let aspect = width as f32 / height as f32;
-    // dbg!(width/height);
-    // let aspect = (width/height) as f32;
-    // let int_aspect = width/height;
     ScreenDimensions { 
       height, 
       width, 
       aspect,
-      // int_aspect
     }
   }
 }
@@ -37,134 +31,92 @@ pub enum Selected {
   CLICKED(usize)
 }
 
-pub struct RenderUniformLocations {
-  pub model:i32,
-  pub view:i32,
-  pub projection:i32
-}
-
-//can I store the uniforms on the program
-impl RenderUniformLocations {
-  pub fn new(model:i32, view:i32, projection:i32) -> Self {
-    RenderUniformLocations { model, view, projection }
-  }
-}
-
 pub struct ShaderPrograms {
   pub normal:Program,
   pub highlight:Program,
-  model_uniform_location:i32,
-  view_uniform_location:i32,
-  projection_uniform_location:i32,
 }
 
 impl ShaderPrograms {
-  pub fn new(world:&World) -> Self {
+  pub fn new(world:&World) -> Result<Self> {
     let gl = world.immut_get_resource::<Gl>().unwrap();
 
-    let normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
-    let highlight = Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER).unwrap();
-
-    let model_uniform_location = normal.get_uniform_location(gl, "model").unwrap();
-    let view_uniform_location = normal.get_uniform_location(gl, "view").unwrap();
-    let projection_uniform_location = normal.get_uniform_location(gl, "projection").unwrap();
+    let mut normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
+    let mut highlight = Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER).unwrap();
     
-    Self {
-      normal,
-      highlight,
-      model_uniform_location,
-      view_uniform_location,
-      projection_uniform_location 
-    }
+    normal
+      .with_model(gl)?
+      .with_view(gl)?
+      .with_projection(gl)?;
 
+    highlight
+      .with_model(gl)?
+      .with_view(gl)?
+      .with_projection(gl)?;
+
+    dbg!(normal);
+    dbg!(highlight);
+
+
+    Ok(Self { normal, highlight })
   }
+  
   pub fn set_normal_uniforms(&self, world:&World) {
-    // let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
     let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    // dbg!(transforms.projection_transform);
     let gl = world.immut_get_resource::<Gl>().unwrap();
+    let program = self.normal;
 
-    self.normal.use_program(gl);
+    program.use_program(gl);
 
-    //bind the view transform
-    self
-      .normal
-      .set_uniform_matrix4fv(
-        gl,
-        self.view_uniform_location,
-        &transforms.view_transform
-      );
-
-    //bind the projection transform
-    self
-      .normal
-      .set_uniform_matrix4fv(
-        gl, 
-        self.projection_uniform_location, 
-        transforms.projection_transform.as_matrix()
-      );
+    //Set the view transform's value
+    program.set_view_matrix(gl, &transforms.view_transform);
+    
+    //Set the projection transform's value
+    program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
   }
 
   pub fn set_highlight_uniforms(&self, world:&World) {
     let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    // let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
     let gl = world.immut_get_resource::<Gl>().unwrap();
+    let program = self.highlight;
 
-    self.highlight.use_program(gl);
+    program.use_program(gl);
 
-    //bind the view transform
-    self
-      .highlight
-      .set_uniform_matrix4fv(
-        gl,
-        self.view_uniform_location,
-        &transforms.view_transform
-      );
-
-    //bind the projection transform
-    self
-      .highlight
-      .set_uniform_matrix4fv(
-        gl,
-        self.projection_uniform_location,
-        transforms.projection_transform.as_matrix()
-      );
+    //Set the view transform's value
+    program.set_view_matrix(gl, &transforms.view_transform);
+    
+    //Set the projection transform's value
+    program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
   }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct DbgShaderProgram {
-  pub program:Program
+  pub program:Program,
 }
 
 impl DbgShaderProgram {
-  pub fn new(program:Program) -> Self {
-    DbgShaderProgram { program }
+  pub fn new(world:&World) -> Self {
+    let gl = world.immut_get_resource::<Gl>().unwrap();
+    
+    let program = Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap();
+
+    DbgShaderProgram { 
+      program,
+    }
   }
 
   pub fn set_normal_uniforms(&self, world:&World) {
     let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    let uniform_locations = world.immut_get_resource::<RenderUniformLocations>().unwrap();
     let gl = world.immut_get_resource::<Gl>().unwrap();
+    let program = self.program;
 
-    self.program.use_program(gl);
+    // program.use_program(gl);
 
-    //bind the view transform
-    self
-      .program
-      .set_uniform_matrix4fv(
-        gl,
-        uniform_locations.view,
-        &transforms.view_transform
-      );
-
-    //bind the projection transform
-    self
-      .program
-      .set_uniform_matrix4fv(
-        gl,
-        uniform_locations.projection,
-        transforms.projection_transform.as_matrix()
-      );
+    // //Set the view transform's value
+    // program.set_view_matrix(gl, &transforms.view_transform);
+    
+    // //Set the projection transform's value
+    // program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
   }
 }
 

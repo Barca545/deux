@@ -14,6 +14,8 @@ use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, S
 // interpolation factor do the interpolation factor * position as a system in
 // beginning of the render loop and pass it down
 
+//I'll need to update the debug functionality
+
 pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
   let programs = world.immut_get_resource::<ShaderPrograms>().unwrap();
@@ -31,14 +33,14 @@ pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
 
   unsafe { gl.StencilMask(0x00) };
   programs.normal.use_program(gl);
-  render_pass::static_geometry(&world, &programs.normal)?;
+  render_pass::static_geometry(&world)?;
 
   //First Render Pass
   unsafe {
     gl.StencilFunc(ALWAYS, 1, 0xFF);
     gl.StencilMask(0xFF);
   }
-  render_pass::skinned_meshes(&world, &programs.normal, interpolation_factor)?;
+  render_pass::skinned_meshes(&world, interpolation_factor)?;
 
   unsafe {
     gl.StencilFunc(NOTEQUAL, 1, 0xFF);
@@ -51,7 +53,7 @@ pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
   }
 
   programs.highlight.use_program(gl);
-  render_pass::special_outlines(&world, &programs.highlight, interpolation_factor)?;
+  render_pass::special_outlines(&world, interpolation_factor)?;
 
   unsafe {
     gl.StencilMask(0xFF);
