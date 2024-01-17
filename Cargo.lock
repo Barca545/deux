@@ -184,7 +184,6 @@ dependencies = [
  "image",
  "nalgebra",
  "nalgebra-glm",
- "obj",
  "serde",
  "serde_json",
  "thiserror",
@@ -515,12 +514,6 @@ checksum = "f30b0abd723be7e2ffca1272140fac1a2f084c77ec3e123c192b66af1ee9e6c2"
 dependencies = [
  "autocfg",
 ]
-
-[[package]]
-name = "obj"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "059c95245738cdc7b40078cdd51a23200252a4c0a0a6dd005136152b3f467a4a"
 
 [[package]]
 name = "objc"

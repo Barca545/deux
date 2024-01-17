@@ -10,8 +10,6 @@ use gl::{Gl, STATIC_DRAW};
 
 use super::render_gl::{UntexturedVertex, buffer::ElementArrayBuffer};
 
-
-//let's just have the one mesh structure and then wrap it in skinned mesh/static mesh etc
 #[derive(Debug, Clone)]
 pub struct Mesh {
   pub vertices:Vec<Vertex>,

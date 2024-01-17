@@ -7,5 +7,7 @@ pub enum FilesystemErrors {
   #[error("Failed to decode image")]
   FailedToDecodeImage,
   #[error("Format can only be RGB or RGB")]
-  IllegalTextureFormat
+  IllegalTextureFormat,
+  #[error("File does not contain readable data")]
+  FileContainsNil
 }

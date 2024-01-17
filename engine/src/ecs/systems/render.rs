@@ -22,7 +22,7 @@ pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
   let debug_elements = world.immut_get_resource::<DebugElements>().unwrap();
 
   unsafe {
-    gl.ClearColor(0.1, 0.1, 0.1, 1.0);
+    // gl.ClearColor(0.1, 0.1, 0.1, 1.0);
     gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT)
   }
 

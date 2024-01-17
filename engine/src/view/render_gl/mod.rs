@@ -5,7 +5,6 @@ mod shaders;
 mod texture;
 mod texture_attatchment;
 mod vertex;
-mod viewport;
 
 pub use self::{
   framebuffer::FrameBuffer,
@@ -13,5 +12,4 @@ pub use self::{
   texture::Texture,
   texture_attatchment::TextureAttachment,
   vertex::{UntexturedVertex, Vertex},
-  viewport::Viewport
 };

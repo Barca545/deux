@@ -34,6 +34,8 @@ pub fn create_gl(window:&mut Window) -> Gl {
   let _gl_context = window.get_context_version();
   let gl = Gl::load_with(&mut |s| window.get_proc_address(s) as *const std::os::raw::c_void);
   unsafe {
+    //set clear color here or in the renderer
+    gl.ClearColor(0.1, 0.1, 0.1, 1.0);
     gl.Enable(DEPTH_TEST);
     gl.DepthFunc(LESS);
     gl.Enable(STENCIL_TEST);

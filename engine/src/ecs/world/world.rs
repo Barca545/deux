@@ -129,10 +129,6 @@ impl World {
     Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
   }
 
-  pub fn load_resource_from_cstring(&self, resource_name:&str) -> Result<CString> {
-    self.resources.load_resource_from_cstring(resource_name)
-  }
-
   /**
   Takes in a type and removes the resource from the World. Does not care if the resource exists.
   ```
@@ -187,6 +183,9 @@ impl World {
     self.entities.delete_entity(index)
   }
 }
+
+//implement scripting here
+impl World {}
 
 #[cfg(test)]
 mod tests {}

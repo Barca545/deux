@@ -1,13 +1,6 @@
-use crate::errors::EcsErrors;
-use eyre::Result;
 use std::{
   any::{Any, TypeId},
-  collections::HashMap,
-  env::current_exe,
-  ffi::CString,
-  fs::File,
-  io::Read,
-  path::{Path, PathBuf}
+  collections::HashMap
 };
 
 #[derive(Default, Debug)]
@@ -20,39 +13,6 @@ impl Resource {
   pub fn add_resource(&mut self, data:impl Any) {
     let typeid:TypeId = data.type_id();
     self.data.insert(typeid, Box::new(data));
-  }
-
-  //this is for loading the asset folder
-  //currently adding a new one would overwrite other ones so possibly find a way
-  // around that
-  pub fn path_to_asset_folder_from_relative_exe_path(&mut self, rel_path:&str) {
-    let typeid:TypeId = TypeId::of::<std::path::PathBuf>();
-    //this line makes it hard to test because this exe is not the one that would
-    // eventually be used in final build use current_exe() instead of
-    // current_dir()
-    let exe_file_name = current_exe().unwrap();
-
-    let exe_path = exe_file_name.parent().unwrap();
-    let root_path = exe_path.join(rel_path);
-    self.data.insert(typeid, Box::new(root_path));
-  }
-
-  //This is for loading a model from the assets folder
-  //also not sure this should be here instead of being in world or the entities
-  // or even a separate system since the main goal is to
-  pub fn load_resource_from_cstring(&self, resource_name:&str) -> Result<CString> {
-    let root_path:&PathBuf = self.get_ref::<PathBuf>().unwrap();
-
-    let mut file = File::open(resource_name_to_path(root_path, resource_name))?;
-
-    let mut buffer:Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
-
-    file.read_to_end(&mut buffer)?;
-
-    if buffer.iter().find(|i| **i == 0).is_some() {
-      return Err(EcsErrors::FileContainsNil.into());
-    }
-    Ok(unsafe { CString::from_vec_unchecked(buffer) })
   }
 
   pub fn get_ref<T:Any>(&self) -> Option<&T> {
@@ -77,15 +37,6 @@ impl Resource {
     let typeid:TypeId = TypeId::of::<T>();
     self.data.remove(&typeid);
   }
-}
-
-fn resource_name_to_path(root_dir:&Path, location:&str) -> PathBuf {
-  let mut path:PathBuf = root_dir.into();
-
-  for part in location.split("/") {
-    path = path.join(part)
-  }
-  path
 }
 
 #[cfg(test)]

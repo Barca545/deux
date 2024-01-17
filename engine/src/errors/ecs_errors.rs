@@ -15,7 +15,5 @@ pub enum EcsErrors {
   #[error("No resource found at given path")]
   NoResourceAtPath,
   #[error("Unable to read the exe at the given path")]
-  ExeResourceRegistrationFailed,
-  #[error("File does not contain readable data")]
-  FileContainsNil
+  ExeResourceRegistrationFailed
 }

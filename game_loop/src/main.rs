@@ -27,6 +27,7 @@ use std::env;
 
 fn main() -> Result<()> {
   env::set_var("RUST_BACKTRACE", "FULL");
+  //could the thing where components are registered be part of world::default()
   let mut world = World::new();
   let server_time = ServerTime::new();
   //make a settings file and load in from there

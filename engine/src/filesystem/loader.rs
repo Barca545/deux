@@ -1,4 +1,4 @@
-use crate::{errors::{EcsErrors, FilesystemErrors}, view::render_gl::Vertex};
+use crate::{errors::FilesystemErrors, view::render_gl::Vertex};
 use eyre::Result;
 
 use image::{io::Reader, DynamicImage};
@@ -37,7 +37,8 @@ pub fn load_cstring(name:&str, extension:&str) -> Result<CString> {
   file.read_to_end(&mut buffer)?;
 
   if buffer.iter().find(|i| **i == 0).is_some() {
-    return Err(EcsErrors::FileContainsNil.into());
+    //should this be a file system error?
+    return Err(FilesystemErrors::FileContainsNil.into());
   }
   Ok(unsafe { CString::from_vec_unchecked(buffer) })
 }
