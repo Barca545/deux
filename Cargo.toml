@@ -3,12 +3,10 @@ resolver = "2"
 members = [
   "gl",
   "game_loop",
-  "ecs",
   "engine"
 ]
 
 [workspace.dependencies]
-ecs = {path ="ecs"}
 game_loop = {path ="game_loop"}
 gl = {path ="gl"}
 engine = {path ="engine"}
@@ -22,6 +20,10 @@ nalgebra-glm = "0.18.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+[workspace.dependencies.mlua]
+version = "0.9.4"
+default-features = false 
+features = ["lua54", "vendored"] 
 
 [workspace.dependencies.winapi]
 version = "0.3.9"

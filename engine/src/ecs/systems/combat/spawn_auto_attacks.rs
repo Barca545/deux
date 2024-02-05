@@ -1,4 +1,4 @@
-use crate::ecs::{World, component_lib::{Target, Position, Velocity, MissleSpeed, SkinnedMesh, AutoAttackCooldown, AutoAttack, AutoAttackMesh, Owner, Player}};
+use crate::ecs::{World, component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackMesh, MissleSpeed, Owner, Player, Position, Scripts, SkinnedMesh, Target, Velocity}};
 use eyre::Result;
 
 //maybe this could be a resource but might be unnessecary 
@@ -48,8 +48,7 @@ impl AutoAttackSpawner{
   }
 }
 
-pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
-  
+pub fn spawn_auto_attacks(world:&mut World) -> Result<()> { 
   let mut spawner = AutoAttackSpawner::default();
 
   let mut query = world.query();
@@ -93,7 +92,7 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
         let owner = Owner{id: entity.id.clone()};
         
         //add all the values to the spawner
-        spawner.add(position.clone(), missle_speed.clone(), velocity, auto_attack_mesh.clone(), owner, Target(Some(id)));
+        spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, Target(Some(id)));
       }
     }
   }
@@ -104,6 +103,20 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
     let auto_attack_mesh = spawner.meshes[index].clone();
     let mesh = SkinnedMesh::from(auto_attack_mesh);
 
+    //in a final set up the scripts will need to be stored on the entity
+    let script = r#"
+      world:remove_health(target_id,100000)
+    "#;
+    //shift all the logic of the attack to scripts
+      //have them fetch the damage from the player
+    //store the scripts on the owner entity
+    //event system
+    //when attack connects, 
+      // run script world.get_by_id 
+      // feed that into the lua VM
+
+    //make a script generate the attack
+
     //create the entity
     world
       .create_entity()
@@ -113,9 +126,8 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
       .with_component(spawner.velocities[index])?
       .with_component(mesh)?
       .with_component(spawner.owners[index])?
-      .with_component(spawner.targets[index])?;
+      .with_component(spawner.targets[index])?
+      .with_component(Scripts::new(vec![script]))?;
   }
   Ok(())
 }
-
-//I figured out why the balls kept spawing on the guy, I never un select the thing during movement

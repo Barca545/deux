@@ -9,20 +9,16 @@ use engine::{
     systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment, register_components},
     world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms},
     World
-  },
-  input::user_inputs::{FrameInputs, MousePosition, UserInputs},
-  math::{Transforms, Vec3},
-  time::ServerTime,
-  view::{
+  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, scripting::run, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
-  }, filesystem::load_object
+  }
 };
 
 use eyre::Result;
 use gl::Gl;
 use glfw::{Action, Context, Key, MouseButton};
-use glm::vec3;
+use mlua::Lua;
 use std::env;
 
 fn main() -> Result<()> {
@@ -32,7 +28,7 @@ fn main() -> Result<()> {
   let server_time = ServerTime::new();
   //make a settings file and load in from there
   let screen_dimensions = ScreenDimensions::new(1280, 720);
-
+  
   world
     .add_resource(screen_dimensions)
     .add_resource(Transforms::new(&screen_dimensions.aspect))
@@ -41,17 +37,20 @@ fn main() -> Result<()> {
     //add physics acceleration structure resource
     //add events resource
     //add window?
+    //add input event system by copying the level editor
     .add_resource(server_time)
-    .add_resource(DebugElements::new(false, false));
+    .add_resource(DebugElements::new(false, false))
+    //Initialize Lua
+    .add_resource(Lua::new());
 
   let (mut glfw, mut window, events) = create_window(&world);
   let gl = create_gl(&mut window);
 
-  //add gl as a resource
+  //Add gl as a resource
   //experiment with making window a resource
   world.add_resource(gl.clone());
 
-  //create the programs
+  //Create the shader programs
   let programs = ShaderPrograms::new(&world)?;
   let dbg_program = DbgShaderProgram::new(&world);
 
@@ -60,17 +59,17 @@ fn main() -> Result<()> {
     .add_resource(programs)
     .add_resource(dbg_program);
 
-  //register the components the game uses with the world
+  //Register the components the game uses with the world
   register_components(&mut world);
 
-  //spawn the ground
+  //Spawn the ground
   spawn_enviroment(&mut world, "ground")?;
 
-  //spawn the players
+  //Spawn the players
   spawn_player(&mut world, "warrior", 1)?;
 
   // create the dummy entity 
-  let dummy_position_vec:Vec3 = vec3(3.0, 0.0, 0.0);
+  let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
   let dummy_position = Position::new(dummy_position_vec, dummy_position_vec);
   let dummy_hitbox = SelectionRadius::new(dummy_position_vec, 0.7, 0.7);
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
@@ -102,7 +101,7 @@ fn main() -> Result<()> {
 
   let mut frame_inputs = FrameInputs::new();
 
-  //main loop
+  //Main loop
   while !window.should_close() {
     //For some reason if this is not here I get a black screen
     {
@@ -127,71 +126,6 @@ fn main() -> Result<()> {
         _ => {}
       }
     }
-    // for event in event_pump.poll_iter() {
-    //     Event::Window {
-    //       win_event: WindowEvent::Resized(w,h), ..} => {
-    //         /*currently this does not update
-    //         the dimensions in world.
-    //         When I eventually create a camera system that will need to change*/
-    //         viewport.update_size(w, h);
-    //         viewport.set_used(&gl);
-    //       },
-    //       Event::KeyDown {keycode:Some(Keycode::Right), ..} =>{
-    //         let event = UserInputs::MoveCameraRight;
-    //         frame_inputs.add_event(event);
-    //       },
-    //       Event::KeyDown {keycode:Some(Keycode::Left), ..} =>{
-    //         let event = UserInputs::MoveCameraLeft;
-    //         frame_inputs.add_event(event)
-    //       },
-    //       //add the ability to use the scroll wheel to move
-    //       Event::KeyDown {keycode:Some(Keycode::Up), ..} =>{
-    //         let event = UserInputs::MoveCameraUp;
-    //         frame_inputs.add_event(event)
-    //       },
-    //       Event::KeyDown {keycode:Some(Keycode::Down), ..} =>{
-    //         let event = UserInputs::MoveCameraDown;
-    //         frame_inputs.add_event(event)
-    //       },
-    //       Event::KeyDown{keycode:Some(Keycode::Space), ..} =>{
-    //         let event = UserInputs::CenterCamera;
-    //         frame_inputs.add_event(event)
-    //       },
-    //       Event::MouseWheel {y, ..} =>{
-    //         if y > 0{
-    //           let event = UserInputs::ZoomInCamera;
-    //           frame_inputs.add_event(event)
-    //         }
-    //         else{
-    //           let event = UserInputs::ZoomOutCamera;
-    //           frame_inputs.add_event(event)
-    //         }
-    //       },
-    //       // //need to add an event to track the mouse location
-    //       // //and update the camera based on it
-    //       // //I might need to break out glfw here since sdl does not track the z
-    // position       //I need to figure why this part of the input capture
-    // causes the program to lag out       // Event::MouseMotion { x, y,..}=>{
-    //       //   // while x <5{
-    //       //   //   let event = UserInputs::MoveCameraLeft;
-    //       //   //   frame_inputs.add_event(event);
-    //       //   // }
-    //       //   // while x > viewport.w-5{
-    //       //   //   let event = UserInputs::MoveCameraRight;
-    //       //   //   frame_inputs.add_event(event);
-    //       //   // }
-    //       //   // // else if  y < 5{
-    //       //   //   let event = UserInputs::MoveCameraUp;
-    //       //   //   frame_inputs.add_event(event);
-    //       //   // }
-    //       //   // else if y > viewport.h-5{
-    //       //   //   let event = UserInputs::MoveCameraDown;
-    //       //   //   frame_inputs.add_event(event);
-    //       //   // }
-    //       // }
-    //       _ => {}
-    //   }
-    // }
     
     let server_time = world.immut_get_resource::<ServerTime>().unwrap().clone();
 
@@ -201,6 +135,7 @@ fn main() -> Result<()> {
       update_selection(&mut world, x, y)?;
       movement(&world)?;
       combat(&mut world)?;
+      run(&world)?;
 
       //my concern is that clearing the frame inputs means it won't update properly
       frame_inputs.clear();

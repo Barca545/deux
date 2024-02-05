@@ -163,6 +163,7 @@ pub struct KDA{
   assists:u32
 }
 
+//might be no reason to have these methods instead of just adding them
 impl KDA { 
   pub fn kill(&mut self, number:u32){
     self.kills += number;
@@ -238,3 +239,31 @@ impl StaticMesh{
     StaticMesh(Mesh::new(gl, vertices, indices, texture_name))
   }
 }
+
+
+
+//Scripting
+#[derive(Debug, Clone, Default)]
+pub struct Scripts(pub Vec<String>);
+
+impl Scripts {
+  pub fn new(scripts:Vec<&str>) -> Self{
+    let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
+    Scripts(scripts)
+  }
+}
+
+// pub struct Scripts{
+//   pub indexes: HashMap<String, usize>,
+//   pub scripts: Vec<String>
+// }
+
+// impl Scripts {
+//   pub fn new(scripts:Vec<&str>) -> Self{
+//     let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
+//     Scripts{
+//       indexes
+//       scripts
+//     }
+//   }
+// }

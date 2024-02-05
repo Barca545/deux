@@ -15,6 +15,7 @@ thiserror = {workspace=true}
 nalgebra-glm = {workspace=true}
 serde = {workspace=true}
 serde_json = {workspace=true}
+mlua = {workspace=true}
 
 [build-dependencies]
 cmake = "0.1"

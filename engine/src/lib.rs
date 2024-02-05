@@ -10,3 +10,4 @@ pub mod math;
 pub mod physics;
 pub mod time;
 pub mod view;
+pub mod scripting;

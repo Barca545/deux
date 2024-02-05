@@ -1,4 +1,4 @@
-use crate::ecs::{World, component_lib::{KDA, Gold}, world_resources::DebugElements};
+use crate::ecs::{World, component_lib::{Gold, Player, KDA}, world_resources::DebugElements};
 use eyre::Result;
 
 use super::{update_target::update_target, spawn_auto_attacks::spawn_auto_attacks, move_attacks::move_attacks, decriment_cooldowns::decriment_cooldowns, resolve_attacks::resolve_attacks};
@@ -25,10 +25,14 @@ fn debug_combat(world:&World) -> Result<()> {
 
   let entites = query.with_component::<KDA>()?.run_entity();
   for entity in entites {
-    let kda = entity.immut_get_component::<KDA>()?;
-    let gold = entity.immut_get_component::<Gold>()?;
-    dbg!(kda);
-    dbg!(gold);
+    //debugs the info of the dummy a player is hitting
+    if let Err(_player) = entity.immut_get_component::<Player>() {
+      let kda = entity.immut_get_component::<KDA>()?;
+      let gold = entity.immut_get_component::<Gold>()?;
+      dbg!(entity.id);
+      dbg!(kda);
+      dbg!(gold);
+    }
   }
   Ok(())
 }

@@ -2,7 +2,7 @@ use eyre::Result;
 use gl::Gl;
 
 use crate::{ecs::{World, component_lib::{Position, Destination, Target, Player, SkinnedMesh, SelectionRadius, Team, AutoAttackMesh, Gold, KDA, Velocity, Controllable, Exp, Level}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
-///spawns a player from a given name
+///spawns a player from a given name and player number
 //possibly should be a system not a method on world
 //might need to also take in the player number
 pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
