@@ -1,7 +1,7 @@
 use mlua::{Lua, Value::Nil};
 use eyre::Result;
 
-use crate::ecs::{component_lib::{Scripts, AutoAttack, Owner, Target}, World};
+use crate::ecs::{component_lib::{AutoAttackScript, AutoAttack, Owner, Target}, query::ComponentRef, World};
 
 pub fn run(world: &World)-> Result<()>{
   run_damage_scripts(world)?;
@@ -22,7 +22,9 @@ pub fn run_damage_scripts(world: &World) -> Result<()>{
   for entity in entities {
     //get the autoattack's scripts as a Vec<String>
     // handle the case where something does not have scripts
-    let scripts = entity.immut_get_component::<Scripts>().unwrap();
+    let script_ref = entity.immut_get_component::<ComponentRef<AutoAttackScript>>().unwrap();
+    let script = script_ref.get_component();
+    
     let entity_id =  entity.id;
     let target_id = entity.immut_get_component::<Target>().unwrap().0.unwrap();
     let owner_id = entity.immut_get_component::<Owner>().unwrap().id;
@@ -38,10 +40,14 @@ pub fn run_damage_scripts(world: &World) -> Result<()>{
       //add this to the creation step in the combat system to test
       //might actually keep attack creation in pure rust instead of scripting until no other choice
 
+      //Run the script
+      lua.load(script.script()).exec()?; 
+
+      //keep in case I add multiple scripts for one event
       //Run the scripts
-      for script in &scripts.0 {
-        lua.load(script).exec()?; 
-      }
+      // for script in &scripts.0 {
+      //   lua.load(script).exec()?; 
+      // }
 
       //Reset the ids for the entity, its target and its owner 
       //might be unnecescary as long as I always make sure a new thing that needs these resets them so they're not reused

@@ -6,6 +6,8 @@ use std::{
   rc::Rc
 };
 
+use super::component_ref::ComponentRef;
+
 type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<dyn Any>>>>>;
 
 pub struct QueryEntity<'a> {
@@ -36,5 +38,21 @@ impl<'a> QueryEntity<'a> {
 
     let borrowed_component = components[self.id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow_mut();
     Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
+  }
+
+  ///Returns an `Rc` smart pointer to the component.
+  pub fn get_commonent_ref<T:Any>(&self) -> Result<ComponentRef<T>>{
+    let components = self.extract_components::<T>()?;   
+    let component = components[self.id].as_ref();
+    
+    match component {
+      Some(component_ref) => {
+        let component_ref = ComponentRef::new::<T>(component_ref.clone());
+        Ok(component_ref)
+      }
+      None => {
+        Err(EcsErrors::ComponentDataDoesNotExist.into())
+      }
+    }
   }
 }

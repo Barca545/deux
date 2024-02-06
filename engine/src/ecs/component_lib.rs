@@ -244,12 +244,16 @@ impl StaticMesh{
 
 //Scripting
 #[derive(Debug, Clone, Default)]
-pub struct Scripts(pub Vec<String>);
+pub struct AutoAttackScript(pub String);
 
-impl Scripts {
-  pub fn new(scripts:Vec<&str>) -> Self{
-    let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
-    Scripts(scripts)
+impl AutoAttackScript {
+  pub fn new(script:&str) -> Self{
+    //leftover from when something had multiple scripts, keep if I readd
+    // let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
+    AutoAttackScript(script.to_owned())
+  }
+  pub fn script(&self) -> &str {
+    &self.0
   }
 }
 

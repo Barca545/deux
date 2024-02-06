@@ -1,4 +1,4 @@
-use crate::ecs::{World, component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackMesh, MissleSpeed, Owner, Player, Position, Scripts, SkinnedMesh, Target, Velocity}};
+use crate::ecs::{component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackMesh, MissleSpeed, Owner, Player, Position, AutoAttackScript, SkinnedMesh, Target, Velocity}, query::ComponentRef, World};
 use eyre::Result;
 
 //maybe this could be a resource but might be unnessecary 
@@ -10,7 +10,8 @@ pub struct AutoAttackSpawner{
   velocities:Vec<Velocity>,
   meshes:Vec<AutoAttackMesh>,
   owners:Vec<Owner>,
-  targets:Vec<Target>
+  targets:Vec<Target>,
+  scripts: Vec<ComponentRef<AutoAttackScript>>,
 }
 
 impl Default for AutoAttackSpawner{
@@ -23,6 +24,7 @@ impl Default for AutoAttackSpawner{
       meshes: Default::default(),
       owners: Default::default(),
       targets: Default::default(),
+      scripts: Default::default(),
     }
   }
 }
@@ -35,7 +37,8 @@ impl AutoAttackSpawner{
     velocity:Velocity,
     mesh:AutoAttackMesh,
     owner:Owner,
-    target:Target
+    target:Target,
+    script:ComponentRef<AutoAttackScript>,
   ){
     let index = self.indices.len();
     self.indices.push(index);
@@ -45,6 +48,7 @@ impl AutoAttackSpawner{
     self.meshes.push(mesh);
     self.owners.push(owner);
     self.targets.push(target);
+    self.scripts.push(script);
   }
 }
 
@@ -90,9 +94,12 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
 
         //get the owner
         let owner = Owner{id: entity.id.clone()};
-        
+
+        //Get the script's reference
+        let script_ref = entity.get_commonent_ref::<AutoAttackScript>()?;
+
         //add all the values to the spawner
-        spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, Target(Some(id)));
+        spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, Target(Some(id)), script_ref);
       }
     }
   }
@@ -103,10 +110,6 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
     let auto_attack_mesh = spawner.meshes[index].clone();
     let mesh = SkinnedMesh::from(auto_attack_mesh);
 
-    //in a final set up the scripts will need to be stored on the entity
-    let script = r#"
-      world:remove_health(target_id,100000)
-    "#;
     //shift all the logic of the attack to scripts
       //have them fetch the damage from the player
     //store the scripts on the owner entity
@@ -127,7 +130,8 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
       .with_component(mesh)?
       .with_component(spawner.owners[index])?
       .with_component(spawner.targets[index])?
-      .with_component(Scripts::new(vec![script]))?;
+      //ideally get rid of clone here
+      .with_component(spawner.scripts[index].clone())?;
   }
   Ok(())
 }

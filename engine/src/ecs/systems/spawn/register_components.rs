@@ -1,6 +1,5 @@
 use crate::{ecs::{
-  World, 
-  component_lib::{AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackMesh, Controllable, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Owner, PathingRadius, Player, Position, Scripts, SelectionRadius, SkinnedMesh, Speed, StaticMesh, Target, Team, Velocity, KDA},
+  component_lib::{AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackMesh, Controllable, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Owner, PathingRadius, Player, Position, AutoAttackScript, SelectionRadius, SkinnedMesh, Speed, StaticMesh, Target, Team, Velocity, KDA}, query::ComponentRef, World
 }, view::AABB3DDebugMesh};
 
 pub fn register_components(world:&mut World){
@@ -30,5 +29,6 @@ pub fn register_components(world:&mut World){
     .register_component::<KDA>()
     .register_component::<Exp>()
     .register_component::<Level>()
-    .register_component::<Scripts>();
+    .register_component::<AutoAttackScript>()
+    .register_component::<ComponentRef<AutoAttackScript>>();
 }

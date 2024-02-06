@@ -1,7 +1,7 @@
 use eyre::Result;
 use gl::Gl;
 
-use crate::{ecs::{World, component_lib::{Position, Destination, Target, Player, SkinnedMesh, SelectionRadius, Team, AutoAttackMesh, Gold, KDA, Velocity, Controllable, Exp, Level}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
+use crate::{ecs::{World, component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
 ///spawns a player from a given name and player number
 //possibly should be a system not a method on world
 //might need to also take in the player number
@@ -78,7 +78,12 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     
     //render components
     .with_component(player_mesh)?
-    .with_component(player_hitbox_mesh)?;
+    .with_component(player_hitbox_mesh)?
+
+    //scripts
+    .with_component(AutoAttackScript::new(r#"
+    world:remove_health(target_id,100000)
+  "#))?;
   
   let debug = world.immut_get_resource::<DebugElements>().unwrap();
   if debug.aabb {
