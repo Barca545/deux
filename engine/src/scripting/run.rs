@@ -35,11 +35,11 @@ pub fn run_damage_scripts(world: &World) -> Result<()>{
     
     lua.scope(|scope| {
       //Set the ids for the entity, its target and its owner 
-      lua.globals().set("entity_id", entity_id)?;
-      lua.globals().set("target_id", target_id)?;
-      lua.globals().set("owner_id", owner_id)?;
-      
-      lua.globals().set("world", scope.create_userdata_ref(world)?)?;
+      lua.globals().set("entity_id", scope.create_userdata_ref(entity_id)?)?;
+lua.globals().set("target_id", scope.create_userdata_ref(target_id)?)?;
+lua.globals().set("owner_id", scope.create_userdata_ref(owner_id)?)?;
+
+lua.globals().set("world", scope.create_userdata_ref(world)?)?;
 
       //add this to the creation step in the combat system to test
       //might actually keep attack creation in pure rust instead of scripting until no other choice
@@ -52,13 +52,6 @@ pub fn run_damage_scripts(world: &World) -> Result<()>{
       // for script in &scripts.0 {
       //   lua.load(script).exec()?; 
       // }
-
-      //Reset the ids for the entity, its target and its owner 
-      //might be unnecescary as long as I always make sure a new thing that needs these resets them so they're not reused
-      lua.globals().set("entity_id", Nil)?;
-      lua.globals().set("target_id", Nil)?;
-      lua.globals().set("owner_id", Nil)?;
-
       Ok(()) 
     })?;
   }
