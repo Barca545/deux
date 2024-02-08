@@ -70,6 +70,6 @@ impl UserData for World {
   }
 }
 
-// impl<'a> UserData for QueryEntity<'a> {
-
-// }
+impl UserData for TargetId{}
+impl UserData for Owner{}
+impl UserData for EntityId{}
