@@ -11,3 +11,5 @@ pub mod physics;
 pub mod time;
 pub mod view;
 pub mod scripting;
+pub mod event;
+pub mod utility_functions;

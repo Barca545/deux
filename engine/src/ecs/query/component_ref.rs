@@ -7,6 +7,7 @@ pub struct ComponentRef<T>{
   component_type: PhantomData<T>
 }
 
+
 impl<T:Any> ComponentRef<T> {
   pub fn new<Takes>(component_ref:Rc<RefCell<dyn Any>>)-> Self{
     ComponentRef{

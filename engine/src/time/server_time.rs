@@ -50,6 +50,9 @@ impl GameDuration {
 //if I later find out it is bad to use custom types this way just make the
 // types a comment next to the line might eventually need a ClientTime and make
 // the methods into a trait or something
+//I think this should also track the current tick in addition to the current count 
+// (which is just the current second 
+// but I am calling it counts because it starts when the timer is started)
 #[derive(Debug, Clone, Copy)]
 pub struct ServerTime {
   start_count:Count,

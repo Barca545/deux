@@ -19,6 +19,8 @@ pub fn resolve_attacks(world:&mut World) -> Result<()>{
 
     //Because target holds an option this has to check. 
     //Should always return true because an auto_attack only spawns if the owner's Target component has an id.
+    //follow rustdev suggestion and just mark it as collided
+    //why does target hold an option? remove that. untargeted abilities just won't have a target component
     if let Some(target_id) = target.0 {
       //get the target radius and position
       let target_position = world.immut_get_component_by_entity_id::<Position>(target_id)?;
@@ -30,13 +32,14 @@ pub fn resolve_attacks(world:&mut World) -> Result<()>{
       //If the attack and the target are colliding, apply damage
       if collision_check {
         //if the attack hit, add it for deletion at the end of the function
+        //deletion will need to go in the part where the scripts are resolved
         attacks_to_delete.push(entity.id);
         
         let mut target_health = world.mut_get_component_by_entity_id::<Health>(target_id)?;
         target_health.remaining -= attack_damage.0;
 
         if target_health.remaining < 0 {
-          //give gold tothe attack owner
+          //give gold to the attack owner
           let mut owner_gold = world.mut_get_component_by_entity_id::<Gold>(owner.id)?;
           owner_gold.0 += 350;
           

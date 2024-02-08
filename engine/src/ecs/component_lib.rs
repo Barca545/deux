@@ -125,6 +125,9 @@ impl AutoAttackCooldown{
 pub struct AttackDamage(pub i32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Armor(pub i32);
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health{
   pub max:i32,
   pub remaining:i32

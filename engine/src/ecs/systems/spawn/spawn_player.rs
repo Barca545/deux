@@ -48,6 +48,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
   let auto_attack_cooldown = champion_info.auto_attack_cooldown;
   let attack_damage = champion_info.attack_damage;
+  //add armor to JSON
   
   world
     .create_entity()
@@ -82,7 +83,8 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
 
     //scripts
     .with_component(AutoAttackScript::new(r#"
-    world:remove_health(target_id,100000)
+    attack_damage = world:get_attack_damage(owner_id)
+    world:remove_health(target_id,attack_damage)
   "#))?;
   
   let debug = world.immut_get_resource::<DebugElements>().unwrap();

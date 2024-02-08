@@ -8,6 +8,9 @@ pub fn run(world: &World)-> Result<()>{
   Ok(())
 }
 
+//alternatively instead of this being a whole system it could just be
+
+
 //System that runs damage scripts.
 //build an event system and have this query the event system for which events happened and require scripts
 pub fn run_damage_scripts(world: &World) -> Result<()>{
@@ -25,6 +28,7 @@ pub fn run_damage_scripts(world: &World) -> Result<()>{
     let script_ref = entity.immut_get_component::<ComponentRef<AutoAttackScript>>().unwrap();
     let script = script_ref.get_component();
     
+    //one alternative to this might be to make query entity something I just pass into the scope
     let entity_id =  entity.id;
     let target_id = entity.immut_get_component::<Target>().unwrap().0.unwrap();
     let owner_id = entity.immut_get_component::<Owner>().unwrap().id;
@@ -66,47 +70,6 @@ mod tests {
   use mlua::Lua;
   use crate::ecs::{component_lib::Health, World};
   use eyre::Result;
-
-  #[test]
-  fn run_lua_script() -> Result<()>{
-    let lua = Lua::new();
-
-    let health = Health::new(100);
-
-    lua.globals().set("health", health)?;
-
-    let script = r#"
-    health:add(10)
-    print(test.remaining)
-    "#;
-
-    lua.load(script).exec()?;
-    // dbg!(health);
-    let health:Health = lua.globals().get("health")?;
-    dbg!(health);
-    // assert_eq!(health.remaining, 110);
-
-    Ok(())
-  }
-
-  #[test]
-  fn mutate_with_script() -> Result<()>{
-    let lua = Lua::new();
-
-    let mut health = Health::new(100);
-
-    lua.globals().set("health", health)?;
-
-    let script = r#"
-    return 
-    health.remaining + 10
-    "#;
-
-    health.remaining = lua.load(script).eval::<i32>()?;
-
-    dbg!(health.remaining);
-    Ok(())
-  }
 
   #[test]
   fn mutate_with_scope() -> Result<()>{
