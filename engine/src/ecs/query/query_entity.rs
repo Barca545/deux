@@ -1,4 +1,4 @@
-use crate::{ecs::entities::{self, Entities}, errors::EcsErrors};
+use crate::{ecs::entities::Entities, errors::EcsErrors};
 use eyre::Result;
 use std::{
   any::{Any, TypeId},
@@ -40,8 +40,14 @@ impl<'a> QueryEntity<'a> {
     Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
   }
 
-  pub fn add_component(&self, data: impl Any){
-    self.entities.add_component_by_entity_id(data, self.id.clone());
+  //there may be a safe way to do this
+  pub fn add_component(&self, data: impl Any) -> Result<()>{
+    let entities = self.entities as *const Entities as *mut Entities;
+    unsafe{
+      let entities = &mut *entities;
+      entities.add_component_by_entity_id(data, self.id)?;
+    }
+    Ok(())
   }
 
   ///Returns an `Rc` smart pointer to the component.

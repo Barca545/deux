@@ -221,5 +221,28 @@ mod test {
     Ok(())
   }
 
+  #[test]
+  fn add_component_to_entity()->Result<()>{
+    let mut entities = Entities::default();
+    entities.register_component::<Health>();
+    entities.register_component::<f32>();
+
+    entities.create_entity().with_component(5.0_f32)?;
+
+    let mut query = Query::new(&entities);
+
+    let queried_entities:Vec<QueryEntity> = query.with_component::<f32>()?.run_entity();
+    let entity = &queried_entities[0];
+
+    entity.add_component(Health(100))?;
+
+    let mut query = Query::new(&entities);
+
+    let queried_entities:Vec<QueryEntity> = query.with_component::<Health>()?.run_entity();
+    let entity = &queried_entities[0];
+    let health = entity.immut_get_component::<Health>()?;
+    assert_eq!(health.0, 100);
+    Ok(())
+  }
   struct Health(pub i32);
 }
