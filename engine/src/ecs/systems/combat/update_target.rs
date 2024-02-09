@@ -1,9 +1,11 @@
 use crate::ecs::{World, world_resources::{Selected, Selected::{HOVERED,CLICKED,NONE}}, component_lib::{Target, Team, Player}};
 use eyre::Result;
 
-//this needs to be updated to used CLICKED instead of hovered
-//this needs to add the target when clicked 
-//consider creating a command buffer to clean this up
+//Refactor
+// -This needs to be updated to used CLICKED instead of hovered
+// -Update the target to deselect the target when click to move instead of on hover
+// -Create/use a command buffer to clean up the code.
+
 pub fn update_target(world:&mut World) -> Result<()>{
   //Get the selection
   let selection = world.immut_get_resource::<Selected>().unwrap();
@@ -49,10 +51,10 @@ pub fn update_target(world:&mut World) -> Result<()>{
   }
 
   if let Some(target) = target {
-    world.add_component_to_entity_by_id(player_id, target)?;
+    world.add_component(player_id, target)?;
   }
   else {
-    world.delete_component_by_entity_id::<Target>(player_id)?;
+    world.remove_component::<Target>(player_id)?;
   }
 
   Ok(())

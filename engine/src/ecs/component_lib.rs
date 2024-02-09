@@ -1,10 +1,11 @@
 use gl::Gl;
 use serde::{Deserialize, Serialize};
-
 use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
-//unsure if this is where I should store stuff like movespeed
-//why does making both dyn Any cause an issue? Says the size for both must be
-// known at compile time but I thought that defeated the point of any?
+
+//Refactor 
+// -Split this into a folder with sub mods grouped by what info components contain
+// -Figure out a way to make position just wrap a vector, maybe have Position and RenderPosition or even just CurrentPosition and PastPosition components
+// -Give tuple components a "value" field/method so they can be accessed through that instead of "0" which I think is better for readability?
 
 ///Represents units the player can control.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -46,6 +47,9 @@ impl Velocity {
     Velocity(velocity)
   }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Colliding;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Speed(pub f32);
@@ -127,6 +131,11 @@ pub struct AttackDamage(pub i32);
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Armor(pub i32);
 
+//Unsure if there should be a seperate component for when an attack lands but does not kill? 
+//some scripts might want to do something with this
+#[derive(Debug, Clone)]
+pub struct Killed(pub usize);
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health{
   pub max:i32,
@@ -168,14 +177,17 @@ pub struct KDA{
 
 //might be no reason to have these methods instead of just adding them
 impl KDA { 
+  ///Increments the tracked kills by 1.
   pub fn kill(&mut self, number:u32){
     self.kills += number;
   }
   
+  ///Increments the tracked deaths by 1.
   pub fn death(&mut self, number:u32){
     self.deaths += number;
   }
 
+  ///Increments the tracked assists by 1.
   pub fn assist(&mut self, number:u32){
     self.assists += number;
   }
@@ -243,8 +255,6 @@ impl StaticMesh{
   }
 }
 
-
-
 //Scripting
 #[derive(Debug, Clone, Default)]
 pub struct AutoAttackScript(pub String);
@@ -259,18 +269,3 @@ impl AutoAttackScript {
     &self.0
   }
 }
-
-// pub struct Scripts{
-//   pub indexes: HashMap<String, usize>,
-//   pub scripts: Vec<String>
-// }
-
-// impl Scripts {
-//   pub fn new(scripts:Vec<&str>) -> Self{
-//     let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
-//     Scripts{
-//       indexes
-//       scripts
-//     }
-//   }
-// }

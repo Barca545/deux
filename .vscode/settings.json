@@ -8,5 +8,6 @@
     "gl/Cargo.toml",
     "Cargo.toml",
     ".\\engine\\Cargo.toml"
-  ]
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false
 }

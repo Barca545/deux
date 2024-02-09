@@ -1,37 +1,5 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Owner, Target}, World}, utility::calc_post_mitigation_damage};
-
-// impl Deref for Health{
-//     type Target = Health;
-
-//   fn deref(&self) -> &Self::Target {
-//     &&self
-//   }
-// }
-
-// impl<'lua> FromLua<'lua> for Health{
-//   fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> Result<Self> {
-//     match value {
-//       Value::UserData(data) => Ok(*data.borrow::<Self>()?),
-//       _ => unreachable!()
-//     }
-//   }
-// }
-
-// //this could go in scripting
-// //unsure I want to keep this since I moved stuff to the world struct
-// impl UserData for Health {
-//   fn add_fields<'lua, F: mlua::prelude::LuaUserDataFields<'lua, Self>>(fields: &mut F) {
-//     fields.add_field_method_get("max", |_,this | Ok(this.max));
-//     fields.add_field_method_get("remaining", |_,this | Ok(this.remaining));
-//   }
-//   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-//     methods.add_method_mut("add", |_,this, amount:i32| {
-//       this.remaining += amount;
-//       Ok(())
-//     });
-//   }
-// }
+use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Killed, Owner, Target}, World}, utility::calc_post_mitigation_damage};
 
 impl UserData for World {
   //get the component data should basically just be numbers 
@@ -60,11 +28,20 @@ impl UserData for World {
     });
 
     //Deal mitigated damage to target enemy. 
-    methods.add_method("deal_mitigated_damage", |_,world, (target,damage):(usize,i32)|{
-      let armor = world.immut_get_component_by_entity_id::<Armor>(target).unwrap();
-      let post_mitigation_damage = calc_post_mitigation_damage(damage, armor.0);
-      let mut health = world.mut_get_component_by_entity_id::<Health>(target as usize).unwrap();
-      health.remaining -= post_mitigation_damage;
+    //If the entity dies, give the script's owner a Killed component.
+    methods.add_method_mut("deal_mitigated_damage", |_,world, (target,owner, damage):(usize,usize,i32)|{
+      {
+        let armor = world.immut_get_component_by_entity_id::<Armor>(target).unwrap();
+        let post_mitigation_damage = calc_post_mitigation_damage(damage, armor.0);
+        let mut health = world.mut_get_component_by_entity_id::<Health>(target as usize).unwrap();
+        health.remaining -= post_mitigation_damage;
+      }
+
+      let health = world.immut_get_component_by_entity_id::<Health>(target as usize).unwrap().remaining;
+      //Apply the Killed component to the attack's owner if applicable
+      if health < 0 {
+        world.add_component(owner, Killed).unwrap();
+      }
       Ok(())
     })
   }

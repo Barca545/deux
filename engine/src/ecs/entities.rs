@@ -20,10 +20,8 @@ use crate::errors::EcsErrors;
 pub type Component = Rc<RefCell<dyn Any>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
 
-//so you can search for classes of entities because they will all have the same
-// number for their bitmap
-
-//use another bitmask for specific id?
+//Figure out if I can wrap the bitmasks in a RefCell so I can mutate them from a reference
+//this would allow mutation in QueryEntity so I could have add/delete functionality
 #[derive(Debug, Default)]
 pub struct Entities {
   pub components:Components,
@@ -83,18 +81,15 @@ impl Entities {
     Ok(())
   }
 
-  //might wanna modify the add component to also be used for updating *or* make
-  // an update query based on it
   pub fn add_component_by_entity_id(&mut self, index:usize, data:impl Any) -> Result<()> {
     let typeid = data.type_id();
 
-    let mask = if let Some(mask) = self.bitmasks.get(&typeid) {
-      mask
-    } else {
+    if let Some(mask) = self.bitmasks.get(&typeid) {
+      self.map[index] |= *mask;
+    } 
+    else {
       return Err(EcsErrors::ComponentNotRegistered.into());
     };
-
-    self.map[index] |= *mask;
 
     let components = self.components.get_mut(&typeid).unwrap();
     components[index] = Some(Rc::new(RefCell::new(data)));
@@ -105,7 +100,8 @@ impl Entities {
   pub fn delete_entity(&mut self, index:usize) -> Result<()> {
     if let Some(map) = self.map.get_mut(index) {
       *map = 0;
-    } else {
+    } 
+    else {
       return Err(EcsErrors::EntityDoesNotExist.into());
     }
 

@@ -9,44 +9,20 @@ use std::{
   cell::{Ref, RefMut},
 };
 
-/*
-Questions
-- what is a Refcell and what is RC
-- what is + 'static
-- what is an Option
-- what is an iter/iter_mut
-- for_each syntax
-- what is a closure or closer
-- what is self vs Self
-- what does move out mean
-- what does ok_or/ok_or_else
-- what does unwrap() do
-- what does derive default mean
-- what is turbofish syntax
-- what does default do
-- what does a Deref do
-- what is downcasting
-- what does Some do
-- how does |= work
-- difference between | and & in rust
-- what is a BitXor (^) in rust -> Compares the binary representations of two numbers and adds them when the bits for a given place are not equal so 101 & 010 = 111 and 110 ^ 100 = 010
-- as_ref vs &
-- are the ids the same as the indices in my code?
-- integration vs unit test?
-- what is a collection?
-*/
-
 //confirm my documentation for the entities portion is correct
 
-//does it make sense to make a special thing for champions? I do not think so
+//Refactor
+// -Set it up so gettng the resources can be an ? and not an unwrap
+// -Change naming patter from immut/mut_get to just get/get_mut
+// -Create a spawn function. Might require implementing a real command buffer?
+// -Investigate archetype based ECS systems
+
 #[derive(Default, Debug)]
 pub struct World {
   resources:Resource,
   pub entities:Entities
 }
 
-//could I set up the immut_get_resource to return a result without needing to
-// unwrap?
 impl World {
   /**
   Generates a new world with default settings.
@@ -102,28 +78,28 @@ impl World {
   assert_eq!(*resource,10)
   ```
   */
-  //could I set up the immut_get_resource to return a result without needing to
-  // unwrap?
   pub fn immut_get_resource<T:Any>(&self) -> Option<&T> {
     self.resources.get_ref::<T>()
   }
 
-  pub fn immut_get_component_by_entity_id<T:Any>(&self, id:usize) -> Result<Ref<T>> {
+  ///Query immutably for the specified component data from the entity whose ID matches the given index.
+  pub fn immut_get_component_by_entity_id<T:Any>(&self, index:usize) -> Result<Ref<T>> {
     let typid = TypeId::of::<T>();
 
     let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
 
-    let borrowed_component = components[id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow();
+    let borrowed_component = components[index].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow();
 
     Ok(Ref::map(borrowed_component, |any| any.downcast_ref::<T>().unwrap()))
   }
 
-  pub fn mut_get_component_by_entity_id<T:Any>(&self, id:usize) -> Result<RefMut<T>> {
+  ///Query mutably for the specified component data from the entity whose ID matches the given index.
+  pub fn mut_get_component_by_entity_id<T:Any>(&self, index:usize) -> Result<RefMut<T>> {
     let typid = TypeId::of::<T>();
 
     let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
 
-    let borrowed_component = components[id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow_mut();
+    let borrowed_component = components[index].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow_mut();
 
     Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
   }
@@ -143,7 +119,7 @@ impl World {
     self.resources.remove::<T>()
   }
 
-  ///Tells Entities that entities inside will have a component of type T.
+  ///Updates the Entities to include components of type T.
   pub fn register_component<T:Any + 'static>(&mut self) -> &mut Entities {
     self.entities.register_component::<T>()
   }
@@ -156,35 +132,27 @@ impl World {
     self.entities.create_entity()
   }
 
-  //if I want to create a spawm probably just modify create entity to give the id and then add components to that entity
-  //just doublecheck first
-
-  ///Creates a query to access entities in a `World` instance.
+  ///Creates a query to access entities in the `World` instance.
   pub fn query(&self) -> Query {
     Query::new(&self.entities)
   }
 
-  ///"Deletes" a component from an entity. Note: The component is not deleted
-  /// it is simply removed from the entity's bitmap.
-  pub fn delete_component_by_entity_id<T:Any>(&mut self, index:usize) -> Result<()> {
+  ///Updates the bitmap of the entity matching the provided ID to indicate it does not contain the component type. 
+  pub fn remove_component<T:Any>(&mut self, index:usize) -> Result<()> {
     self.entities.delete_component_by_entity_id::<T>(index)
   }
 
-  ///Takes in data as a new component
-  pub fn add_component_to_entity_by_id(&mut self, index:usize, data:impl Any, ) -> Result<()> {
+  ///Adds a component to the entity matching the provided ID.
+  pub fn add_component(&mut self, index:usize, data:impl Any, ) -> Result<()> {
     self.entities.add_component_by_entity_id(index, data)
   }
 
   ///Deletes an entity from the entities list matching the index.
-  /// Leaves the slot open -- the next entity added will overwrite the emptied
-  /// slot.
+  /// Leaves the slot open -- the next entity added will overwrite the emptied slot.
   pub fn delete_entity(&mut self, index:usize) -> Result<()> {
     self.entities.delete_entity(index)
   }
 }
-
-//implement scripting here
-impl World {}
 
 #[cfg(test)]
 mod tests {}
