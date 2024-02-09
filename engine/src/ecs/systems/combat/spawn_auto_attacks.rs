@@ -62,41 +62,41 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
     .with_component::<Target>()?
     .run_entity();
 
- 
   //for every entity with a target spawn an auto attack
   for entity in entities{
     //get the cooldown
     let mut cooldown = entity.mut_get_component::<AutoAttackCooldown>()?;
    
-    //check if there is a target
+    //Get the target
     let target = entity.immut_get_component::<Target>()?;
 
     if cooldown.remaining==0.0 {
-      //reset the cooldown after starting the attack spawning
+      //Reset the cooldown after starting the attack spawning
       cooldown.remaining = cooldown.duration;
 
-      //get the start position
+      //Get the start position
       let position = entity.immut_get_component::<Position>()?;
 
-      //get the missle speed
+      //Get the missle speed
       let missle_speed = entity.immut_get_component::<MissleSpeed>()?;
       
-      //get the target's position
+      //Get the target's position
       let destination = world.immut_get_component_by_entity_id::<Position>(target.0)?;
       
-      //calculate velocity
+      //Calculate velocity
       let velocity = Velocity::new(&position.tick_end, &destination.tick_end, &missle_speed.0);
       
-      //get the mesh info
+      //Get the mesh info
+      //let's load all the meshes into a resource or something and get a ref to them
       let auto_attack_mesh = entity.immut_get_component::<AutoAttackMesh>()?;
 
-      //get the owner
+      //Get the owner
       let owner = Owner(entity.id.clone());
 
       //Get the script's reference
       let script_ref = entity.get_commonent_ref::<AutoAttackScript>()?;
 
-      //add all the values to the spawner
+      //Add all the values to the spawner
       spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, *target, script_ref);
     }
   }

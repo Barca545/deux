@@ -41,14 +41,14 @@ impl<'a> QueryEntity<'a> {
   }
 
   //there may be a safe way to do this
-  pub fn add_component(&self, data: impl Any) -> Result<()>{
-    let entities = self.entities as *const Entities as *mut Entities;
-    unsafe{
-      let entities = &mut *entities;
-      entities.add_component_by_entity_id(data, self.id)?;
-    }
-    Ok(())
-  }
+  // pub fn add_component(&self, data: impl Any) -> Result<()>{
+  //   let entities = self.entities as *const Entities as *mut Entities;
+  //   unsafe{
+  //     let entities = &mut *entities;
+  //     entities.add_component_by_entity_id(self.id, data)?;
+  //   }
+  //   Ok(())
+  // }
 
   ///Returns an `Rc` smart pointer to the component.
   pub fn get_commonent_ref<T:Any>(&self) -> Result<ComponentRef<T>>{

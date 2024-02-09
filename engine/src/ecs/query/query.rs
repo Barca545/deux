@@ -222,27 +222,48 @@ mod test {
   }
 
   #[test]
-  fn add_component_to_entity()->Result<()>{
+  fn query_for_entity_after_component_delete()->Result<()>{
     let mut entities = Entities::default();
     entities.register_component::<Health>();
-    entities.register_component::<f32>();
+    entities.register_component::<Damage>();
 
-    entities.create_entity().with_component(5.0_f32)?;
-
+    entities.create_entity().with_component(Health(100))?;
+    entities.add_component_by_entity_id(0, Damage(100))?;
+    entities.delete_component_by_entity_id::<Damage>(0)?;
+    
     let mut query = Query::new(&entities);
 
-    let queried_entities:Vec<QueryEntity> = query.with_component::<f32>()?.run_entity();
-    let entity = &queried_entities[0];
+    let entities = query.with_component::<Health>()?.with_component::<Damage>()?.run_entity();
+    assert_eq!(entities.len(), 0);
+    // let entity = &entities[0];
+    //len should be zero
+    // 
 
-    entity.add_component(Health(100))?;
-
-    let mut query = Query::new(&entities);
-
-    let queried_entities:Vec<QueryEntity> = query.with_component::<Health>()?.run_entity();
-    let entity = &queried_entities[0];
-    let health = entity.immut_get_component::<Health>()?;
-    assert_eq!(health.0, 100);
     Ok(())
   }
+  // #[test]
+  // fn add_component_to_entity()->Result<()>{
+  //   let mut entities = Entities::default();
+  //   entities.register_component::<Health>();
+  //   entities.register_component::<f32>();
+
+  //   entities.create_entity().with_component(5.0_f32)?;
+
+  //   let mut query = Query::new(&entities);
+
+  //   let queried_entities:Vec<QueryEntity> = query.with_component::<f32>()?.run_entity();
+  //   let entity = &queried_entities[0];
+
+  //   entity.add_component(Health(100))?;
+
+  //   let mut query = Query::new(&entities);
+
+  //   let queried_entities:Vec<QueryEntity> = query.with_component::<Health>()?.run_entity();
+  //   let entity = &queried_entities[0];
+  //   let health = entity.immut_get_component::<Health>()?;
+  //   assert_eq!(health.0, 100);
+  //   Ok(())
+  // }
   struct Health(pub i32);
+  struct Damage(pub u32);
 }

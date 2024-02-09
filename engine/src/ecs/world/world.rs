@@ -42,7 +42,7 @@ Questions
 #[derive(Default, Debug)]
 pub struct World {
   resources:Resource,
-  entities:Entities
+  pub entities:Entities
 }
 
 //could I set up the immut_get_resource to return a result without needing to
@@ -165,14 +165,14 @@ impl World {
   }
 
   ///"Deletes" a component from an entity. Note: The component is not deleted
-  /// it is simply removed from the entit's bitmap.
+  /// it is simply removed from the entity's bitmap.
   pub fn delete_component_by_entity_id<T:Any>(&mut self, index:usize) -> Result<()> {
     self.entities.delete_component_by_entity_id::<T>(index)
   }
 
   ///Takes in data as a new component
-  pub fn add_component_to_entity_by_id(&mut self, data:impl Any, index:usize) -> Result<()> {
-    self.entities.add_component_by_entity_id(data, index)
+  pub fn add_component_to_entity_by_id(&mut self, index:usize, data:impl Any, ) -> Result<()> {
+    self.entities.add_component_by_entity_id(index, data)
   }
 
   ///Deletes an entity from the entities list matching the index.

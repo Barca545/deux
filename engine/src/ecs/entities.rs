@@ -26,11 +26,8 @@ pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
 //use another bitmask for specific id?
 #[derive(Debug, Default)]
 pub struct Entities {
-  //what is this type
   pub components:Components,
-  //using u32 limits us to 32 components per entity
-  pub bitmasks:HashMap<TypeId, u128>,
-  //this was not pub in the tutorial
+  bitmasks:HashMap<TypeId, u128>,
   //contains the bitmaps for the registered components
   pub map:Vec<u128>,
   inserting_into_index:usize
@@ -69,7 +66,6 @@ impl Entities {
       let bitmask = self.bitmasks.get(&typeid).unwrap();
       self.map[index] |= *bitmask
     } else {
-      dbg!();
       return Err(EcsErrors::CreateComponentNeverCalled.into());
     };
     Ok(self)
@@ -81,21 +77,15 @@ impl Entities {
 
   pub fn delete_component_by_entity_id<T:Any>(&mut self, index:usize) -> Result<()> {
     let typeid = TypeId::of::<T>();
-    //what is happening here?
-    let mask = if let Some(mask) = self.bitmasks.get(&typeid) {
-      mask
-    } else {
-      return Err(EcsErrors::ComponentNotRegistered.into());
-    };
-
-    self.map[index] ^= *mask;
-
+    if let Some(mask) = self.bitmasks.get(&typeid) {
+      self.map[index] &= !*mask;
+    } 
     Ok(())
   }
 
   //might wanna modify the add component to also be used for updating *or* make
   // an update query based on it
-  pub fn add_component_by_entity_id(&mut self, data:impl Any, index:usize) -> Result<()> {
+  pub fn add_component_by_entity_id(&mut self, index:usize, data:impl Any) -> Result<()> {
     let typeid = data.type_id();
 
     let mask = if let Some(mask) = self.bitmasks.get(&typeid) {
@@ -210,12 +200,18 @@ mod tests {
 
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
+    entities.register_component::<Damage>();
 
-    entities.create_entity().with_component(Health(100))?.with_component(Speed(50))?;
+    entities.create_entity()
+      .with_component(Health(100))?
+      .with_component(Speed(50))?
+      .with_component(Damage(50))?;
 
-    entities.delete_component_by_entity_id::<Health>(0)?;
+    assert_eq!(entities.map[0], 7);
+    
+    entities.delete_component_by_entity_id::<f32>(0)?;
 
-    assert_eq!(entities.map[0], 2);
+    assert_eq!(entities.map[0], 6);
 
     Ok(())
   }
@@ -230,7 +226,7 @@ mod tests {
     entities.create_entity().with_component(Health(100))?;
 
     //how are we finding the entity's id?
-    entities.add_component_by_entity_id(Speed(50), 0)?;
+    entities.add_component_by_entity_id( 0, Speed(50))?;
 
     assert_eq!(entities.map[0], 3);
 
@@ -289,4 +285,5 @@ mod tests {
 
   struct Health(pub u32);
   struct Speed(pub u32);
+  struct Damage(pub u32);
 }
