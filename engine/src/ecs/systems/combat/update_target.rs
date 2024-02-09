@@ -29,7 +29,7 @@ pub fn update_target(world:&mut World) -> Result<()>{
       //need to add a delete_component method to query entity
       // Remove the target component from the Player
       // entity
-      world.add_component_to_entity_by_id(data, index)
+      // world.add_component_to_entity_by_id(data, index)
     }
   }
   Ok(())

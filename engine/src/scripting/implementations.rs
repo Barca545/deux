@@ -1,5 +1,5 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Owner, Target}, World}, utility_functions::calc_post_mitigation_damage};
+use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Owner, Target}, World}, utility::calc_post_mitigation_damage};
 
 // impl Deref for Health{
 //     type Target = Health;

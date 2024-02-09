@@ -12,11 +12,11 @@ type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<dyn Any>>>>>;
 
 pub struct QueryEntity<'a> {
   pub id:usize,
-  entities:&'a mut Entities
+  entities:&'a Entities
 }
 
 impl<'a> QueryEntity<'a> {
-  pub fn new(id:usize, entities:&'a mut Entities) -> Self {
+  pub fn new(id:usize, entities:&'a Entities) -> Self {
     Self { id, entities }
   }
 
