@@ -1,4 +1,4 @@
-use crate::{ecs::entities::Entities, errors::EcsErrors};
+use crate::{ecs::entities::{self, Entities}, errors::EcsErrors};
 use eyre::Result;
 use std::{
   any::{Any, TypeId},
@@ -12,11 +12,11 @@ type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<dyn Any>>>>>;
 
 pub struct QueryEntity<'a> {
   pub id:usize,
-  entities:&'a Entities
+  entities:&'a mut Entities
 }
 
 impl<'a> QueryEntity<'a> {
-  pub fn new(id:usize, entities:&'a Entities) -> Self {
+  pub fn new(id:usize, entities:&'a mut Entities) -> Self {
     Self { id, entities }
   }
 
@@ -38,6 +38,10 @@ impl<'a> QueryEntity<'a> {
 
     let borrowed_component = components[self.id].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow_mut();
     Ok(RefMut::map(borrowed_component, |any| any.downcast_mut::<T>().unwrap()))
+  }
+
+  pub fn add_component(&self, data: impl Any){
+    self.entities.add_component_by_entity_id(data, self.id.clone());
   }
 
   ///Returns an `Rc` smart pointer to the component.

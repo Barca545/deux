@@ -1,7 +1,7 @@
 use eyre::Result;
 use gl::Gl;
 
-use crate::{ecs::{World, component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
+use crate::{ecs::{World, component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
 ///spawns a player from a given name and player number
 //possibly should be a system not a method on world
 //might need to also take in the player number
@@ -17,7 +17,6 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   //the controllable flag information needs to get passed in from somewhere else
   let controllable = Controllable;
   let health = champion_info.health;
-  let target = Target(None);
   //the team information needs to get passed in from somewhere else
   let team = Team::BLUE;
   let gold = Gold::default();
@@ -56,7 +55,6 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(player)?
     .with_component(controllable)?
     .with_component(health)?
-    .with_component(target)?
     .with_component(team)?
     .with_component(gold)?
     .with_component(kda)?
@@ -83,8 +81,8 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
 
     //scripts
     .with_component(AutoAttackScript::new(r#"
-    attack_damage = world:get_attack_damage(owner_id)
-    world:remove_health(target_id,attack_damage)
+    attack_damage = world:get_attack_damage(owner.id)
+    world:remove_health(target.id,attack_damage)
   "#))?;
   
   let debug = world.immut_get_resource::<DebugElements>().unwrap();

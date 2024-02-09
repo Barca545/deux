@@ -97,12 +97,12 @@ pub type CrowdControlList = Vec<CrowdControlState>;
 
 //Combat
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Target(pub Option<usize>);
+
+//for target and owner just make them wrap usize then make according changes. No need for option because entities without a target just won't have a target component
+pub struct Target(pub usize);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Owner{
-  pub id:usize
-}
+pub struct Owner(pub usize);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MissleSpeed(pub f32);

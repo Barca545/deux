@@ -1,5 +1,5 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{ecs::{component_lib::{Armor, AttackDamage, Health}, World}, utility_functions::calc_post_mitigation_damage};
+use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Owner, Target}, World}, utility_functions::calc_post_mitigation_damage};
 
 // impl Deref for Health{
 //     type Target = Health;
@@ -70,6 +70,28 @@ impl UserData for World {
   }
 }
 
-impl UserData for TargetId{}
-impl UserData for Owner{}
-impl UserData for EntityId{}
+pub struct LuaEntity(usize);
+
+impl From<Owner> for LuaEntity {
+  fn from(value: Owner) -> Self {
+    LuaEntity(value.0)
+  }
+}
+
+impl From<Target> for LuaEntity {
+  fn from(value: Target) -> Self {
+    LuaEntity(value.0)
+  }
+}
+
+impl From<usize> for LuaEntity {
+  fn from(value: usize) -> Self {
+    LuaEntity(value)
+  }
+}
+
+impl UserData for LuaEntity{
+  fn add_fields<'lua, F: mlua::prelude::LuaUserDataFields<'lua, Self>>(fields: &mut F) {
+    fields.add_field_method_get("id", |_,entity_id| Ok(entity_id.0))
+  }
+}

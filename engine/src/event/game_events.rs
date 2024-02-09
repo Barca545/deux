@@ -2,7 +2,7 @@
 // and the id of the entity that was hit
 //does it need a timestamp/tickstamp?
 
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
 // so maybe what I can do is instad of the event holding the timestamp I have a hashmap with timestamps as the index
 //then it just listens for events in the current tick and discards the rest?  

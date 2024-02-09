@@ -58,8 +58,8 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
   let mut query = world.query();
   
   let entities = query
-    // .with_component::<Target>()?
     .with_component::<Player>()?
+    .with_component::<Target>()?
     .run_entity();
 
  
@@ -71,36 +71,33 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
     //check if there is a target
     let target = entity.immut_get_component::<Target>()?;
 
-    if let Some(id) = target.0 {
-      //confirm the attack cooldown has expired
-      if cooldown.remaining==0.0 {
-        //reset the cooldown after starting the attack spawning
-        cooldown.remaining = cooldown.duration;
+    if cooldown.remaining==0.0 {
+      //reset the cooldown after starting the attack spawning
+      cooldown.remaining = cooldown.duration;
 
-        //get the start position
-        let position = entity.immut_get_component::<Position>()?;
+      //get the start position
+      let position = entity.immut_get_component::<Position>()?;
 
-        //get the missle speed
-        let missle_speed = entity.immut_get_component::<MissleSpeed>()?;
-        
-        //get the target's position
-        let destination = world.immut_get_component_by_entity_id::<Position>(id)?;
-        
-        //calculate velocity
-        let velocity = Velocity::new(&position.tick_end, &destination.tick_end, &missle_speed.0);
-        
-        //get the mesh info
-        let auto_attack_mesh = entity.immut_get_component::<AutoAttackMesh>()?;
+      //get the missle speed
+      let missle_speed = entity.immut_get_component::<MissleSpeed>()?;
+      
+      //get the target's position
+      let destination = world.immut_get_component_by_entity_id::<Position>(target.0)?;
+      
+      //calculate velocity
+      let velocity = Velocity::new(&position.tick_end, &destination.tick_end, &missle_speed.0);
+      
+      //get the mesh info
+      let auto_attack_mesh = entity.immut_get_component::<AutoAttackMesh>()?;
 
-        //get the owner
-        let owner = Owner{id: entity.id.clone()};
+      //get the owner
+      let owner = Owner(entity.id.clone());
 
-        //Get the script's reference
-        let script_ref = entity.get_commonent_ref::<AutoAttackScript>()?;
+      //Get the script's reference
+      let script_ref = entity.get_commonent_ref::<AutoAttackScript>()?;
 
-        //add all the values to the spawner
-        spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, Target(Some(id)), script_ref);
-      }
+      //add all the values to the spawner
+      spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, *target, script_ref);
     }
   }
   

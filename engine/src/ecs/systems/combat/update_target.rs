@@ -2,7 +2,8 @@ use crate::ecs::{World, world_resources::{Selected, Selected::{HOVERED,NONE}}, c
 use eyre::Result;
 
 //this needs to be updated to used CLICKED instead of hovered
-pub fn update_target(world:&World) -> Result<()>{
+//this needs to add the target when clicked 
+pub fn update_target(world:&mut World) -> Result<()>{
   //get the selection
   let selection = world.immut_get_resource::<Selected>().unwrap();
   if let HOVERED(selected_id) = selection {
@@ -13,11 +14,10 @@ pub fn update_target(world:&World) -> Result<()>{
     let entities = query.with_component::<Player>()?.run_entity();
     for entity in entities{
       let team = entity.immut_get_component::<Team>()?;
-      let mut target = entity.mut_get_component::<Target>()?;
       
       //check if the selection is *not* the same team as the entity, if so set it as the target
       if *team != *selected_entity_team {
-        *target = Target(Some(*selected_id));
+        let target = Target(*selected_id);
       }
     }
   }
@@ -26,8 +26,10 @@ pub fn update_target(world:&World) -> Result<()>{
 
     let entities = query.with_component::<Player>()?.run_entity();
     for entity in entities{
-      let mut target = entity.mut_get_component::<Target>()?;
-      *target = Target(None);
+      //need to add a delete_component method to query entity
+      // Remove the target component from the Player
+      // entity
+      world.add_component_to_entity_by_id(data, index)
     }
   }
   Ok(())

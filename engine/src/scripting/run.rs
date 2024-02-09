@@ -1,58 +1,54 @@
-use mlua::{Lua, Value::Nil};
+use mlua::Lua;
 use eyre::Result;
 
 use crate::ecs::{component_lib::{AutoAttackScript, AutoAttack, Owner, Target}, query::ComponentRef, World};
+
+use super::implementations::LuaEntity;
 
 pub fn run(world: &World)-> Result<()>{
   run_damage_scripts(world)?;
   Ok(())
 }
 
-//alternatively instead of this being a whole system it could just be
-
+// these functions need to be exported and stuck into the loops for the other systems. i.e. 
+// run_damage_scripts should be a step of the combat system
 
 //System that runs damage scripts.
-//build an event system and have this query the event system for which events happened and require scripts
+//add this to the creation step in the combat system to test
+//might actually keep attack creation in pure rust instead of scripting until no other choices
 pub fn run_damage_scripts(world: &World) -> Result<()>{
-  let lua = world.immut_get_resource::<Lua>().unwrap();
   //this works but any script that creates new entities *will* need to mutate world and be structured differently
+  let lua = world.immut_get_resource::<Lua>().unwrap();  
   
   let mut query = world.query();
 
-  //Search for all auto attackentities 
+  //Search for all auto attack entities 
   let entities = query.with_component::<AutoAttack>().unwrap().run_entity();
 
   for entity in entities {
-    //get the autoattack's scripts as a Vec<String>
-    // handle the case where something does not have scripts
     let script_ref = entity.immut_get_component::<ComponentRef<AutoAttackScript>>().unwrap();
     let script = script_ref.get_component();
+  
+    //Convert the ids into types Lua can use
+    let target = *entity.immut_get_component::<Target>().unwrap();
+    let owner = *entity.immut_get_component::<Owner>().unwrap();
     
-    //one alternative to this might be to make query entity something I just pass into the scope
-    let entity_id =  entity.id;
-    let target_id = entity.immut_get_component::<Target>().unwrap().0.unwrap();
-    let owner_id = entity.immut_get_component::<Owner>().unwrap().id;
-    
+    let entity_id = LuaEntity::from(entity.id);
+    let target_id = LuaEntity::from(target);
+    let owner_id = LuaEntity::from(owner);
+
     lua.scope(|scope| {
-      //Set the ids for the entity, its target and its owner 
-      lua.globals().set("entity_id", scope.create_userdata_ref(entity_id)?)?;
-lua.globals().set("target_id", scope.create_userdata_ref(target_id)?)?;
-lua.globals().set("owner_id", scope.create_userdata_ref(owner_id)?)?;
+    //Set the ids for the entity, its target, and its owner 
+    lua.globals().set("entity", scope.create_userdata_ref(&entity_id)?)?;
+    lua.globals().set("target", scope.create_userdata_ref(&target_id)?)?;
+    lua.globals().set("owner", scope.create_userdata_ref(&owner_id)?)?;
 
-lua.globals().set("world", scope.create_userdata_ref(world)?)?;
+    //Add the world 
+    lua.globals().set("world", scope.create_userdata_ref(world)?)?;
 
-      //add this to the creation step in the combat system to test
-      //might actually keep attack creation in pure rust instead of scripting until no other choice
-
-      //Run the script
-      lua.load(script.script()).exec()?; 
-
-      //keep in case I add multiple scripts for one event
-      //Run the scripts
-      // for script in &scripts.0 {
-      //   lua.load(script).exec()?; 
-      // }
-      Ok(()) 
+    //Run the script
+    lua.load(script.script()).exec()?; 
+    Ok(()) 
     })?;
   }
   Ok(())
