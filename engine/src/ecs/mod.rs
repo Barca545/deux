@@ -1,4 +1,3 @@
-pub mod component_lib;
 pub mod entities;
 pub mod query;
 pub mod resources;

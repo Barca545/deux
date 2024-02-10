@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::{Position, PreviousPosition}, ecs::{component_lib::SkinnedMesh, world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
+  component_lib::{Position, PreviousPosition, SkinnedMesh}, ecs::{world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
 };
 use eyre::Result;
 use gl::Gl;
@@ -14,7 +14,7 @@ pub fn skinned_meshes(world:&World, interpolation_factor:f64) -> Result<()> {
   let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
 
   let mut query = world.query();
-  let entities = query.with_component::<SkinnedMesh>()?.with_component::<Position>()?.run_entity();
+  let entities = query.with_component::<SkinnedMesh>()?.with_component::<Position>()?.with_component::<PreviousPosition>()?.run_entity();
 
   for entity in entities {
     //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick

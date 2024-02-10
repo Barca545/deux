@@ -4,8 +4,8 @@ extern crate glfw;
 extern crate nalgebra_glm as glm;
 
 use engine::{
-  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, SelectionRadius, Team, KDA}, ecs::{
-    component_lib::SkinnedMesh, systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_destination, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, ecs::{
+    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_destination, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
   }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
@@ -68,6 +68,7 @@ fn main() -> Result<()> {
   // create the dummy entity 
   let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
   let dummy_position = Position(dummy_position_vec);
+  let dummy_previous_position = PreviousPosition(dummy_position_vec);
   let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
   
@@ -84,6 +85,7 @@ fn main() -> Result<()> {
     // .with_component(Player)?
     .with_component(dummy_mesh)?
     .with_component(dummy_position)?
+    .with_component(dummy_previous_position)?
     // .with_component(Destination::new(0.0, 0.0, 0.0))?
     // .with_component(Speed(0.05))?
     // .with_component(Velocity::default())?

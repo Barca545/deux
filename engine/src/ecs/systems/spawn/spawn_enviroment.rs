@@ -1,6 +1,6 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::Position, ecs::{component_lib::StaticMesh, World}, filesystem::load_object, math::Vec3};
+use crate::{component_lib::{Position, StaticMesh}, ecs::World, filesystem::load_object, math::Vec3};
 
 pub fn spawn_enviroment(world:&mut World, name:&str) -> Result<()> {
   let gl: &Gl = world.immut_get_resource::<Gl>().unwrap();

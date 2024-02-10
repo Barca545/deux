@@ -1,8 +1,9 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, Team, Velocity, KDA}, ecs::{component_lib::{AutoAttackMesh, SkinnedMesh}, world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
+use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
 
 // Refactor
+// -Missing some component the combat system needs
 // -Add the scripts as something that gets loaded in.
 // -Add dynamic bundles like in Hecs
 // -Make spawn location based on player number
@@ -32,6 +33,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   //movement and collision info
   let position_vec = Vec3::new(0.0, 0.0, 0.0);
   let position = Position(position_vec);
+  let previous_position = PreviousPosition(position_vec);
   let destination = Destination(position_vec);
   let speed = champion_info.speed;
   let velocity = Velocity::default();
@@ -73,6 +75,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     
     //movement and collision components
     .with_component(position)?
+    .with_component(previous_position)?
     .with_component(destination)?
     .with_component(speed)?
     .with_component(velocity)?

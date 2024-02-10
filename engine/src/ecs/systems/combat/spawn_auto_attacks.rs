@@ -1,4 +1,4 @@
-use crate::{component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackScript, Destination, MissleSpeed, Owner, Player, Position, Target, Timer, Velocity}, ecs::{command_buffer::AutoAttackSpawner, component_lib::{AutoAttackMesh, SkinnedMesh}, World}};
+use crate::{component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackMesh, AutoAttackScript, Destination, MissleSpeed, Owner, Player, Position, PreviousPosition, SkinnedMesh, Target, Timer, Velocity}, ecs::{command_buffer::AutoAttackSpawner, World}};
 use eyre::Result;
 
 
@@ -30,8 +30,9 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
       //Reset the cooldown after starting the attack spawning
       cooldown.reset();
 
-      //Get the start position
+      //Get the positions
       let position = entity.immut_get_component::<Position>()?;
+      let previous_position = entity.immut_get_component::<PreviousPosition>()?;
 
       //Get the missle speed
       let missle_speed = entity.immut_get_component::<MissleSpeed>()?;
@@ -52,7 +53,7 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
       let script_ref = entity.get_commonent_ref::<AutoAttackScript>()?;
 
       //Add all the values to the spawner
-      spawner.add(*position, *missle_speed, velocity, auto_attack_mesh.clone(), owner, *target, script_ref);
+      spawner.add(*position, *previous_position,*missle_speed, velocity, auto_attack_mesh.clone(), owner, *target, script_ref);
     }
   }
   
@@ -67,6 +68,7 @@ pub fn spawn_auto_attacks(world:&mut World) -> Result<()> {
       .create_entity()
       .with_component(AutoAttack::default())?
       .with_component(spawner.positions[index])?
+      .with_component(spawner.previous_positions[index])?
       .with_component(spawner.missle_speeds[index])?
       .with_component(spawner.velocities[index])?
       .with_component(mesh)?

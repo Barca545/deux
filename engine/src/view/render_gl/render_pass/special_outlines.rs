@@ -1,6 +1,5 @@
 use crate::{
-  component_lib::{Position, PreviousPosition}, ecs::{
-    component_lib::SkinnedMesh,
+  component_lib::{Position, PreviousPosition, SkinnedMesh}, ecs::{
     world_resources::{Selected::{self, HOVERED}, ShaderPrograms},
     World
   }, math::{calculate_model_transform, Vec3}

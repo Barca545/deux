@@ -1,5 +1,5 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{component_lib::{identification::Killed, Armor, AttackDamage, Health, Owner, Target}, ecs::World, utility::calc_post_mitigation_damage};
+use crate::{component_lib::{Killed, Armor, AttackDamage, Health, Owner, Target}, ecs::World, utility::calc_post_mitigation_damage};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors

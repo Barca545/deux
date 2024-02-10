@@ -1,5 +1,5 @@
 use crate::{component_lib::AutoAttackCooldown, ecs::World, time::ServerTime};
-use crate::component_lib::timers::Timer;
+use crate::component_lib::Timer;
 use eyre::Result;
 
 ///Decrements the cooldowns by the time passed since the last game logic tick.

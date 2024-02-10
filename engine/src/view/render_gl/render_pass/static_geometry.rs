@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::Position, ecs::{component_lib::StaticMesh, world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
+  component_lib::{Position, StaticMesh}, ecs::{world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
 };
 use eyre::Result;
 use gl::Gl;
