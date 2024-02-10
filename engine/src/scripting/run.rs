@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
   use mlua::Lua;
-  use crate::ecs::{component_lib::Health, World};
+  use crate::{component_lib::Health, ecs::World};
   use eyre::Result;
 
   #[test]

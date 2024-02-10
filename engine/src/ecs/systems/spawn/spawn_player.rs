@@ -1,10 +1,15 @@
 use eyre::Result;
 use gl::Gl;
+use crate::{component_lib::{AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, Team, Velocity, KDA}, ecs::{component_lib::{AutoAttackMesh, SkinnedMesh}, world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
 
-use crate::{ecs::{World, component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, world_resources::DebugElements}, math::Vec3, filesystem::{load_object, load_champion_json}, view::AABB3DDebugMesh};
-///spawns a player from a given name and player number
-//possibly should be a system not a method on world
-//might need to also take in the player number
+// Refactor
+// -Add the scripts as something that gets loaded in.
+// -Add dynamic bundles like in Hecs
+// -Make spawn location based on player number
+// -Add command buffer so I can set up the situational components
+
+
+///Spawns a player from a given champion name and player number.
 pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
   
@@ -25,20 +30,17 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let level = Level::default();
 
   //movement and collision info
-  //the start position info needs to get passed in from somehwere else or depend on the player number
-  let position_vec:Vec3 = Vec3::new(0.0, 0.0, 0.0);
-  let position = Position::new(position_vec, position_vec);
-  let destination = Destination::from(position_vec);
+  let position_vec = Vec3::new(0.0, 0.0, 0.0);
+  let position = Position(position_vec);
+  let destination = Destination(position_vec);
   let speed = champion_info.speed;
   let velocity = Velocity::default();
-  let selection_radius = SelectionRadius::new(position_vec, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
+  let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
   let pathing_radius = champion_info.pathing_radius;
 
   //render info
   let (sprite_vertices, sprite_indices) = load_object(name)?;
   let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
-  //have some flag so this only spawns if in debug mode
-  //also with_component can be used on world and affect the same entity until a new entity is spawned and incriments the index
   let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
 
   //combat info 
@@ -48,6 +50,14 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let auto_attack_cooldown = champion_info.auto_attack_cooldown;
   let attack_damage = champion_info.attack_damage;
   //add armor to JSON
+
+  //scripts info
+  let auto_attack_script = AutoAttackScript::new(
+    r#"
+    attack_damage = world:get_attack_damage(owner.id)
+    world:remove_health(target.id,attack_damage)
+    "#
+  );
   
   world
     .create_entity()
@@ -80,14 +90,11 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(player_hitbox_mesh)?
 
     //scripts
-    .with_component(AutoAttackScript::new(r#"
-    attack_damage = world:get_attack_damage(owner.id)
-    world:remove_health(target.id,attack_damage)
-  "#))?;
+    .with_component(auto_attack_script)?;
   
   let debug = world.immut_get_resource::<DebugElements>().unwrap();
   if debug.aabb {
-    //update this to only include the debug stuff if debug elements is true
+    //if true add the dbg mesh
   }
 
   // if controllable {

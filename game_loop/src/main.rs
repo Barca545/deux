@@ -4,12 +4,9 @@ extern crate glfw;
 extern crate nalgebra_glm as glm;
 
 use engine::{
-  ecs::{
-    component_lib::{SelectionRadius, Position, PathingRadius, SkinnedMesh, Team, Health, GameplayRadius, Gold, KDA},
-    systems::{movement, render, update_destination, update_selection, combat, spawn_player, spawn_enviroment, register_components},
-    world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms},
-    World
-  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, scripting::run, time::ServerTime, view::{
+  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, SelectionRadius, Team, KDA}, ecs::{
+    component_lib::SkinnedMesh, systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_destination, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
@@ -70,8 +67,8 @@ fn main() -> Result<()> {
 
   // create the dummy entity 
   let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
-  let dummy_position = Position::new(dummy_position_vec, dummy_position_vec);
-  let dummy_hitbox = SelectionRadius::new(dummy_position_vec, 0.7, 0.7);
+  let dummy_position = Position(dummy_position_vec);
+  let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
   
   let (dummy_vertices, dummy_indices) = load_object("box")?;
@@ -135,14 +132,13 @@ fn main() -> Result<()> {
       update_selection(&mut world, x, y)?;
       movement(&world)?;
       combat(&mut world)?;
-      run(&world)?;
 
       //my concern is that clearing the frame inputs means it won't update properly
       frame_inputs.clear();
 
       //I think this is where I update the delta timer
       let server_time = world.mut_get_resource::<ServerTime>().unwrap();
-      server_time.decrimint_seconds_since_update()
+      server_time.decrement_seconds_since_update()
     }
 
     //Render
@@ -177,7 +173,7 @@ fn main() -> Result<()> {
 
       window.swap_buffers();
       let server_time = world.mut_get_resource::<ServerTime>().unwrap();
-      server_time.decrimint_seconds_since_render()
+      server_time.decrement_seconds_since_render()
     }
   }
   Ok(())

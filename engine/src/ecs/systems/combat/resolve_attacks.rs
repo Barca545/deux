@@ -1,4 +1,4 @@
-use crate::ecs::{component_lib::{AutoAttack, Colliding, Exp, Gold, Killed, Owner, Target, KDA}, World};
+use crate::{component_lib::{identification::Killed, AutoAttack, Colliding, Exp, Gold, Owner, Target, KDA}, ecs::World};
 use eyre::Result;
 
 //Refactor

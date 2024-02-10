@@ -1,10 +1,8 @@
-// run_damage_scripts should be a step of the combat system
-
 use eyre::Result;
 use mlua::Lua;
+use crate::component_lib::{AutoAttack, AutoAttackScript, Owner, Target};
 use crate::scripting::LuaEntity;
-
-use crate::ecs::{component_lib::{AutoAttackScript, AutoAttack, Owner, Target}, query::ComponentRef, World};
+use crate::ecs::{query::ComponentRef, World};
 
 //System that runs damage scripts.
 //add this to the creation step in the combat system to test

@@ -1,11 +1,9 @@
 use crate::{
-  ecs::{
-    component_lib::Position,
+  component_lib::{Position, PreviousPosition}, ecs::{
     world_resources::DbgShaderProgram,
     World
-  },
-  math::{Vec3, calculate_model_transform},
-  view::AABB3DDebugMesh
+  }, 
+  math::Vec3, view::AABB3DDebugMesh
 };
 use eyre::Result;
 use gl::{Gl, FILL, FRONT, LINE, LINES};
@@ -16,14 +14,15 @@ pub fn debug(world:&World, interpolation_factor:f64) -> Result<()> {
   let program = world.immut_get_resource::<DbgShaderProgram>().unwrap().program;
 
   let mut query = world.query();
-
   let entities = query.with_component::<AABB3DDebugMesh>()?.with_component::<Position>()?.run_entity();
 
   for entity in entities {
+    //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick
     let position = entity.immut_get_component::<Position>()?;
-    //this is smoother but starts jerking around at high speeds
-    let render_position:Vec3 = lerp(&position.tick_start, &position.tick_end, interpolation_factor as f32);
+    let previous_position = entity.immut_get_component::<PreviousPosition>()?;
+    let render_position:Vec3 = lerp(&previous_position.0, &position.0, interpolation_factor as f32);
 
+    //Get the mesh and vao
     let mesh = entity.immut_get_component::<AABB3DDebugMesh>()?;
     let vao = &mesh.vao;
 

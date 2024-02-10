@@ -1,8 +1,13 @@
-use crate::{ecs::{World, world_resources::ScreenDimensions, component_lib::{Controllable, Destination}}, math::{Transforms, MouseRay, Vec3}};
 use eyre::Result;
+use crate::{component_lib::{Controllable, Destination}, ecs::{
+  world_resources::ScreenDimensions, World
+}, math::{MouseRay, Transforms, Vec3}};
 
-//this shold only update the destination not set velocity
+//Refactor
+// -MouseRay should be a resource that systems can query instead of each system building its own
 
+///Updates the `Destination` component for the entity marked with the `Controllable` component. 
+/// Does not update velocities.
 pub fn update_destination(world:&mut World, x:f64, y:f64) -> Result<()> {
   let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
   let transforms = world.immut_get_resource::<Transforms>().unwrap();
@@ -14,26 +19,16 @@ pub fn update_destination(world:&mut World, x:f64, y:f64) -> Result<()> {
   let mouse_ray = MouseRay::new(x, y, &screen_dimensions, &transforms);
   let intersection:Vec3 = mouse_ray.0.ray_ground_intersection();
 
-  //this gets the index of the component and updates its destination
-  //this is necesary for adding a commponent
-
   let mut query = world.query();
   let entities = query
     .with_component::<Controllable>()?
     .with_component::<Destination>()?
-    // .with_component::<Position>()?
-    // .with_component::<Speed>()?
-    // .with_component::<Velocity>()?
     .run_entity();
 
   for entity in entities {
+    //Update the destination to match the location the cursor has indicated
     let mut destination = entity.mut_get_component::<Destination>()?;
-    // let position = entity.mut_get_component::<Position>()?;
-    // let speed = entity.immut_get_component::<Speed>()?;
-    // let mut velocity = entity.mut_get_component::<Velocity>()?;
-
     *destination = Destination(intersection);
-    // *velocity = Velocity::new(&position, &destination, &speed);
   }
   Ok(())
 }

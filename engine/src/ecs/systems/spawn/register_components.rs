@@ -1,6 +1,9 @@
-use crate::{ecs::{
-  component_lib::{AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackMesh, Controllable, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Owner, PathingRadius, Player, Position, AutoAttackScript, SelectionRadius, SkinnedMesh, Speed, StaticMesh, Target, Team, Velocity, KDA}, query::ComponentRef, World
-}, view::AABB3DDebugMesh};
+use crate::{
+  component_lib::{AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackScript, Controllable, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Owner, PathingRadius, Player, Position, SelectionRadius, Target, Team, UnitSpeed, Velocity, KDA}, 
+  ecs::{component_lib::{AutoAttackMesh, SkinnedMesh, StaticMesh}, 
+  query::ComponentRef, World}, 
+  view::AABB3DDebugMesh
+};
 
 pub fn register_components(world:&mut World){
   world
@@ -8,7 +11,7 @@ pub fn register_components(world:&mut World){
     .register_component::<StaticMesh>()
     .register_component::<Position>()
     .register_component::<Destination>()
-    .register_component::<Speed>()
+    .register_component::<UnitSpeed>()
     .register_component::<Velocity>()
     .register_component::<Controllable>()
     .register_component::<SelectionRadius>()

@@ -1,213 +1,211 @@
-use gl::Gl;
-use serde::{Deserialize, Serialize};
-use crate::{math::math::Vec3, physics::AABB3D, view::{render_gl::Vertex, Mesh}};
-
 //Refactor 
 // -Split this into a folder with sub mods grouped by what info components contain
 // -Figure out a way to make position just wrap a vector, maybe have Position and RenderPosition or even just CurrentPosition and PastPosition components
 // -Give tuple components a "value" field/method so they can be accessed through that instead of "0" which I think is better for readability?
 
-///Represents units the player can control.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Controllable;
+// ///Represents units the player can control.
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Controllable;
 
-//I think I want to separate these into two components
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Position {
-  pub tick_start:Vec3,
-  pub tick_end:Vec3
-}
+// //I think I want to separate these into two components
+// #[derive(Debug, Clone, Copy, Default)]
+// pub struct Position {
+//   pub tick_start:Vec3,
+//   pub tick_end:Vec3
+// }
 
-impl Position {
-  pub fn new(tick_start:Vec3, tick_end:Vec3) -> Self {
-    Position { tick_start, tick_end }
-  }
-}
+// impl Position {
+//   pub fn new(tick_start:Vec3, tick_end:Vec3) -> Self {
+//     Position { tick_start, tick_end }
+//   }
+// }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Destination(pub Vec3);
-impl Destination {
-  pub fn new(x:f32, y:f32, z:f32) -> Self {
-    Destination(Vec3::new(x, y, z))
-  }
-}
+// #[derive(Debug, Clone, Copy)]
+// pub struct Destination(pub Vec3);
+// impl Destination {
+//   pub fn new(x:f32, y:f32, z:f32) -> Self {
+//     Destination(Vec3::new(x, y, z))
+//   }
+// }
 
-impl From<Vec3> for Destination{
-  fn from(value: Vec3) -> Self {
-    Destination(value)
-  }
-}
+// impl From<Vec3> for Destination{
+//   fn from(value: Vec3) -> Self {
+//     Destination(value)
+//   }
+// }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Velocity(pub Vec3);
+// #[derive(Debug, Default, Clone, Copy)]
+// pub struct Velocity(pub Vec3);
 
-impl Velocity {
-  pub fn new(position:&Vec3, destination:&Vec3, speed:&f32) -> Self {
-    let velocity:Vec3 = (destination - position).normalize().scale(*speed);
-    Velocity(velocity)
-  }
-}
+// impl Velocity {
+//   pub fn new(position:&Vec3, destination:&Vec3, speed:&f32) -> Self {
+//     let velocity:Vec3 = (destination - position).normalize().scale(*speed);
+//     Velocity(velocity)
+//   }
+// }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Colliding;
+// #[derive(Debug, Clone, Copy)]
+// pub struct Colliding;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Speed(pub f32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Speed(pub f32);
 
-#[derive(Debug, Clone, Copy)]
-///3D AABB to be used for unit selection.
-pub struct SelectionRadius(pub AABB3D);
+// #[derive(Debug, Clone, Copy)]
+// ///3D AABB to be used for unit selection.
+// pub struct SelectionRadius(pub AABB3D);
 
-impl SelectionRadius {
-  pub fn new(position:Vec3, height:f32, radius:f32) -> Self {
-    let aabb3d = AABB3D::new(position, height, radius);
+// impl SelectionRadius {
+//   pub fn new(position:Vec3, height:f32, radius:f32) -> Self {
+//     let aabb3d = AABB3D::new(position, height, radius);
 
-    SelectionRadius(aabb3d)
-  }
-}
+//     SelectionRadius(aabb3d)
+//   }
+// }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-///Radius for edge-to-edge gameplay logic.
-pub struct GameplayRadius(pub f32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// ///Radius for edge-to-edge gameplay logic.
+// pub struct GameplayRadius(pub f32);
 
-///Radius for unit collision and pathing logic.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct PathingRadius(pub f32);
+// ///Radius for unit collision and pathing logic.
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct PathingRadius(pub f32);
 
 //Can use the following two to construct a ward entity.
 //Duration can be reused for other stuff too.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct VisionRange(i32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct VisionRange(i32);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Duration(f64);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Duration(f64);
 
-//Player State
-//these probably need to hold a duration so the can be timed
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum MovementState {
-  DASHING,
-  WALKING
-}
+// //Player State
+// //these probably need to hold a duration so the can be timed
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub enum MovementState {
+//   DASHING,
+//   WALKING
+// }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum CrowdControlState {
-  STUNNED(usize),
-  SLOWED(usize),
-  AIRBORNE(usize)
-}
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub enum CrowdControlState {
+//   STUNNED(usize),
+//   SLOWED(usize),
+//   AIRBORNE(usize)
+// }
 
-pub type CrowdControlList = Vec<CrowdControlState>;
+// #[derive(Debug, Default, Clone)]
+// pub struct CrowdControlList(Vec<CrowdControlState>);
 
 //Combat
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 
-//for target and owner just make them wrap usize then make according changes. No need for option because entities without a target just won't have a target component
-pub struct Target(pub usize);
+// //for target and owner just make them wrap usize then make according changes. No need for option because entities without a target just won't have a target component
+// pub struct Target(pub usize);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Owner(pub usize);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Owner(pub usize);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct MissleSpeed(pub f32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct MissleSpeed(pub f32);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-//use the seconds thing imported from the timer mod
-pub struct AutoAttackCooldown{
-  //this type will be reused and probably should be its own struct
-  pub duration:f64,
-  pub remaining:f64
-}
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// //use the seconds thing imported from the timer mod
+// pub struct AutoAttackCooldown{
+//   //this type will be reused and probably should be its own struct
+//   pub duration:f64,
+//   pub remaining:f64
+// }
 
-impl AutoAttackCooldown{
-  pub fn new(duration:f64,remaining:f64) -> Self {
-    AutoAttackCooldown{duration,remaining}
-  }
-}
+// impl AutoAttackCooldown{
+//   pub fn new(duration:f64,remaining:f64) -> Self {
+//     AutoAttackCooldown{duration,remaining}
+//   }
+// }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct AttackDamage(pub i32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct AttackDamage(pub i32);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Armor(pub i32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Armor(pub i32);
 
 //Unsure if there should be a seperate component for when an attack lands but does not kill? 
 //some scripts might want to do something with this
-#[derive(Debug, Clone)]
-pub struct Killed(pub usize);
+// #[derive(Debug, Clone)]
+// pub struct Killed(pub usize);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Health{
-  pub max:i32,
-  pub remaining:i32
-}
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Health{
+//   pub max:i32,
+//   pub remaining:i32
+// }
 
-impl Health{
-  pub fn new(max:i32) -> Self {
-    Health { 
-      max, 
-      remaining: max
-    }
-  }
-}
+// impl Health{
+//   pub fn new(max:i32) -> Self {
+//     Health { 
+//       max, 
+//       remaining: max
+//     }
+//   }
+// }
 
 //Level and exp
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct Exp(pub u32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+// pub struct Exp(pub u32);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Level(pub u32);
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Level(pub u32);
 
-impl Default for Level{
-  fn default() -> Self {
-    Self(1)
-  }
-}
+// impl Default for Level{
+//   fn default() -> Self {
+//     Self(1)
+//   }
+// }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
-pub struct Gold(pub i32);
+// #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+// pub struct Gold(pub i32);
 
 //the different events should probably get a timestamp
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
-pub struct KDA{
-  kills:u32,
-  deaths:u32,
-  assists:u32
-}
+// #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+// pub struct KDA{
+//   kills:u32,
+//   deaths:u32,
+//   assists:u32
+// }
 
-//might be no reason to have these methods instead of just adding them
-impl KDA { 
-  ///Increments the tracked kills by 1.
-  pub fn kill(&mut self, number:u32){
-    self.kills += number;
-  }
+// //might be no reason to have these methods instead of just adding them
+// impl KDA { 
+//   ///Increments the tracked kills by 1.
+//   pub fn kill(&mut self, number:u32){
+//     self.kills += number;
+//   }
   
-  ///Increments the tracked deaths by 1.
-  pub fn death(&mut self, number:u32){
-    self.deaths += number;
-  }
+//   ///Increments the tracked deaths by 1.
+//   pub fn death(&mut self, number:u32){
+//     self.deaths += number;
+//   }
 
-  ///Increments the tracked assists by 1.
-  pub fn assist(&mut self, number:u32){
-    self.assists += number;
-  }
-}
+//   ///Increments the tracked assists by 1.
+//   pub fn assist(&mut self, number:u32){
+//     self.assists += number;
+//   }
+// }
 
 //Identification
-#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum Team{
-  BLUE,
-  RED,
-  NEUTRAL
-}
+// #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
+// pub enum Team{
+//   BLUE,
+//   RED,
+//   NEUTRAL
+// }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
-pub struct AutoAttack;
+// #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+// pub struct AutoAttack;
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
-///Flags an entity as a player. 1-10 allowed as values.
-pub struct Player(pub u32);
-
+// #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+// ///Flags an entity as a player. 1-10 allowed as values.
+// pub struct Player(pub u32);
+use gl::Gl;
+use crate::view::{render_gl::Vertex, Mesh};
 //rendering
 pub struct SkinnedMesh{
   pub mesh:Mesh,
@@ -256,16 +254,16 @@ impl StaticMesh{
 }
 
 //Scripting
-#[derive(Debug, Clone, Default)]
-pub struct AutoAttackScript(pub String);
+// #[derive(Debug, Clone, Default)]
+// pub struct AutoAttackScript(String);
 
-impl AutoAttackScript {
-  pub fn new(script:&str) -> Self{
-    //leftover from when something had multiple scripts, keep if I readd
-    // let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
-    AutoAttackScript(script.to_owned())
-  }
-  pub fn script(&self) -> &str {
-    &self.0
-  }
-}
+// impl AutoAttackScript {
+//   pub fn new(script:&str) -> Self{
+//     //leftover from when something had multiple scripts, keep if I readd
+//     // let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
+//     AutoAttackScript(script.to_owned())
+//   }
+//   pub fn script(&self) -> &str {
+//     &self.0
+//   }
+// }

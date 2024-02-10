@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
-
-use crate::ecs::component_lib::{Health, Speed, PathingRadius, AutoAttackCooldown, AttackDamage, MissleSpeed};
+use crate::component_lib::{AttackDamage, AutoAttackCooldown, Health, MissleSpeed, PathingRadius, UnitSpeed};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AABB3DInfo {
@@ -9,13 +8,13 @@ pub struct AABB3DInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-//used as an intermediary struct for loading in champ data
+///An intermediary struct for loading in champ data from a JSON.
 pub struct Champion{
   //basic info
   pub health:Health,
   
   //movement and collision info
-  pub speed: Speed,
+  pub speed: UnitSpeed,
   pub selection_radius: AABB3DInfo,
   pub pathing_radius: PathingRadius,
 

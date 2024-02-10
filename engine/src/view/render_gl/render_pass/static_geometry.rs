@@ -1,6 +1,5 @@
 use crate::{
-  ecs::{component_lib::{Position, StaticMesh}, World, world_resources::ShaderPrograms},
-  math::{Vec3, calculate_model_transform, math::Mat4}
+  component_lib::Position, ecs::{component_lib::StaticMesh, world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
 };
 use eyre::Result;
 use gl::Gl;
@@ -16,9 +15,11 @@ pub fn static_geometry(world:&World) -> Result<()> {
   let entities = query.with_component::<StaticMesh>()?.with_component::<Position>()?.run_entity();
 
   for entity in entities {
+    //Get the entity's position
     let position = entity.immut_get_component::<Position>()?;
-    //this is smoother but starts jerking around at high speeds
-    let render_position:Vec3 = position.tick_end;
+    let render_position:Vec3 = position.0;
+
+    //Get the mesh
     let mesh = entity.immut_get_component::<StaticMesh>()?;
 
     //Bind the model transform

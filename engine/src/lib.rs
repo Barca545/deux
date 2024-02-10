@@ -13,3 +13,5 @@ pub mod view;
 pub mod scripting;
 pub mod event;
 pub mod utility;
+pub mod component_lib;
+pub mod resource_lib;

@@ -1,11 +1,10 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{ecs::{component_lib::{Armor, AttackDamage, Health, Killed, Owner, Target}, World}, utility::calc_post_mitigation_damage};
+use crate::{component_lib::{identification::Killed, Armor, AttackDamage, Health, Owner, Target}, ecs::World, utility::calc_post_mitigation_damage};
+
+// Refactor
+// -Figure out how to convert ECS errors into LuaErrors
 
 impl UserData for World {
-  //get the component data should basically just be numbers 
-  //introduce it to th
-  //figure out how to convert the errors
-
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
    //Increments the health of the queried entity
     methods.add_method("add_health", |_,world, (target,value):(usize,i32)| {
@@ -14,7 +13,7 @@ impl UserData for World {
       Ok(())
     });
     
-    //Decriments the health of the queried entity
+    //Decrements the health of the queried entity
     methods.add_method("remove_health", |_,world, (target,value):(usize,i32)| {
       let mut health = world.mut_get_component_by_entity_id::<Health>(target as usize).unwrap();
       health.remaining -= value;

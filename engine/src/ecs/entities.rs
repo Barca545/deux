@@ -51,8 +51,8 @@ impl Entities {
   }
 
   ///Used with `create_entity` to assign components and their initial values to
-  /// the entity being created. Updates the entity's bitmap to indicate which
-  /// components they contain.
+  /// the entity being created. Updates the entity's bitmap to indicate which components they contain.
+  /// `with_component` will continue to update the same entity until a new entity is spawned.
   pub fn with_component(&mut self, data:impl Any) -> Result<&mut Self> {
     let typeid:TypeId = data.type_id();
     let index = self.inserting_into_index;

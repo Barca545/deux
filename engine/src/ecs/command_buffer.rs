@@ -1,4 +1,8 @@
-use crate::ecs::{component_lib::{AutoAttackMesh, MissleSpeed, Owner, Position, AutoAttackScript, Target, Velocity}, query::ComponentRef};
+// use crate::ecs::{component_lib::{AutoAttackMesh, MissleSpeed, Owner, Position, AutoAttackScript, Target, Velocity}, query::ComponentRef};
+
+use crate::component_lib::{AutoAttackScript, MissleSpeed, Owner, Position, Target, Velocity};
+
+use super::{component_lib::AutoAttackMesh, query::ComponentRef};
 
 //Not currently a CommandBuffer. Can be expanded into a CommandBuffer like Hecs uses when I eventually need to replicated this functionality
 //https://docs.rs/hecs/latest/src/hecs/command_buffer.rs.html#33-40

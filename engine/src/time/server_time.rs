@@ -125,7 +125,7 @@ impl ServerTime {
 
   /**
   Compares the amount of unrendered time to engine's ticks per second and returns a boolean whose `true` value indicates the system should render/update.
-  Use in a while loop with `Timer::decrimint_unrendered_time()` to render an amount of time from the unrendered time equal to the value of one game engine tick.
+  Use in a while loop with `Timer::decrement_unrendered_time()` to render an amount of time from the unrendered time equal to the value of one game engine tick.
 
   # Examples
 
@@ -145,7 +145,7 @@ impl ServerTime {
       current_time = server_time.get_game_duration().get_seconds_since_start();
       number_of_ticks+=1;
 
-      server_time.decrimint_seconds_since_update();
+      server_time.decrement_seconds_since_update();
     }
 
     if current_time >= 5.0{
@@ -176,15 +176,15 @@ impl ServerTime {
     &self.game_duration
   }
 
-  ///Use at the end of a loop, decriments the unrendered time by the time 1
+  ///Use at the end of a loop, decrements the unrendered time by the time 1
   /// tick takes.
-  pub fn decrimint_seconds_since_render(&mut self) {
+  pub fn decrement_seconds_since_render(&mut self) {
     if self.seconds_since_render != 0.0 {
       self.seconds_since_render -= self.render_frequency;
     }
   }
 
-  pub fn decrimint_seconds_since_update(&mut self) {
+  pub fn decrement_seconds_since_update(&mut self) {
     //is it better to set this to zero or let it accumulate by just subtracting the
     // frequency
     self.seconds_since_update -= self.tick_frequency;
@@ -270,7 +270,7 @@ mod tests {
 
         assert!(server_time.seconds_since_update >= ticks_per_second);
         dbg!(current_time);
-        server_time.decrimint_seconds_since_update();
+        server_time.decrement_seconds_since_update();
       }
 
       if current_time >= 5.0 {

@@ -1,4 +1,4 @@
-use crate::{ecs::{component_lib::{AutoAttack, Colliding, GameplayRadius, Position, Target, Velocity}, World}, math::Vec3, physics::circle_point_collision_test};
+use crate::{component_lib::{AutoAttack, Colliding, GameplayRadius, Position, PreviousPosition, Target, Velocity}, ecs::World, physics::circle_point_collision_test};
 use eyre::Result;
 
 ///Moves all entities with the `AutoAttack` component forward each game logic tick. 
@@ -11,14 +11,14 @@ pub fn move_attacks(world:&mut World) ->Result<()>{
 
   for entity in entities{
     //Get position and velocity
+    let mut previous_position = entity.mut_get_component::<PreviousPosition>()?;
     let mut position = entity.mut_get_component::<Position>()?;
     let velocity = entity.immut_get_component::<Velocity>()?;
     
-    //Update the position
-    let tick_start:Vec3 = position.tick_end;
-    let tick_end:Vec3 = position.tick_end + velocity.0;
-    let new_position = Position::new(tick_start, tick_end);
-    
+    //Update the positions
+    let new_previous_position = PreviousPosition(position.0);
+    let new_position = Position(position.0 + velocity.0);
+    *previous_position = new_previous_position;
     *position = new_position;
 
     //Check if entities have reached their target.
@@ -30,7 +30,7 @@ pub fn move_attacks(world:&mut World) ->Result<()>{
     
     //Check if the attack is colliding with the target using a circle-point test
 //I don't think I need to refetch the attack's position but double checks
-    let collision_check = circle_point_collision_test(position.tick_end, target_position.tick_end, target_radius.0);
+    let collision_check = circle_point_collision_test(position.0, target_position.0, target_radius.0);
 
     //If the attack has hit its target, buffer the command to give it the Colliding component
     if collision_check {

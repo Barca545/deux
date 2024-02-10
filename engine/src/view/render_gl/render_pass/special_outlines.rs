@@ -1,10 +1,9 @@
 use crate::{
-  ecs::{
-    component_lib::{Position, SkinnedMesh},
-    world_resources::{Selected, Selected::HOVERED, ShaderPrograms},
+  component_lib::{Position, PreviousPosition}, ecs::{
+    component_lib::SkinnedMesh,
+    world_resources::{Selected::{self, HOVERED}, ShaderPrograms},
     World
-  },
-  math::{Vec3, calculate_model_transform},
+  }, math::{calculate_model_transform, Vec3}
 };
 use eyre::Result;
 use gl::{Gl, TRIANGLES};
@@ -18,10 +17,12 @@ pub fn special_outlines(world:&World, interpolation_factor:f64) -> Result<()> {
   match selection {
     HOVERED(id) => {
       let mesh = world.immut_get_component_by_entity_id::<SkinnedMesh>(*id)?;
-      let position = world.immut_get_component_by_entity_id::<Position>(*id)?;
       let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
-
-      let render_position:Vec3 = lerp(&position.tick_start, &position.tick_end, interpolation_factor as f32);
+      
+      //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick
+      let position = world.immut_get_component_by_entity_id::<Position>(*id)?;
+      let previous_position = world.immut_get_component_by_entity_id::<PreviousPosition>(*id)?;
+      let render_position:Vec3 = lerp(&previous_position.0, &position.0, interpolation_factor as f32);
 
       let texture = &mesh.mesh.texture;
       let vao = &mesh.mesh.vao;

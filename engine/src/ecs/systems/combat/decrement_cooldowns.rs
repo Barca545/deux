@@ -1,9 +1,10 @@
-use crate::{ecs::{World, component_lib::AutoAttackCooldown}, time::ServerTime};
+use crate::{component_lib::AutoAttackCooldown, ecs::World, time::ServerTime};
+use crate::component_lib::timers::Timer;
 use eyre::Result;
 
-///Decriments the cooldowns by the time passed since the last game logic tick.
+///Decrements the cooldowns by the time passed since the last game logic tick.
 /// Sets the cooldown == 0.0 if the value would be negative.
-pub fn decriment_cooldowns(world:&World) -> Result<()>{
+pub fn decrement_cooldowns(world:&World) -> Result<()>{
   let server_time = world.immut_get_resource::<ServerTime>().unwrap();
   let time_passed = server_time.get_tick_frequency();
   
@@ -12,10 +13,10 @@ pub fn decriment_cooldowns(world:&World) -> Result<()>{
   
   for entity in entities{
     let mut auto_attack_cooldown = entity.mut_get_component::<AutoAttackCooldown>()?;
-    auto_attack_cooldown.remaining -= time_passed;
+    auto_attack_cooldown.decrement(time_passed);
     
-    if auto_attack_cooldown.remaining < 0.0 {
-      auto_attack_cooldown.remaining = 0.0
+    if auto_attack_cooldown.remaining() < 0.0 {
+      auto_attack_cooldown.zero();
     } 
   }
   Ok(())
