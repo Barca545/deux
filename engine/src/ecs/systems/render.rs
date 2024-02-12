@@ -5,7 +5,6 @@ use crate::{
   },
   view::render_gl::render_pass
 };
-use eyre::Result;
 use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, STENCIL_BUFFER_BIT};
 
 //I need to find a way to make the render positions consistent accross the sub
@@ -16,7 +15,7 @@ use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, S
 
 //I'll need to update the debug functionality
 
-pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
+pub fn render(world:&World, interpolation_factor:f64) {
   let gl = world.immut_get_resource::<Gl>().unwrap();
   let programs = world.immut_get_resource::<ShaderPrograms>().unwrap();
   let debug_elements = world.immut_get_resource::<DebugElements>().unwrap();
@@ -25,21 +24,21 @@ pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
     gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT)
   }
 
-  //set uniforms
+  //Set uniforms
   //do I need to do this every render loop or can I do it once?
   programs.set_highlight_uniforms(world);
   programs.set_normal_uniforms(world);
 
   unsafe { gl.StencilMask(0x00) };
   programs.normal.use_program(gl);
-  render_pass::static_geometry(&world)?;
+  render_pass::static_geometry(&world);
 
   //First Render Pass
   unsafe {
     gl.StencilFunc(ALWAYS, 1, 0xFF);
     gl.StencilMask(0xFF);
   }
-  render_pass::skinned_meshes(&world, interpolation_factor)?;
+  render_pass::skinned_meshes(&world, interpolation_factor);
 
   unsafe {
     gl.StencilFunc(NOTEQUAL, 1, 0xFF);
@@ -48,19 +47,17 @@ pub fn render(world:&World, interpolation_factor:f64) -> Result<()> {
   }
 
   if debug_elements.aabb == true {
-    render_pass::debug(&world, interpolation_factor)?;
+    render_pass::debug(&world, interpolation_factor);
   }
 
   programs.highlight.use_program(gl);
-  render_pass::special_outlines(&world, interpolation_factor)?;
+  render_pass::special_outlines(&world, interpolation_factor);
 
   unsafe {
     gl.StencilMask(0xFF);
     gl.StencilFunc(ALWAYS, 1, 0xFF);
     gl.Enable(DEPTH_TEST);
   }
-
-  Ok(())
 }
 
 // pub fn render_fog(){}

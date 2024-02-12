@@ -1,19 +1,18 @@
 use crate::{component_lib::{AutoAttack, Colliding, GameplayRadius, Position, PreviousPosition, Target, Velocity}, ecs::World, physics::circle_point_collision_test};
-use eyre::Result;
 
 ///Moves all entities with the `AutoAttack` component forward each game logic tick. 
 /// Marks auto attacks which reach their target with a `Colliding` component.
-pub fn move_attacks(world:&mut World) ->Result<()>{
+pub fn move_attacks(world:&mut World) {
   let mut query = world.query();
-  let entities = query.with_component::<AutoAttack>()?.run_entity();
+  let entities = query.with_component::<AutoAttack>().unwrap().run_entity();
 
   let mut colliding = Vec::default();
 
   for entity in entities{
     //Get position and velocity
-    let mut previous_position = entity.mut_get_component::<PreviousPosition>()?;
-    let mut position = entity.mut_get_component::<Position>()?;
-    let velocity = entity.immut_get_component::<Velocity>()?;
+    let mut previous_position = entity.mut_get_component::<PreviousPosition>().unwrap();
+    let mut position = entity.mut_get_component::<Position>().unwrap();
+    let velocity = entity.immut_get_component::<Velocity>().unwrap();
     
     //Update the positions
     let new_previous_position = PreviousPosition(position.0);
@@ -24,9 +23,9 @@ pub fn move_attacks(world:&mut World) ->Result<()>{
     //Check if entities have reached their target.
     
     //Get the target information
-    let target = entity.immut_get_component::<Target>()?;
-    let target_position = world.immut_get_component_by_entity_id::<Position>(target.0)?;
-    let target_radius = world.immut_get_component_by_entity_id::<GameplayRadius>(target.0)?;
+    let target = entity.immut_get_component::<Target>().unwrap();
+    let target_position = world.immut_get_component_by_entity_id::<Position>(target.0).unwrap();
+    let target_radius = world.immut_get_component_by_entity_id::<GameplayRadius>(target.0).unwrap();
     
     //Check if the attack is colliding with the target using a circle-point test
 //I don't think I need to refetch the attack's position but double checks
@@ -40,6 +39,4 @@ pub fn move_attacks(world:&mut World) ->Result<()>{
 
   //Loop through the buffered entity IDs and give them the Colliding component
   colliding.into_iter().for_each(|entity_id|world.add_component(entity_id, Colliding).unwrap());
-
-  Ok(())
 }

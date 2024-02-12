@@ -8,6 +8,11 @@ pub struct Position(pub Vec3);
 #[derive(Debug, Clone, Copy, Default)]
 ///Component holding the position the entity occupied at the end of the previous game logic tick.
 pub struct PreviousPosition(pub Vec3);
+impl From<Position> for PreviousPosition {
+  fn from(value: Position) -> Self {
+    PreviousPosition(value.0)
+  }
+}
 
 #[derive(Debug, Clone, Copy)]
 ///Component holding the position an entity is moving towards.

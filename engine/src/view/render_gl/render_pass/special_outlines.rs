@@ -4,23 +4,22 @@ use crate::{
     World
   }, math::{calculate_model_transform, Vec3}
 };
-use eyre::Result;
 use gl::{Gl, TRIANGLES};
 use glm::lerp;
 
-pub fn special_outlines(world:&World, interpolation_factor:f64) -> Result<()> {
+pub fn special_outlines(world:&World, interpolation_factor:f64) {
   let gl = world.immut_get_resource::<Gl>().unwrap();
   let selection = world.immut_get_resource::<Selected>().unwrap();
 
   //probably need to make selected a vec and so still need a loop
   match selection {
     HOVERED(id) => {
-      let mesh = world.immut_get_component_by_entity_id::<SkinnedMesh>(*id)?;
+      let mesh = world.immut_get_component_by_entity_id::<SkinnedMesh>(*id).unwrap();
       let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
       
       //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick
-      let position = world.immut_get_component_by_entity_id::<Position>(*id)?;
-      let previous_position = world.immut_get_component_by_entity_id::<PreviousPosition>(*id)?;
+      let position = world.immut_get_component_by_entity_id::<Position>(*id).unwrap();
+      let previous_position = world.immut_get_component_by_entity_id::<PreviousPosition>(*id).unwrap();
       let render_position:Vec3 = lerp(&previous_position.0, &position.0, interpolation_factor as f32);
 
       let texture = &mesh.mesh.texture;
@@ -42,5 +41,4 @@ pub fn special_outlines(world:&World, interpolation_factor:f64) -> Result<()> {
     }
     _ => {}
   }
-  Ok(())
 }

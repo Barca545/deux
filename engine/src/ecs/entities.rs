@@ -63,7 +63,8 @@ impl Entities {
 
       let bitmask = self.bitmasks.get(&typeid).unwrap();
       self.map[index] |= *bitmask
-    } else {
+    } 
+    else {
       return Err(EcsErrors::CreateComponentNeverCalled.into());
     };
     Ok(self)

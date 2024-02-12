@@ -1,4 +1,3 @@
-use eyre::Result;
 use crate::{component_lib::{Controllable, Destination}, ecs::{
   world_resources::ScreenDimensions, World
 }, math::{MouseRay, Transforms, Vec3}};
@@ -8,7 +7,7 @@ use crate::{component_lib::{Controllable, Destination}, ecs::{
 
 ///Updates the `Destination` component for the entity marked with the `Controllable` component. 
 /// Does not update velocities.
-pub fn update_destination(world:&mut World, x:f64, y:f64) -> Result<()> {
+pub fn update_destination(world:&mut World, x:f64, y:f64) {
   let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
   let transforms = world.immut_get_resource::<Transforms>().unwrap();
   //mouse ray should be a resource that is updated when the mouse moves
@@ -21,14 +20,13 @@ pub fn update_destination(world:&mut World, x:f64, y:f64) -> Result<()> {
 
   let mut query = world.query();
   let entities = query
-    .with_component::<Controllable>()?
-    .with_component::<Destination>()?
+    .with_component::<Controllable>().unwrap()
+    .with_component::<Destination>().unwrap()
     .run_entity();
 
   for entity in entities {
     //Update the destination to match the location the cursor has indicated
-    let mut destination = entity.mut_get_component::<Destination>()?;
+    let mut destination = entity.mut_get_component::<Destination>().unwrap();
     *destination = Destination(intersection);
   }
-  Ok(())
 }

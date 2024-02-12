@@ -3,7 +3,6 @@ use crate::{
   ecs::World, 
   physics::circle_circle_collision_test
 };
-use eyre::Result;
 
 // Refactor
 // -Figure out why circle to circle collision panics for the collision check
@@ -13,21 +12,21 @@ use eyre::Result;
 /// If they overshoot their destination their position is set to their destination.
 /// If they collide with an object prevent them from moving forward.
 /// Otherwise move the character forward.
-pub fn update_position(world:&World) -> Result<()> {
+pub fn update_position(world:&World) {
   let mut query = world.query();
 
   let entities = query
-    .with_component::<Position>()?
-    .with_component::<Velocity>()?
-    .with_component::<Destination>()?
+    .with_component::<Position>().unwrap()
+    .with_component::<Velocity>().unwrap()
+    .with_component::<Destination>().unwrap()
     .run_entity();
 
   for entity in entities {
-    let mut previous_position = entity.mut_get_component::<PreviousPosition>()?;
-    let mut position = entity.mut_get_component::<Position>()?;
-    let velocity = entity.immut_get_component::<Velocity>()?;
-    let destination = entity.immut_get_component::<Destination>()?;
-    let pathing_radius = entity.immut_get_component::<PathingRadius>()?;
+    let mut previous_position = entity.mut_get_component::<PreviousPosition>().unwrap();
+    let mut position = entity.mut_get_component::<Position>().unwrap();
+    let velocity = entity.immut_get_component::<Velocity>().unwrap();
+    let destination = entity.immut_get_component::<Destination>().unwrap();
+    let pathing_radius = entity.immut_get_component::<PathingRadius>().unwrap();
     let id = entity.id;
 
     if position.0 != destination.0 {
@@ -37,14 +36,14 @@ pub fn update_position(world:&World) -> Result<()> {
       
       let mut query2 = world.query();
       let test_entities = query2
-        .with_component::<PathingRadius>()?
+        .with_component::<PathingRadius>().unwrap()
         .run_entity();
   
       for test_entity in test_entities{
         let test_entity_id = test_entity.id;
 
         if test_entity_id != id {
-          collision_check = collision_test(world, new_position, pathing_radius.0, test_entity_id)?;
+          collision_check = collision_test(world, new_position, pathing_radius.0, test_entity_id);
         }
       }
 
@@ -54,8 +53,6 @@ pub fn update_position(world:&World) -> Result<()> {
       }
     }
   }
-
-  Ok(())
 }
 
 ///Test if the entity's new position is past its destination.
@@ -73,11 +70,11 @@ fn calculate_new_position(position:Position, velocity:Velocity, destination:Dest
   }
 }
 
-fn collision_test(world:&World, entity_position:Position, entity_radius:f32, test_id:usize,)->Result<bool>{
-  let test_position = world.immut_get_component_by_entity_id::<Position>(test_id)?;
-  let pathing_radius = world.immut_get_component_by_entity_id::<PathingRadius>(test_id)?;
+fn collision_test(world:&World, entity_position:Position, entity_radius:f32, test_id:usize,)->bool{
+  let test_position = world.immut_get_component_by_entity_id::<Position>(test_id).unwrap();
+  let pathing_radius = world.immut_get_component_by_entity_id::<PathingRadius>(test_id).unwrap();
 
   let collision_test = circle_circle_collision_test(entity_position.0, entity_radius, test_position.0, pathing_radius.0);
   
-  Ok(collision_test)
+  collision_test
 }

@@ -1,4 +1,3 @@
-use eyre::Result;
 use mlua::Lua;
 use crate::component_lib::{AutoAttack, AutoAttackScript, Owner, Target};
 use crate::scripting::LuaEntity;
@@ -7,7 +6,7 @@ use crate::ecs::{query::ComponentRef, World};
 //System that runs damage scripts.
 //add this to the creation step in the combat system to test
 //might actually keep attack creation in pure rust instead of scripting until no other choices
-pub fn run_scripts(world: &World) -> Result<()>{
+pub fn run_scripts(world: &World) {
   //this works but any script that creates new entities *will* need to mutate world and be structured differently
   let lua = world.immut_get_resource::<Lua>().unwrap();  
   
@@ -40,7 +39,6 @@ pub fn run_scripts(world: &World) -> Result<()>{
     //Run the script
     lua.load(script.script()).exec()?; 
     Ok(()) 
-    })?;
+    }).unwrap();
   }
-  Ok(())
 }

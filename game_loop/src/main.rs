@@ -11,23 +11,19 @@ use engine::{
     AABB3DDebugMesh,
   }
 };
-use eyre::Result;
 use gl::Gl;
 use glfw::{Action, Context, Key, MouseButton};
 use mlua::Lua;
 
-//Future commit notes: 
-
-// Updated errors to display line where "unwrap" was called instead of line where the error was defined.
-
 // added a FileType enum to the file system
 
-fn main() -> Result<()> {
+fn main() {
   //Configure the location of the asset folders
   asset_config();
 
   //could the thing where components are registered be part of world::default()
   let mut world = World::new();
+
   let server_time = ServerTime::new();
   //make a settings file and load in from there
   let screen_dimensions = ScreenDimensions::new(1280, 720);
@@ -54,7 +50,7 @@ fn main() -> Result<()> {
   world.add_resource(gl.clone());
 
   //Create the shader programs
-  let programs = ShaderPrograms::new(&world)?;
+  let programs = ShaderPrograms::new(&world).unwrap();
   let dbg_program = DbgShaderProgram::new(&world);
 
   //add the programs as a resource
@@ -66,10 +62,10 @@ fn main() -> Result<()> {
   register_components(&mut world);
 
   //Spawn the ground
-  spawn_enviroment(&mut world, "ground")?;
+  spawn_enviroment(&mut world, "ground").unwrap();
 
   //Spawn the players
-  spawn_player(&mut world, "warrior", 1)?;
+  spawn_player(&mut world, "warrior", 1).unwrap();
 
   //Create the dummy entity 
   let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
@@ -78,7 +74,7 @@ fn main() -> Result<()> {
   let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
   
-  let (dummy_vertices, dummy_indices) = load_object("box")?;
+  let (dummy_vertices, dummy_indices) = load_object("box").unwrap();
   let dummy_mesh = SkinnedMesh::new(&gl,dummy_vertices,dummy_indices,"wall", 1.0);
 
   //combat info
@@ -88,21 +84,21 @@ fn main() -> Result<()> {
 
   world
     .create_entity()
-    // .with_component(Player)?
-    .with_component(dummy_mesh)?
-    .with_component(dummy_position)?
-    .with_component(dummy_previous_position)?
-    // .with_component(Destination::new(0.0, 0.0, 0.0))?
-    // .with_component(Speed(0.05))?
-    // .with_component(Velocity::default())?
-    .with_component(dummy_hitbox)?
-    .with_component(dummy_hitbox_mesh)?
-    .with_component(PathingRadius(0.2))?
-    .with_component(GameplayRadius(0.1))?
-    .with_component(dummy_team)?
-    .with_component(dummy_health)?
-    .with_component(Gold::default())?
-    .with_component(KDA::default())?;
+    // .with_component(Player).unwrap()
+    .with_component(dummy_mesh).unwrap()
+    .with_component(dummy_position).unwrap()
+    .with_component(dummy_previous_position).unwrap()
+    // .with_component(Destination::new(0.0, 0.0, 0.0)).unwrap()
+    // .with_component(Speed(0.05)).unwrap()
+    // .with_component(Velocity::default()).unwrap()
+    .with_component(dummy_hitbox).unwrap()
+    .with_component(dummy_hitbox_mesh).unwrap()
+    .with_component(PathingRadius(0.2)).unwrap()
+    .with_component(GameplayRadius(0.1)).unwrap()
+    .with_component(dummy_team).unwrap()
+    .with_component(dummy_health).unwrap()
+    .with_component(Gold::default()).unwrap()
+    .with_component(KDA::default()).unwrap();
 
   let mut frame_inputs = FrameInputs::new();
 
@@ -125,7 +121,7 @@ fn main() -> Result<()> {
 
           //this needs to go into the update section.
           //the transforms and mouse coordinates need to become queryable from world
-          update_destination(&mut world, x, y)?;
+          update_destination(&mut world, x, y);
           frame_inputs.add_event(event);
         }
         _ => {}
@@ -137,9 +133,9 @@ fn main() -> Result<()> {
     //Update
     if server_time.should_update() == true {      
       let (x, y) = window.get_cursor_pos();
-      update_selection(&mut world, x, y)?;
-      movement(&world)?;
-      combat(&mut world)?;
+      update_selection(&mut world, x, y);
+      movement(&world);
+      combat(&mut world);
 
       //my concern is that clearing the frame inputs means it won't update properly
       frame_inputs.clear();
@@ -175,12 +171,11 @@ fn main() -> Result<()> {
 
       //can maybe make the render function handle the swapbuffers
       let interpolation_factor = server_time.get_interpolation_factor();
-      render(&world, interpolation_factor)?;
+      render(&world, interpolation_factor);
 
       window.swap_buffers();
       let server_time = world.mut_get_resource::<ServerTime>().unwrap();
       server_time.decrement_seconds_since_render()
     }
   }
-  Ok(())
 }

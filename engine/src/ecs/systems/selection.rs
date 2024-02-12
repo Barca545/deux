@@ -6,12 +6,11 @@ use crate::{
     World
   }, math::{MouseRay, Transforms}, physics::ray_aabb3d_collision_test
 };
-use eyre::Result;
 
 //does not work consistently, unclear why. most consistently does not work at
 // bottom of screen seems to think the hitbox is longer than it should be so
 // probably has something to do with that
-fn update_hovered(world:&mut World, x:f64, y:f64) -> Result<()> {
+fn update_hovered(world:&mut World, x:f64, y:f64) {
   let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
   let transforms = world.immut_get_resource::<Transforms>().unwrap();
 
@@ -22,10 +21,10 @@ fn update_hovered(world:&mut World, x:f64, y:f64) -> Result<()> {
   let mut selection_state = NONE;
 
   let mut query = world.query();
-  let entities = query.with_component::<SelectionRadius>()?.run_entity();
+  let entities = query.with_component::<SelectionRadius>().unwrap().run_entity();
   
   for entity in entities {
-    let hitbox = entity.immut_get_component::<SelectionRadius>()?;
+    let hitbox = entity.immut_get_component::<SelectionRadius>().unwrap();
     let hit_check = ray_aabb3d_collision_test(hitbox.0, mouse_ray.0);
     if hit_check == true {
       selection_state = HOVERED(entity.id)
@@ -34,10 +33,8 @@ fn update_hovered(world:&mut World, x:f64, y:f64) -> Result<()> {
 
   let selection = world.mut_get_resource::<Selected>().unwrap();
   *selection = selection_state;
-  Ok(())
 }
 
-pub fn update_selection(world:&mut World, x:f64, y:f64) -> Result<()> {
-  update_hovered(world, x, y)?;
-  Ok(())
+pub fn update_selection(world:&mut World, x:f64, y:f64) {
+  update_hovered(world, x, y);
 }

@@ -1,5 +1,4 @@
 use crate::ecs::World;
-use eyre::Result;
 use super::{update_velocity::update_velocity, update_position, update_hitbox};
 
 //Refactor
@@ -9,11 +8,10 @@ use super::{update_velocity::update_velocity, update_position, update_hitbox};
 // needs selection needs to run first and do the AABB test
 //this should only run if the selection test says nothing is selected
 
-pub fn movement(world:&World) -> Result<()> {
-  update_velocity(world)?;
-  update_position(world)?;
-  update_hitbox(world)?;
-  Ok(())
+pub fn movement(world:&World) {
+  update_velocity(world);
+  update_position(world);
+  update_hitbox(world);
 }
 
 #[cfg(test)]
@@ -71,7 +69,7 @@ mod test {
       .with_component(speed)?
       .with_component(velocity)?;
 
-    update_position(&world)?;
+    update_position(&world);
 
     //Confirm the update occured
     let mut query = world.query();

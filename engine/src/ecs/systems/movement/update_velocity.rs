@@ -2,24 +2,25 @@ use crate::{
   component_lib::{Destination, Position, UnitSpeed, Velocity}, 
   ecs::World
 };
-use eyre::Result;
+
+//Refactor
+// -Can just query for velocity?
 
 ///Updates the velocities of all entities in the world.
-pub fn update_velocity(world:&World) -> Result<()> {
+pub fn update_velocity(world:&World) {
   let mut query = world.query();
   let entities = query
-    .with_component::<Position>()?
-    .with_component::<Destination>()?
-    .with_component::<UnitSpeed>()?
-    .with_component::<Velocity>()?
+    .with_component::<Position>().unwrap()
+    .with_component::<Destination>().unwrap()
+    .with_component::<UnitSpeed>().unwrap()
+    .with_component::<Velocity>().unwrap()
     .run_entity();
 
-    for entity in entities {
-      let destination = entity.mut_get_component::<Destination>()?;
-      let position = entity.mut_get_component::<Position>()?;
-      let speed = entity.immut_get_component::<UnitSpeed>()?;
-      let mut velocity = entity.mut_get_component::<Velocity>()?;
-      *velocity = Velocity::new(&position, &destination, &speed.0);
-    }  
-  Ok(())
+  for entity in entities {
+    let destination = entity.mut_get_component::<Destination>().unwrap();
+    let position = entity.mut_get_component::<Position>().unwrap();
+    let speed = entity.immut_get_component::<UnitSpeed>().unwrap();
+    let mut velocity = entity.mut_get_component::<Velocity>().unwrap();
+    *velocity = Velocity::new(&position, &destination, &speed.0);
+  }  
 }
