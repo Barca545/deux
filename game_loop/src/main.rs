@@ -4,22 +4,28 @@ extern crate glfw;
 extern crate nalgebra_glm as glm;
 
 use engine::{
-  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, ecs::{
+  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
     systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_destination, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
   }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
 };
-
 use eyre::Result;
 use gl::Gl;
 use glfw::{Action, Context, Key, MouseButton};
 use mlua::Lua;
-use std::env;
+
+//Future commit notes: 
+
+// Updated errors to display line where "unwrap" was called instead of line where the error was defined.
+
+// added a FileType enum to the file system
 
 fn main() -> Result<()> {
-  env::set_var("RUST_BACKTRACE", "FULL");
+  //Configure the location of the asset folders
+  asset_config();
+
   //could the thing where components are registered be part of world::default()
   let mut world = World::new();
   let server_time = ServerTime::new();
@@ -65,7 +71,7 @@ fn main() -> Result<()> {
   //Spawn the players
   spawn_player(&mut world, "warrior", 1)?;
 
-  // create the dummy entity 
+  //Create the dummy entity 
   let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
   let dummy_position = Position(dummy_position_vec);
   let dummy_previous_position = PreviousPosition(dummy_position_vec);
@@ -164,9 +170,7 @@ fn main() -> Result<()> {
         *transforms = Transforms::new(&dimensions.aspect);
 
         let gl = world.immut_get_resource::<Gl>().unwrap();
-        unsafe{
-          gl.Viewport(0, 0, width, height);
-        }
+        unsafe{gl.Viewport(0, 0, width, height)}
       }
 
       //can maybe make the render function handle the swapbuffers

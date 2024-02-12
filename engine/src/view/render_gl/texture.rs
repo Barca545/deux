@@ -1,4 +1,4 @@
-use crate::filesystem::load_image;
+use crate::filesystem::load_texture_image;
 
 use eyre::Result;
 use gl::{
@@ -15,7 +15,7 @@ pub struct Texture {
 impl Texture {
   //eventually will need to change when I settle on a texture filetype
   pub fn new(gl:&Gl, name:&str) -> Result<Self> {
-    let image = load_image(&name, "jpg")?;
+    let image = load_texture_image(&name, "jpg")?;
     let image_pixels = image.to_rgba8().into_raw();
 
     let mut id = 0;

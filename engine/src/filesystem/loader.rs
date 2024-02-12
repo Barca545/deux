@@ -1,19 +1,27 @@
 use crate::{errors::FilesystemErrors, view::render_gl::Vertex};
+use config::{Config, File as ConfigFile};
 use eyre::Result;
-
 use image::{io::Reader, DynamicImage};
-
-use std::{
-  ffi::CString,
-  fs::{File, self},
-  io::Read,
-  path::{PathBuf, Path}, collections::HashMap
-};
-
+use std::{collections::HashMap, env::{var, current_dir}, ffi::CString, fs::{self, File}, io::Read, path::Path};
 use super::champion::Champion;
 
-pub fn load_image(name:&str, extension:&str) -> Result<DynamicImage> {
-  let path = name_to_pathbuff(name, extension);
+//Refactor
+// -Use a config file to load each PC will need a unique one so do gitignore
+// -Update files to target the asset folder
+// -Should the unwrap or else be some other form of unwrap
+// -Pull useful portions from the level editor
+// -have errors print the file that failed
+// -Each game object will need it's own named asset folder
+// -Move the path generation into its own function find/replace lowercase path
+
+///Loads a Texture's pixels.
+pub fn load_texture_image(name:&str, extension:&str) -> Result<DynamicImage> {
+  let path = var("texture_folder")? + "/" + name + "." + extension;
+  let texture = load_image(&path)?;
+  Ok(texture)
+}
+
+fn load_image(path:&str) -> Result<DynamicImage> {
   let image = Reader::open(path)
     .unwrap_or_else(|_| panic!("{}", { FilesystemErrors::FailedToLoadImage }))
     .decode()
@@ -22,36 +30,23 @@ pub fn load_image(name:&str, extension:&str) -> Result<DynamicImage> {
 }
 
 pub fn load_champion_json(name:&str)->Result<Champion>{
-  let path = name_to_pathbuff(name, "json");
+  let path = var("champion_folder")? + "/" + name + "." + "json";
   let champion_string = fs::read_to_string(path)?;
   
   let champion:Champion = serde_json::from_str(&champion_string)?;
   Ok(champion)
 }
 
-pub fn load_cstring(name:&str, extension:&str) -> Result<CString> {
-  let mut file = File::open(name_to_pathbuff(name, extension))?;
-
-  let mut buffer:Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
-
-  file.read_to_end(&mut buffer)?;
-
-  if buffer.iter().find(|i| **i == 0).is_some() {
-    //should this be a file system error?
-    return Err(FilesystemErrors::FileContainsNil.into());
-  }
-  Ok(unsafe { CString::from_vec_unchecked(buffer) })
-}
-
 pub fn load_shader(name:&str, extension:&str) -> Result<CString> {
-  let shader = load_cstring(name, extension)?;
+  let path = var("shader_folder")? + "/" + name + "." + extension;
+  let shader = load_cstring(&path)?;
   Ok(shader)
 }
 
 ///Loads an object's vertices and indices from a file name.
 pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
-  let path_string = name_to_path_string(name, "obj");
-  let path = Path::new(&path_string);
+  let path = var("model_folder")? + "/" + name + "." + "obj";
+  let path = Path::new(&path);
   
   let load_options = &tobj::LoadOptions {
     single_index: true,
@@ -116,27 +111,63 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
   Ok((vertices,indices))
 }
 
-fn name_to_pathbuff(name:&str, extension:&str) -> PathBuf {
-  let root_dir = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/".to_owned();
-  let path:PathBuf = PathBuf::from(root_dir + name + "." + extension);
-  path
+pub fn load_cstring(path:&str) -> Result<CString> {
+  let mut file = File::open(path)?;
+  let mut buffer:Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
+
+  file.read_to_end(&mut buffer)?;
+
+  if buffer.iter().find(|i| **i == 0).is_some() {
+    return Err(FilesystemErrors::FileContainsNil.into());
+  }
+  Ok(unsafe { CString::from_vec_unchecked(buffer) })
 }
 
-fn name_to_path_string(name:&str, extension:&str) -> String {
-  let root_dir = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/".to_owned();
-  let path_string = root_dir + name + "." + extension;
-  path_string
+///Loads a configuration file from a given path.
+pub fn load_config() -> Result<Config> {
+  let root_directory = load_root_directory()?;
+  let config_path = &(root_directory + "config");
+
+  let config = Config::builder()
+  .add_source(ConfigFile::with_name(config_path))
+  .build()
+  .unwrap();
+  Ok(config)
+}
+
+///Returns the path of the working directory as a string (the path "./").
+fn load_root_directory() -> Result<String> {
+  let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/deux/";
+  Ok(directory)
 }
 
 #[cfg(test)]
 mod test {
-  use crate::{errors::FilesystemErrors, view::render_gl::Vertex};
+  use crate::{errors::FilesystemErrors, filesystem::loader::{load_config, load_root_directory}, view::render_gl::Vertex};
   use eyre::Result;
   use image::io::Reader;
   use tobj;
-  use std::path::Path;
-
+  use std::{env::{set_var, var}, path::Path};
   use super::{load_shader, load_champion_json};
+
+  #[test]
+  fn get_config() -> Result<()> {
+    let config = load_config()?;
+    let shader_path:String = config.get("shader_path")?;
+    
+    set_var("shader_path", shader_path);
+    let test = var("shader_path")?;
+    dbg!(test);
+    Ok(())
+  }
+
+  #[test]
+  fn get_working_directory() -> Result<()> {
+    let directory = load_root_directory()?;
+    dbg!(directory);
+    Ok(())
+  }
+
   #[test]
   fn load_image() -> Result<()> {
     let name = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
@@ -152,6 +183,10 @@ mod test {
 
   #[test]
   fn load_test_shader() -> Result<()> {
+    let config = load_config()?;
+    let shader_path = config.get::<String>("shader_path")?;
+    set_var("shader_path", shader_path);
+    
     let shader = load_shader("textured", "vert")?;
     dbg!(shader);
     Ok(())
