@@ -103,9 +103,9 @@ impl CommandBuffer {
   //Why does count in copy = layout.size
   unsafe fn add_inner(&mut self, ptr: *mut u8, type_info: TypeInfo){
     //Get the amount of padding necesary for the new data chunk to start on a power of two of the alignment
-    let padding = align(self.cursor, type_info.layout().align());
+    let start = align(self.cursor, type_info.layout().align());
     //The end of the data chunk after alignment
-    let end = padding + type_info.layout().size();
+    let end = start + type_info.layout().size();
 
     //Check if adding the component would cause it to exceed the currently allocated memory
     //Occurs if the end of the data chunk exceeds the size of the struct 
@@ -127,13 +127,13 @@ impl CommandBuffer {
       self.layout = new_layout;
     }
     
-    //Calculate the address in memory where the new chunk should be copied
-    let addr = self.storage.as_ptr().add(padding);
+    //Calculate the address in memory where the new chunk should be copied. 
+    let addr = self.storage.as_ptr().add(start);
     //Copy the data
     ptr::copy_nonoverlapping(ptr, addr, type_info.layout().size());
     
     //Append info about the newly added components to the Command buffers component data
-    let component_info = ComponentInfo{type_info, padding};
+    let component_info = ComponentInfo{type_info, start};
     self.component_data.push(component_info);
   }
 
@@ -174,10 +174,12 @@ fn align(cursor:usize, alignment:usize) -> usize {
   (cursor + alignment - 1) & (!alignment + 1)
 }
 
-//unsure if this should be called padding or offset? 
+//using the type info and offset the component can be copied to the appropriate location. use the type id to place it and the size to figure out how many slots to copy.
+
 pub struct ComponentInfo{
   type_info: TypeInfo,
-  padding:usize
+  //indicates the starting location of the component in memory
+  start:usize
 }
 
 //this type should actually be used throughout where relevant
