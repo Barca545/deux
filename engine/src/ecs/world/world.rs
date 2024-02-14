@@ -1,5 +1,5 @@
 use crate::{
-  ecs::{entities::Entities, query::Query, resources::Resource},
+  ecs::{bundle::Bundle, entities::Entities, query::Query, resources::Resource},
   errors::EcsErrors
 };
 
@@ -20,7 +20,7 @@ use std::{
 #[derive(Default, Debug)]
 pub struct World {
   resources:Resource,
-  pub entities:Entities
+  entities:Entities
 }
 
 impl World {
@@ -132,6 +132,11 @@ impl World {
     self.entities.create_entity()
   }
 
+  ///Reserves an entity id. See: `create_entity`.
+  pub fn reserve_entity(&mut self) -> usize {
+    self.entities.reserve_entity()
+  }
+
   ///Creates a query to access entities in the `World` instance.
   pub fn query(&self) -> Query {
     Query::new(&self.entities)
@@ -145,6 +150,12 @@ impl World {
   ///Adds a component to the entity matching the provided ID.
   pub fn add_component(&mut self, index:usize, data:impl Any, ) -> Result<()> {
     self.entities.add_component_by_entity_id(index, data)
+  }
+
+  ///Adds a bundle of components to an entity. 
+  /// Does not error if component is unregistered but operation will fail.
+  pub fn add_components(&mut self, index:usize, components:impl Bundle){
+    self.entities.add_components(index, components)
   }
 
   ///Deletes an entity from the entities list matching the index.

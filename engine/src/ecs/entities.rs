@@ -1,13 +1,16 @@
 use eyre::Result;
-use std::{
-  any::{Any, TypeId},
-  cell::RefCell,
-  collections::HashMap,
-  rc::Rc
-};
-
-//why does this require pub mod be declared in both main and in lib
+use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
 use crate::errors::EcsErrors;
+use super::bundle::Bundle;
+
+// Refactor:
+// -Make components private
+// -Instead of calling not registered could add components just register the
+// -Use https://lib.rs/crates/list-any instead of Rc<RefCell<dyn Any>>;
+// -Look into sparse arrays? https://discord.com/channels/676678179678715904/677286494033018924/1207030703888531457
+// -Figure out if I can wrap the bitmasks in a RefCell so I can mutate them from a reference this would allow mutation in QueryEntity so I could have add/delete functionality
+// -See about getting rid of the Rc so stuff can be contiguous in memory
+// -look into a component trait like specs has that does sized + any https://docs.rs/specs/latest/src/specs/world/comp.rs.html#63-71
 
 //From YT: https://www.youtube.com/watch?v=_9fAYLWSBVE&list=PLrmY5pVcnuE_SQSzGPWUJrf9Yo-YNeBYs&index=42
 //I think a better approach would be to have a vec of free spots/indexes and
@@ -17,11 +20,10 @@ use crate::errors::EcsErrors;
 // vec of free indexes, this should be faster for large amounts of entities This
 // will be used a lot so making it as fast as possible is good
 
-pub type Component = Rc<RefCell<dyn Any>>;
+// pub type Component = Rc<RefCell<Box<dyn Any>>>;
+pub type Component = Rc<RefCell<Box<dyn Any>>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
 
-//Figure out if I can wrap the bitmasks in a RefCell so I can mutate them from a reference
-//this would allow mutation in QueryEntity so I could have add/delete functionality
 #[derive(Debug, Default)]
 pub struct Entities {
   pub components:Components,
@@ -50,6 +52,17 @@ impl Entities {
     self
   }
 
+  pub fn reserve_entity(&mut self) -> usize {
+    if let Some((index, _)) = self.map.iter().enumerate().find(|(_index, mask)| **mask == 0) {
+      self.inserting_into_index = index;
+    } else {
+      self.components.iter_mut().for_each(|(_key, components)| components.push(None));
+      self.map.push(0);
+      self.inserting_into_index = self.map.len() - 1;
+    }
+    self.inserting_into_index
+  }
+
   ///Used with `create_entity` to assign components and their initial values to
   /// the entity being created. Updates the entity's bitmap to indicate which components they contain.
   /// `with_component` will continue to update the same entity until a new entity is spawned.
@@ -59,7 +72,7 @@ impl Entities {
 
     if let Some(components) = self.components.get_mut(&typeid) {
       let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled)?;
-      *component = Some(Rc::new(RefCell::new(data)));
+      *component = Some(Rc::new(RefCell::new(Box::new(data))));
 
       let bitmask = self.bitmasks.get(&typeid).unwrap();
       self.map[index] |= *bitmask
@@ -93,9 +106,22 @@ impl Entities {
     };
 
     let components = self.components.get_mut(&typeid).unwrap();
-    components[index] = Some(Rc::new(RefCell::new(data)));
+    components[index] = Some(Rc::new(RefCell::new(Box::new(data))));
 
     Ok(())
+  }
+
+  pub fn add_components(&mut self, index:usize, components: impl Bundle){
+    components.safe_put(|typeinfo, data|{
+      if let Some(mask) = self.bitmasks.get(&typeinfo.id()) {
+        self.map[index] |= *mask;
+      } 
+      else{
+        dbg!(format!("Component {:?} Not Registered", typeinfo.id()));
+      }
+      let components = self.components.get_mut(&typeinfo.id()).unwrap();
+      components[index] = Some(Rc::new(RefCell::new(data)));
+    });
   }
 
   pub fn delete_entity(&mut self, index:usize) -> Result<()> {
@@ -114,7 +140,6 @@ impl Entities {
 #[allow(clippy::float_cmp)]
 mod tests {
   use std::any::TypeId;
-
   use super::*;
 
   #[test]
@@ -206,7 +231,7 @@ mod tests {
 
     assert_eq!(entities.map[0], 7);
     
-    entities.delete_component_by_entity_id::<f32>(0)?;
+    entities.delete_component_by_entity_id::<Health>(0)?;
 
     assert_eq!(entities.map[0], 6);
 
@@ -227,7 +252,6 @@ mod tests {
 
     assert_eq!(entities.map[0], 3);
 
-    // what is all of this code doing?
     let speed_typeid = TypeId::of::<Speed>();
     let wrapped_speeds = entities.components.get(&speed_typeid).unwrap();
     let wrapped_speed = wrapped_speeds[0].as_ref().unwrap();

@@ -5,10 +5,10 @@ use std::{
   cell::{Ref, RefCell, RefMut},
   rc::Rc
 };
-
 use super::component_ref::ComponentRef;
 
-type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<dyn Any>>>>>;
+// type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<dyn Any>>>>>;
+type ExtractedComponents<'a> = Result<&'a Vec<Option<Rc<RefCell<Box<dyn Any>>>>>>;
 
 pub struct QueryEntity<'a> {
   pub id:usize,
@@ -56,8 +56,9 @@ impl<'a> QueryEntity<'a> {
     let component = components[self.id].as_ref();
     
     match component {
-      Some(component_ref) => {
-        let component_ref = ComponentRef::new::<T>(component_ref.clone());
+      Some(component) => {
+        let component = component;
+        let component_ref = ComponentRef::new::<T>(component.clone());
         Ok(component_ref)
       }
       None => {

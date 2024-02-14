@@ -3,12 +3,12 @@ use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 pub struct ComponentRef<T>{
-  component_ref:Rc<RefCell<dyn Any>>,
+  component_ref:Rc<RefCell<Box<dyn Any>>>,
   component_type: PhantomData<T>
 }
 
 impl<T:Any> ComponentRef<T> {
-  pub fn new<Takes>(component_ref:Rc<RefCell<dyn Any>>) -> Self {
+  pub fn new<Takes>(component_ref:Rc<RefCell<Box<dyn Any>>>) -> Self {
     ComponentRef{
       component_ref,
       component_type: PhantomData
