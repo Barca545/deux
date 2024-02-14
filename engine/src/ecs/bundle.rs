@@ -133,7 +133,7 @@ smaller_tuples_too!(impl_tuple, O, N, M, L, K, J, I, H, G, F, E, D, C, B, A);
 
 #[cfg(test)]
 mod test{
-  use std::{alloc::{alloc, dealloc, Layout}, any::TypeId, mem::size_of_val, ptr};
+  use std::any::TypeId;
   use crate::{component_lib::{Health, UnitSpeed}, ecs::{bundle::{Bundle, TypeInfo}, World}};
 
   #[test]

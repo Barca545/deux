@@ -7,7 +7,8 @@ pub fn update_hitbox(world:&World) {
   let entities = query
     .with_component::<Position>().unwrap()
     .with_component::<SelectionRadius>().unwrap()
-    .run_entity();
+    .run
+();
 
   for entity in entities {
     let position = entity.immut_get_component::<Position>().unwrap();

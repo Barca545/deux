@@ -18,7 +18,8 @@ pub fn combat(world:&mut World){
 fn debug_combat(world:&World) {
   let mut query = world.query();
 
-  let entites = query.with_component::<KDA>().unwrap().run_entity();
+  let entites = query.with_component::<KDA>().unwrap().run
+();
   for entity in entites {
     //debugs the info of the dummy a player is hitting
     if let Err(_player) = entity.immut_get_component::<Player>() {

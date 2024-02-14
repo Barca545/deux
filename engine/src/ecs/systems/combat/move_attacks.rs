@@ -4,7 +4,8 @@ use crate::{component_lib::{AutoAttack, Colliding, GameplayRadius, Position, Pre
 /// Marks auto attacks which reach their target with a `Colliding` component.
 pub fn move_attacks(world:&mut World) {
   let mut query = world.query();
-  let entities = query.with_component::<AutoAttack>().unwrap().run_entity();
+  let entities = query.with_component::<AutoAttack>().unwrap().run
+();
 
   let mut colliding = Vec::default();
 

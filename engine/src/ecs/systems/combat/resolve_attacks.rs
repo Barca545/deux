@@ -17,7 +17,8 @@ pub fn resolve_attacks(world:&mut World) {
  let entities = query
   .with_component::<AutoAttack>().unwrap()
   .with_component::<Colliding>().unwrap()
-  .run_entity();
+  .run
+();
 
   //Check the result of attacks landing.
   //Award gold and update KDAs 

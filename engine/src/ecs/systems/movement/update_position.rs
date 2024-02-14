@@ -19,7 +19,8 @@ pub fn update_position(world:&World) {
     .with_component::<Position>().unwrap()
     .with_component::<Velocity>().unwrap()
     .with_component::<Destination>().unwrap()
-    .run_entity();
+    .run
+();
 
   for entity in entities {
     let mut previous_position = entity.mut_get_component::<PreviousPosition>().unwrap();
@@ -37,7 +38,8 @@ pub fn update_position(world:&World) {
       let mut query2 = world.query();
       let test_entities = query2
         .with_component::<PathingRadius>().unwrap()
-        .run_entity();
+        .run
+();
   
       for test_entity in test_entities{
         let test_entity_id = test_entity.id;

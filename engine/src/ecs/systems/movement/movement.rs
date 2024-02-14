@@ -74,7 +74,7 @@ mod test {
     //Confirm the update occured
     let mut query = world.query();
 
-    let entities = query.with_component::<Position>()?.run_entity();
+    let entities = query.with_component::<Position>()?.run();
 
     for entity in entities {
       let updated_position = entity.immut_get_component::<Position>()?;

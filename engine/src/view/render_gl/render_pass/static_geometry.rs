@@ -11,7 +11,8 @@ pub fn static_geometry(world:&World) {
 
   let mut query = world.query();
 
-  let entities = query.with_component::<StaticMesh>().unwrap().with_component::<Position>().unwrap().run_entity();
+  let entities = query.with_component::<StaticMesh>().unwrap().with_component::<Position>().unwrap().run
+();
 
   for entity in entities {
     //Get the entity's position

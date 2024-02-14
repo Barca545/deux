@@ -14,7 +14,8 @@ pub fn spawn_auto_attacks(world:&mut World) {
   let entities = query
     .with_component::<Player>().unwrap()
     .with_component::<Target>().unwrap()
-    .run_entity();
+    .run
+();
 
   //Spawn an auto attack for every player entity with a target.
   for entity in entities{

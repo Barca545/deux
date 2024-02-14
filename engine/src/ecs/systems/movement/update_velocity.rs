@@ -14,7 +14,8 @@ pub fn update_velocity(world:&World) {
     .with_component::<Destination>().unwrap()
     .with_component::<UnitSpeed>().unwrap()
     .with_component::<Velocity>().unwrap()
-    .run_entity();
+    .run
+();
 
   for entity in entities {
     let destination = entity.mut_get_component::<Destination>().unwrap();

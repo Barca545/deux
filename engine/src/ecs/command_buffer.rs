@@ -1,8 +1,8 @@
-use std::{alloc::{alloc, dealloc, Layout}, any::{Any, TypeId}, ops::Range, ptr::{self,NonNull}};
+use std::{any::Any, ops::Range};
 
 use crate::component_lib::{AutoAttackMesh, AutoAttackScript, MissleSpeed, Owner, Position, PreviousPosition, Target, Velocity};
 
-use super::{bundle::{Bundle, TypeInfo}, query::ComponentRef};
+use super::{bundle::Bundle, query::ComponentRef};
 
 //Not currently a CommandBuffer. Can be expanded into a CommandBuffer like Hecs uses when I eventually need to replicated this functionality
 //https://docs.rs/hecs/latest/src/hecs/command_buffer.rs.html#33-40

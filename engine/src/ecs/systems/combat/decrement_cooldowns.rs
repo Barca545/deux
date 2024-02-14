@@ -8,7 +8,8 @@ pub fn decrement_cooldowns(world:&World) {
   let time_passed = server_time.get_tick_frequency();
   
   let mut query = world.query();
-  let entities = query.with_component::<AutoAttackCooldown>().unwrap().run_entity();
+  let entities = query.with_component::<AutoAttackCooldown>().unwrap().run
+();
   
   for entity in entities{
     let mut auto_attack_cooldown = entity.mut_get_component::<AutoAttackCooldown>().unwrap();

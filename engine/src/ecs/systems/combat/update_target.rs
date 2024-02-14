@@ -18,7 +18,8 @@ pub fn update_target(world:&mut World) {
       let selected_entity_team = world.immut_get_component_by_entity_id::<Team>(*selected_id).unwrap();
     
       let mut query = world.query();
-      let entities = query.with_component::<Player>().unwrap().run_entity();
+      let entities = query.with_component::<Player>().unwrap().run
+();
       let entity = &entities[0];
       
       player_id = entity.id;
@@ -34,7 +35,8 @@ pub fn update_target(world:&mut World) {
       target = None;
 
       let mut query = world.query();
-      let entities = query.with_component::<Player>().unwrap().run_entity();
+      let entities = query.with_component::<Player>().unwrap().run
+();
       let entity = &entities[0];
       
       player_id = entity.id;
@@ -42,7 +44,8 @@ pub fn update_target(world:&mut World) {
     NONE => {
       target = None;
       let mut query = world.query();
-      let entities = query.with_component::<Player>().unwrap().run_entity();
+      let entities = query.with_component::<Player>().unwrap().run
+();
       let entity = &entities[0];
       
       player_id = entity.id;

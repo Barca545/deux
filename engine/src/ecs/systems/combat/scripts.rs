@@ -13,7 +13,8 @@ pub fn run_scripts(world: &World) {
   let mut query = world.query();
 
   //Search for all auto attack entities 
-  let entities = query.with_component::<AutoAttack>().unwrap().run_entity();
+  let entities = query.with_component::<AutoAttack>().unwrap().run
+();
 
   for entity in entities {
     let script_ref = entity.immut_get_component::<ComponentRef<AutoAttackScript>>().unwrap();

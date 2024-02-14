@@ -22,7 +22,7 @@ pub fn update_destination(world:&mut World, x:f64, y:f64) {
   let entities = query
     .with_component::<Controllable>().unwrap()
     .with_component::<Destination>().unwrap()
-    .run_entity();
+    .run();
 
   for entity in entities {
     //Update the destination to match the location the cursor has indicated
