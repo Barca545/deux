@@ -20,9 +20,9 @@ use super::bundle::Bundle;
 // vec of free indexes, this should be faster for large amounts of entities This
 // will be used a lot so making it as fast as possible is good
 
-// pub type Component = Rc<RefCell<Box<dyn Any>>>;
 pub type Component = Rc<RefCell<Box<dyn Any>>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
+
 
 #[derive(Debug, Default)]
 pub struct Entities {
@@ -83,6 +83,22 @@ impl Entities {
     Ok(self)
   }
 
+  pub fn with_components(&mut self, bundle: impl Bundle) -> Result<()>{
+    bundle.safe_put(|ty, data|{
+      let typeid:TypeId = ty.id();
+      let index = self.inserting_into_index;
+
+      if let Some(components) = self.components.get_mut(&typeid) {
+        let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled).unwrap();
+        *component = Some(Rc::new(RefCell::new(data)));
+  
+        let bitmask = self.bitmasks.get(&typeid).unwrap();
+        self.map[index] |= *bitmask
+      } 
+    });
+    Ok(())
+  }
+
   pub fn get_bitmask(&self, typeid:&TypeId) -> Option<u128> {
     return self.bitmasks.get(typeid).copied();
   }
@@ -112,6 +128,7 @@ impl Entities {
   }
 
   pub fn add_components(&mut self, index:usize, components: impl Bundle){
+    // let test = self.components.get_mut(&typeinfo.id()).unwrap();
     components.safe_put(|typeinfo, data|{
       if let Some(mask) = self.bitmasks.get(&typeinfo.id()) {
         self.map[index] |= *mask;

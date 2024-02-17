@@ -2,7 +2,6 @@ use crate::{
   component_lib::{Position, StaticMesh}, ecs::{world_resources::ShaderPrograms, World}, math::{calculate_model_transform, math::Mat4, Vec3}
 };
 use gl::Gl;
-
 use super::render_mesh::render_mesh;
 
 pub fn static_geometry(world:&World) {
@@ -11,8 +10,7 @@ pub fn static_geometry(world:&World) {
 
   let mut query = world.query();
 
-  let entities = query.with_component::<StaticMesh>().unwrap().with_component::<Position>().unwrap().run
-();
+  let entities = query.with_component::<StaticMesh>().unwrap().with_component::<Position>().unwrap().run();
 
   for entity in entities {
     //Get the entity's position

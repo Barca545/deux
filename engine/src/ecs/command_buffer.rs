@@ -1,56 +1,13 @@
 use std::{any::Any, ops::Range};
-
-use crate::component_lib::{AutoAttackMesh, AutoAttackScript, MissleSpeed, Owner, Position, PreviousPosition, Target, Velocity};
-
-use super::{bundle::Bundle, query::ComponentRef};
-
-//Not currently a CommandBuffer. Can be expanded into a CommandBuffer like Hecs uses when I eventually need to replicated this functionality
-//https://docs.rs/hecs/latest/src/hecs/command_buffer.rs.html#33-40
-#[derive(Debug, Clone, Default)]
-pub struct AutoAttackSpawner{
-  pub indices:Vec<usize>,
-  pub positions:Vec<Position>,
-  pub previous_positions:Vec<PreviousPosition>,
-  pub missle_speeds:Vec<MissleSpeed>,
-  pub velocities:Vec<Velocity>,
-  pub meshes:Vec<AutoAttackMesh>,
-  pub owners:Vec<Owner>,
-  pub targets:Vec<Target>,
-  pub scripts: Vec<ComponentRef<AutoAttackScript>>,
-}
-
-impl AutoAttackSpawner{
-  pub fn add(
-    &mut self, 
-    position:Position,
-    previous_position:PreviousPosition,
-    missle_speed:MissleSpeed,
-    velocity:Velocity,
-    mesh:AutoAttackMesh,
-    owner:Owner,
-    target:Target,
-    script:ComponentRef<AutoAttackScript>
-  )
-  {
-    let index = self.indices.len();
-    self.indices.push(index);
-    self.positions.push(position);
-    self.previous_positions.push(previous_position);
-    self.missle_speeds.push(missle_speed);
-    self.velocities.push(velocity);
-    self.meshes.push(mesh);
-    self.owners.push(owner);
-    self.targets.push(target);
-    self.scripts.push(script);
-  }
-}
-
+use super::bundle::Bundle;
 
 // Refactor
 // -Could add_inner be made faster by assuming the new alignment is always the ty.alignment or something if I reconfiger the conditionals?
 // -Could grow be a method instead of an associated function?
 // -Add a method to world/entities to reserve an entity id
 // -Move the unsafe stuff to Becs (Brainy ECS) and retry to implement it once I am more skilled
+// -Not currently a CommandBuffer. Can be expanded into a CommandBuffer like Hecs uses when I eventually need to replicated this functionality
+// -https://docs.rs/hecs/latest/src/hecs/command_buffer.rs.html#33-40
 
 struct CommandBuffer{
   commands: Vec<Command>,

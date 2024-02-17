@@ -13,8 +13,7 @@ pub fn debug(world:&World, interpolation_factor:f64) {
   let program = world.immut_get_resource::<DbgShaderProgram>().unwrap().program;
 
   let mut query = world.query();
-  let entities = query.with_component::<AABB3DDebugMesh>().unwrap().with_component::<Position>().unwrap().run
-();
+  let entities = query.with_component::<AABB3DDebugMesh>().unwrap().with_component::<Position>().unwrap().run();
 
   for entity in entities {
     //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick

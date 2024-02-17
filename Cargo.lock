@@ -305,6 +305,7 @@ dependencies = [
  "gl",
  "glfw",
  "image",
+ "list-any",
  "mlua",
  "nalgebra",
  "nalgebra-glm",
@@ -587,6 +588,12 @@ name = "linux-raw-sys"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
+
+[[package]]
+name = "list-any"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93d1d1b0528cc76bed22884ae4f56f5548d80643f848d6df0c652032f7ca6165"
 
 [[package]]
 name = "lock_api"

@@ -13,8 +13,7 @@ pub fn skinned_meshes(world:&World, interpolation_factor:f64) {
   let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
 
   let mut query = world.query();
-  let entities = query.with_component::<SkinnedMesh>().unwrap().with_component::<Position>().unwrap().with_component::<PreviousPosition>().unwrap().run
-();
+  let entities = query.with_component::<SkinnedMesh>().unwrap().with_component::<Position>().unwrap().with_component::<PreviousPosition>().unwrap().run();
 
   for entity in entities {
     //Get the render position by lerping between the position at the end of the previous game logic tick and the position at the end of the current game logic tick

@@ -21,8 +21,7 @@ fn update_hovered(world:&mut World, x:f64, y:f64) {
   let mut selection_state = NONE;
 
   let mut query = world.query();
-  let entities = query.with_component::<SelectionRadius>().unwrap().run
-();
+  let entities = query.with_component::<SelectionRadius>().unwrap().run();
   
   for entity in entities {
     let hitbox = entity.immut_get_component::<SelectionRadius>().unwrap();

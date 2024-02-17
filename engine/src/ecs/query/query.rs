@@ -4,11 +4,7 @@ use crate::{
 };
 use eyre::Result;
 use std::any::{Any, TypeId};
-
 use super::query_entity::QueryEntity;
-
-
-//Redo the Query: https://www.youtube.com/watch?v=PIyCUYcJefo&list=PLrmY5pVcnuE_SQSzGPWUJrf9Yo-YNeBYs&index=47
 
 #[derive(Debug)]
 pub struct Query<'a> {
@@ -25,7 +21,7 @@ impl<'a> Query<'a> {
       typeids:vec![]
     }
   }
-  ///Tells the query the entities it pulls must contain the component passed in
+  ///Tells the query the entities it pulls must contain the type passed in
   /// as an argument.
   pub fn with_component<T:Any>(&mut self) -> Result<&mut Self> {
     let typeid = TypeId::of::<T>();
