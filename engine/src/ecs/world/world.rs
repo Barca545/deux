@@ -1,5 +1,5 @@
 use crate::{
-  ecs::{bundle::Bundle, entities::Entities, query::Query, resources::Resource},
+  ecs::{bundle::{Bundle, TypeInfo}, entities::Entities, query::Query, resources::Resource},
   errors::EcsErrors
 };
 
@@ -145,6 +145,10 @@ impl World {
   ///Updates the bitmap of the entity matching the provided ID to indicate it does not contain the component type. 
   pub fn remove_component<T:Any>(&mut self, index:usize) -> Result<()> {
     self.entities.delete_component_by_entity_id::<T>(index)
+  }
+
+  pub fn remove_component_by_typeinfo(&mut self, index:usize, ty:TypeInfo) -> Result<()> {
+    self.entities.delete_component_by_type_info(index, ty)
   }
 
   ///Adds a component to the entity matching the provided ID.

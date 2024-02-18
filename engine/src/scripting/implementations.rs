@@ -3,6 +3,7 @@ use crate::{component_lib::{Killed, Armor, AttackDamage, Health, Owner, Target},
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
+// -Replace field method get with field like in movement? 
 
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -42,7 +43,12 @@ impl UserData for World {
         world.add_component(owner, Killed).unwrap();
       }
       Ok(())
-    })
+    });
+
+    methods.add_method("add_node_to_path", |_,world, (entity,node):(usize,[f32;3])|{
+      //push the node into the target entity's Path
+      Ok(())
+    });
   }
 }
 

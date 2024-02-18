@@ -7,8 +7,11 @@ use core::mem;
 // -Worst case scenario entities can just also box the data might cause performance issues in the future but meh can fix then if so
 // -Can also look in
 
+//Refactor:
+// -TypeInfo in its own file
+
 //not sure why the type id stored in type info is distinct from other type ids for the type
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Clone, Copy)]
 pub struct TypeInfo{
   typeid: TypeId,
   layout:Layout

@@ -15,7 +15,7 @@ impl Camera {
     let world_up:Vec3 = vec3(0.0, 1.0, 0.0);
 
     let x = 0.0;
-    let z = -5.0;
+    let z = -10.0;
     let y = -z * radians(55.0).tan();
 
     let front:Vec3 = vec3(-x, -y, -z);

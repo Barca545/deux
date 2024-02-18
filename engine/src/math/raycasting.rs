@@ -4,7 +4,7 @@ use glm::{self, inverse, vec3, vec4};
 use super::math::{Mat4, Vec3, Vec4};
 use super::Transforms;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct RayCast {
   pub(crate) origin:Vec3,
   pub(crate) direction:Vec3,
@@ -69,7 +69,7 @@ impl RayCast {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct MouseRay(pub RayCast);
 
 impl MouseRay {

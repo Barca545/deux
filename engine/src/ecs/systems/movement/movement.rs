@@ -1,14 +1,21 @@
 use crate::ecs::World;
-use super::{update_velocity::update_velocity, update_position, update_hitbox};
+use super::{run_scripts, update_destination, update_hitbox, update_path, update_position, update_velocity};
 
-//Refactor
-//the below should be incorporated into the system's description
-//mouse ray should be a resource that is updated when the mouse moves
-//arguably the mouse ray is information both the selection and this system
-// needs selection needs to run first and do the AABB test
-//this should only run if the selection test says nothing is selected
+// Refactor:
+// -Mouse ray should be a resource that is updated when the mouse moves
+//  mouse ray is information both the selection and this system 
+//  needs selection needs to run first and do the AABB test
+//  this should only run if the selection test says nothing is selected
+// -Once MouseRay is a resource, move update destination into this system
+// -Merge update path and update destination?
+// -Have the system run a pathing system if the destination is past a certain distance
+// -System should check for a path, if there is a path run the path system otherwise run the current move system
+// -Clicking anything should clear the current Path and rerun the pathing calculation if applicable
 
-pub fn movement(world:&World) {
+pub fn movement(world:&mut World) {
+  run_scripts(world);
+  update_path(world);
+  update_destination(world);
   update_velocity(world);
   update_position(world);
   update_hitbox(world);

@@ -23,6 +23,12 @@ impl From<Position> for Destination{
   }
 }
 
+impl From<[f32;3]> for Destination{
+  fn from(value: [f32;3]) -> Self {
+    Destination(Vec3::from(value))
+  }
+}
+
 #[derive(Debug, Default, Clone, Copy)]
 ///Component holding the velocity of an entity towards its `Destination`.
 pub struct Velocity(pub Vec3);
@@ -40,3 +46,26 @@ pub struct UnitSpeed(pub f32);
 #[derive(Debug, Clone, Copy)]
 ///Component marker for entities undergoing a collision.
 pub struct Colliding;
+
+///Component containing a `Vec<Destination>` used for storing an entity's path. 
+pub struct Path{pub nodes: Vec<Destination>}
+
+impl Path{
+  pub fn new() -> Self {
+    Path { nodes: Vec::default() }
+  }
+
+  ///Returns an option containing the next Destination in the Path. 
+  /// If the final destination has been reached, returns `None`.
+  pub fn next(&mut self) -> Option<Destination> {
+    self.nodes.pop()
+  }
+
+  pub fn push(&mut self,node:Destination){
+    self.nodes.push(node)
+  }
+
+  pub fn len(&self) -> usize {
+    self.nodes.len()
+  }
+}

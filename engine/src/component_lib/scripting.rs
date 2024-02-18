@@ -14,3 +14,17 @@ impl AutoAttackScript {
     &self.0
   }
 }
+
+
+#[derive(Debug, Clone, Default)]
+pub struct MovementScript(String);
+
+impl MovementScript {
+  pub fn new(script:&str) -> Self{
+    // let scripts:Vec<String> = scripts.iter().map(|&str| str.into()).collect();
+    MovementScript(script.to_owned())
+  }
+  pub fn script(&self) -> &str {
+    &self.0
+  }
+}

@@ -1,7 +1,7 @@
 use eyre::Result;
 use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
 use crate::errors::EcsErrors;
-use super::bundle::Bundle;
+use super::bundle::{Bundle, TypeInfo};
 
 // Refactor:
 // -Make components private
@@ -106,6 +106,13 @@ impl Entities {
   pub fn delete_component_by_entity_id<T:Any>(&mut self, index:usize) -> Result<()> {
     let typeid = TypeId::of::<T>();
     if let Some(mask) = self.bitmasks.get(&typeid) {
+      self.map[index] &= !*mask;
+    } 
+    Ok(())
+  }
+
+  pub fn delete_component_by_type_info(&mut self, index:usize, ty:TypeInfo) -> Result<()> {
+    if let Some(mask) = self.bitmasks.get(&ty.id()) {
       self.map[index] &= !*mask;
     } 
     Ok(())

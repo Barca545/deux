@@ -10,12 +10,12 @@ mod status;
 mod render;
 
 pub use self::{
-  movement::{Destination,PreviousPosition,Position,Velocity,UnitSpeed,Colliding},
+  movement::{Destination,PreviousPosition,Position,Velocity,UnitSpeed,Colliding, Path},
   radii::{SelectionRadius,PathingRadius,GameplayRadius,VisionRadius},
   identification::{AutoAttack,Player,Controllable,Target,Owner,Team,Killed},
   timers::{Timer,AutoAttackCooldown},
   combat::{MissleSpeed,Armor,AttackDamage,Health,KDA},
-  scripting::AutoAttackScript,
+  scripting::{AutoAttackScript,MovementScript},
   levels::{Level,Exp},
   income::Gold,
   status::{MovementState,CrowdControlState,CrowdControlList},

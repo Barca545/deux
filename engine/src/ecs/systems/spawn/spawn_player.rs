@@ -1,6 +1,6 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
+use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, MovementScript, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
 
 // Refactor
 // -Missing some component the combat system needs
@@ -58,6 +58,13 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     r#"
     attack_damage = world:get_attack_damage(owner.id)
     world:remove_health(target.id,attack_damage)
+    "#
+  );
+
+  //just test the ability to add new stuff to the path here.
+  //I think I may need to update the world implementation to allow this
+  let movement_script = MovementScript::new(
+    r#"
     "#
   );
   

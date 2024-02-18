@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
-    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_destination, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
-  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{Transforms, Vec3}, time::ServerTime, view::{
+    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
@@ -32,7 +32,7 @@ fn main() {
     .add_resource(screen_dimensions)
     .add_resource(Transforms::new(&screen_dimensions.aspect))
     .add_resource(Selected::NONE)
-    //add MouseRay resource
+    .add_resource(MouseRay::default())
     //add physics acceleration structure resource
     //add events resource
     //add window?
@@ -118,10 +118,7 @@ fn main() {
         glfw::WindowEvent::MouseButton(MouseButton::Button2, Action::Press, ..) => {
           let (x, y) = window.get_cursor_pos();
           let event = UserInputs::MouseClick(MousePosition { x, y });
-
-          //this needs to go into the update section.
-          //the transforms and mouse coordinates need to become queryable from world
-          update_destination(&mut world, x, y);
+          update_mouseray(&mut world, x, y);
           frame_inputs.add_event(event);
         }
         _ => {}
@@ -134,7 +131,7 @@ fn main() {
     if server_time.should_update() == true {      
       let (x, y) = window.get_cursor_pos();
       update_selection(&mut world, x, y);
-      movement(&world);
+      movement(&mut world);
       combat(&mut world);
 
       //my concern is that clearing the frame inputs means it won't update properly

@@ -1,12 +1,8 @@
 use mlua::Lua;
-use crate::component_lib::{AutoAttack, AutoAttackScript, Owner, Target};
-use crate::scripting::LuaEntity;
-use crate::ecs::{query::ComponentRef, World};
+use crate::{component_lib::{AutoAttack, MovementScript, Owner, Target}, ecs::{query::ComponentRef, World}, scripting::LuaEntity};
 
-//System that runs damage scripts.
-//add this to the creation step in the combat system to test
-//might actually keep attack creation in pure rust instead of scripting until no other choices
-///Run all [`AutoAttackScript`]s.
+
+///Run all [`MovementScript`]s.
 pub fn run_scripts(world: &World) {
   //this works but any script that creates new entities *will* need to mutate world and be structured differently
   let lua = world.immut_get_resource::<Lua>().unwrap();  
@@ -17,7 +13,7 @@ pub fn run_scripts(world: &World) {
   let entities = query.with_component::<AutoAttack>().unwrap().run();
 
   for entity in entities {
-    let script_ref = entity.immut_get_component::<ComponentRef<AutoAttackScript>>().unwrap();
+    let script_ref = entity.immut_get_component::<ComponentRef<MovementScript>>().unwrap();
     let script = script_ref.get_component();
   
     //Convert the ids into types Lua can use

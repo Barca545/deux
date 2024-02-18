@@ -1,5 +1,5 @@
-use std::{any::Any, ops::Range};
-use super::bundle::Bundle;
+use std::any::Any;
+use super::{bundle::{Bundle, TypeInfo}, World};
 
 // Refactor
 // -Could add_inner be made faster by assuming the new alignment is always the ty.alignment or something if I reconfiger the conditionals?
@@ -9,7 +9,7 @@ use super::bundle::Bundle;
 // -Not currently a CommandBuffer. Can be expanded into a CommandBuffer like Hecs uses when I eventually need to replicated this functionality
 // -https://docs.rs/hecs/latest/src/hecs/command_buffer.rs.html#33-40
 
-struct CommandBuffer{
+pub struct CommandBuffer{
   commands: Vec<Command>,
   components: Vec<Box<dyn Any>>
 }
@@ -30,26 +30,44 @@ impl CommandBuffer {
     // let stop = components.len();
   }
 
-  pub fn remove_components<B:Bundle>(&mut self,){
+  pub fn remove_components<B:Bundle>(&mut self){
     //is it possible to iterate over the components in the turbofish
+  }
+
+  pub fn remove_component<T:Any>(&mut self, entity:EntityId){
+    let command = Command::Remove(entity, TypeInfo::of::<T>());
+    self.commands.push(command);
+  }
+
+  pub fn run(&mut self, world:&mut World){
+    for command in &self.commands {
+      match command {
+        Command::Remove(entity,ty ) => {
+          world.remove_component_by_typeinfo(*entity, *ty).unwrap();
+        },
+        _=> {}
+      }
+    }
   }
 }
 
 //this type should actually be used throughout where relevant
 type EntityId = usize;
 
+#[derive(Debug,Clone, Copy)]
 pub struct EntityIndex{
   //Target entity for an add command
   entity_id:Option<EntityId>,
   //Component belonging to the entity in the CommandBuffer's component data vec
-  components: Range<usize>
+  // components: Range<usize>
 }
 
+#[derive(Debug,Clone, Copy)]
 pub enum Command {
   Spawn(EntityIndex),
   Despawn(EntityId),
   Insert(EntityIndex),
-  Remove(EntityIndex),
+  Remove(EntityId,TypeInfo),
 }
 
 impl Default for CommandBuffer{
