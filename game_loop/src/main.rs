@@ -4,9 +4,9 @@ extern crate glfw;
 extern crate nalgebra_glm as glm;
 
 use engine::{
-  component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
+  arena::Grid, component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
     systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
-  }, filesystem::load_object, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
+  }, filesystem::{load_grid, load_object}, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
@@ -20,6 +20,8 @@ use mlua::Lua;
 // Refactor
 // -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
 // -Consider moving to a slower tick rate LoL uses 30hz
+// -Grid should load in from a JSON once I build the grid in the level editor
+// -Grid my also need to be a resource. I'm unsure if other systems will need it
 
 fn main() {
   //Configure the location of the asset folders
@@ -32,6 +34,12 @@ fn main() {
   //make a settings file and load in from there
   let screen_dimensions = ScreenDimensions::new(1280, 720);
   
+  // let grid = load_grid("5v5", "json").unwrap();
+  let grid = Grid::new(100, 100, 1.0).unwrap();
+
+  let lua = Lua::new();
+  lua.globals().set("grid", grid).unwrap();
+
   world
     .add_resource(screen_dimensions)
     .add_resource(Transforms::new(&screen_dimensions.aspect))
@@ -39,13 +47,11 @@ fn main() {
     .add_resource(MouseRay::default())
     .add_resource(FrameInputs::new())
     //add physics acceleration structure resource
-    //add events resource
     //add window?
-    //add input event system by copying the level editor
     .add_resource(server_time)
     .add_resource(DebugElements::new(false, false))
     //Initialize Lua
-    .add_resource(Lua::new());
+    .add_resource(lua);
 
   let (mut glfw, mut window, events) = create_window(&world);
   let gl = create_gl(&mut window);

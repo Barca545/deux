@@ -70,15 +70,16 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let movement_script = MovementScript::new(
     r#"
     start = world:get_position(entity.id)
-    end = world:get_destination(entity.id)
+    destination = world:get_destination(entity.id)
 
-    function get_cell(position)
-
-    function heuristic(node, goal)
-
-    function Astar(grid, start, end)
+    terrain = grid:is_passable(destination)
+    print(terrain)
     "#
   );
+
+  // function heuristic(node, goal)
+
+  // function Astar(grid, start, end)
   
   world
     .create_entity()

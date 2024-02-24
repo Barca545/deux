@@ -1,4 +1,4 @@
-use crate::{errors::FilesystemErrors, view::render_gl::Vertex};
+use crate::{arena::Grid, errors::FilesystemErrors, view::render_gl::Vertex};
 use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
@@ -7,12 +7,12 @@ use super::champion::Champion;
 
 //Refactor
 // -Use a config file to load each PC will need a unique one so do gitignore
-// -Update files to target the asset folder
 // -Should the unwrap or else be some other form of unwrap
 // -Pull useful portions from the level editor
 // -have errors print the file that failed
 // -Each game object will need it's own named asset folder
 // -Move the path generation into its own function find/replace lowercase path
+// -Make load image not panic
 
 ///Loads a Texture's pixels.
 pub fn load_texture_image(name:&str, extension:&str) -> Result<DynamicImage> {
@@ -23,9 +23,9 @@ pub fn load_texture_image(name:&str, extension:&str) -> Result<DynamicImage> {
 
 fn load_image(path:&str) -> Result<DynamicImage> {
   let image = Reader::open(path)
-    .unwrap_or_else(|_| panic!("{}", { FilesystemErrors::FailedToLoadImage }))
+    .unwrap_or_else(|_| panic!("{}", FilesystemErrors::FailedToLoadImage))
     .decode()
-    .unwrap_or_else(|_| panic!("{}", { FilesystemErrors::FailedToDecodeImage }));
+    .unwrap_or_else(|_| panic!("{}", FilesystemErrors::FailedToDecodeImage));
   Ok(image)
 }
 
@@ -123,6 +123,14 @@ pub fn load_cstring(path:&str) -> Result<CString> {
   Ok(unsafe { CString::from_vec_unchecked(buffer) })
 }
 
+///Loads the a [`Grid`]'s information.
+pub fn load_grid(name:&str,extension:&str) -> Result<Grid> {
+  let path = var("grid_folder")? + "/" + name + "." + extension;
+  let grid_path = fs::read_to_string(path)?;
+  let grid:Grid = serde_json::from_str(&grid_path)?;
+  Ok(grid)
+}
+
 ///Loads a configuration file from a given path.
 pub fn load_config() -> Result<Config> {
   let root_directory = load_root_directory()?;
@@ -143,7 +151,7 @@ fn load_root_directory() -> Result<String> {
 
 #[cfg(test)]
 mod test {
-  use crate::{errors::FilesystemErrors, filesystem::loader::{load_config, load_root_directory}, view::render_gl::Vertex};
+  use crate::{errors::FilesystemErrors, filesystem::load::{load_config, load_root_directory}, view::render_gl::Vertex};
   use eyre::Result;
   use image::io::Reader;
   use tobj;

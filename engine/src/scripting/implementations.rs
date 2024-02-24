@@ -1,8 +1,9 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{component_lib::{Armor, AttackDamage, Destination, Health, Killed, Owner, Path, Position, Target}, ecs::World, utility::calc_post_mitigation_damage};
+use crate::{arena::{Grid, Terrain}, component_lib::{Armor, AttackDamage, Destination, Health, Killed, Owner, Path, Position, Target}, ecs::World, math::Vec3, utility::calc_post_mitigation_damage};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
+// -Convert terrain to lua. ergonomically, I think I'll do strings until it shows as a performance issue 
 
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -47,7 +48,6 @@ impl UserData for World {
     //Retrieves an entity's Destination
     methods.add_method("get_destination", |_,world,entity:usize|{
       let destination = world.immut_get_component_by_entity_id::<Destination>(entity).unwrap();
-      dbg!(destination.clone());
       Ok([destination.0.x,destination.0.y,destination.0.z])
     });
 
@@ -92,3 +92,21 @@ impl UserData for LuaEntity{
     fields.add_field_method_get("id", |_,entity_id| Ok(entity_id.0))
   }
 }
+
+impl UserData for Grid {
+  fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    methods.add_method("is_passable", |_,grid,position:[f32;3]|{
+      Ok(grid.is_passable(Vec3::from(position)))
+    });
+
+    // methods.add_method("test", |_,grid,|)
+  }
+}
+
+impl UserData for Terrain {}
+
+// impl<'lua, T> IntoLua<'lua> for Grid {
+//   fn into_lua(self, lua: &'lua mlua::prelude::Lua) -> mlua::prelude::LuaResult<mlua::prelude::LuaValue<'lua>> {
+//     todo!()
+//   }
+// }

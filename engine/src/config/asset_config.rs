@@ -17,4 +17,7 @@ pub fn asset_config(){
 
   let champion_folder = config.get::<String>("champion_folder").unwrap();
   env::set_var("champion_folder", champion_folder); 
+
+  let grid_folder = config.get::<String>("grid_folder").unwrap();
+  env::set_var("grid_folder", grid_folder); 
 }
