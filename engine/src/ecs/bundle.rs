@@ -1,4 +1,4 @@
-use std::{alloc::Layout, any::{Any, TypeId}, hash::Hash};
+use std::{alloc::Layout, any::{Any, TypeId, type_name}, hash::Hash};
 use core::mem;
 
 // git message: Added component bundle trait and command buffer
@@ -14,7 +14,8 @@ use core::mem;
 #[derive(Debug, Eq, Clone, Copy)]
 pub struct TypeInfo{
   typeid: TypeId,
-  layout:Layout
+  layout:Layout,
+  type_name: &'static str
 }
 
 impl Hash for TypeInfo{
@@ -30,17 +31,19 @@ impl PartialEq for TypeInfo {
 }
 
 impl TypeInfo{
-  pub fn new(value:&impl Any) -> Self {
+  pub fn new<T:Any>(value:&T) -> Self {
     TypeInfo { 
       typeid: value.type_id(),
-      layout: Layout::for_value(value)
+      layout: Layout::for_value(value),
+      type_name: type_name::<T>()
     }
   }
 
   pub fn of<T:'static>()->Self{
     TypeInfo { 
       typeid: TypeId::of::<T>(),
-      layout: Layout::new::<T>()
+      layout: Layout::new::<T>(),
+      type_name: type_name::<T>()
     }
   }
   
@@ -57,6 +60,10 @@ impl TypeInfo{
   ///Access the `TypeId` of this component type.
   pub fn id(&self) -> TypeId{
     self.typeid
+  }
+
+  pub fn type_name(&self) -> &str {
+    self.type_name
   }
 }
 
@@ -143,8 +150,7 @@ smaller_tuples_too!(impl_tuple, O, N, M, L, K, J, I, H, G, F, E, D, C, B, A);
 #[cfg(test)]
 mod test{
   use core::slice;
-use std::{alloc::Layout, any::{Any, TypeId}, collections::HashMap, mem, ptr};
-  use list_any::VecAny;
+  use std::{any::TypeId, ptr};
 
 use crate::{component_lib::{Health, UnitSpeed}, ecs::{bundle::{Bundle, TypeInfo}, World}};
 

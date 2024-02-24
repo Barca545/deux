@@ -106,6 +106,10 @@ impl MouseRay {
       ray_end_worldspace_coordinates.xyz()
     ))
   }
+
+  pub fn ray_ground_intersection(&self) -> Vec3{
+    self.0.ray_ground_intersection()
+  }
 }
 
 #[cfg(test)]

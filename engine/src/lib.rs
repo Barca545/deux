@@ -15,3 +15,4 @@ pub mod event;
 pub mod utility;
 pub mod component_lib;
 pub mod config;
+mod arena;

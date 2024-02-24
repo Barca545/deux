@@ -1,7 +1,8 @@
 use crate::ecs::World;
-use super::{run_scripts, update_destination, update_hitbox, update_path, update_position, update_velocity};
+use super::{update_destination, update_hitbox, update_path, update_position, update_velocity};
 
 // Refactor:
+// -Update path, update destination, and update velocity need to be integrated
 // -Mouse ray should be a resource that is updated when the mouse moves
 //  mouse ray is information both the selection and this system 
 //  needs selection needs to run first and do the AABB test
@@ -13,7 +14,6 @@ use super::{run_scripts, update_destination, update_hitbox, update_path, update_
 // -Clicking anything should clear the current Path and rerun the pathing calculation if applicable
 
 pub fn movement(world:&mut World) {
-  run_scripts(world);
   update_path(world);
   update_destination(world);
   update_velocity(world);

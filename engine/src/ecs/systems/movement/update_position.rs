@@ -1,17 +1,15 @@
 use crate::{
-  component_lib::{Destination, PathingRadius, Position, PreviousPosition, Velocity}, 
-  ecs::World, 
-  physics::circle_circle_collision_test
+  component_lib::{Destination, PathingRadius, Position, PreviousPosition, Velocity}, ecs::World, physics::circle_circle_collision_test
 };
 
 // Refactor
 // -Figure out why circle to circle collision panics for the collision check
+// -Confirm new previous position does not take ownership of the position
 
-///Updates the positions of all entitys in the world.
-/// Moves entities forward by their `Velocity` component. 
-/// If they overshoot their destination their position is set to their destination.
-/// If they collide with an object prevent them from moving forward.
-/// Otherwise move the character forward.
+///Updates the [`Position`] of all entities in the [`World`].
+/// Moves entities forward by their [`Velocity`] component. 
+/// If they overshoot their [`Destination`] their `Position` is set to their `Destination`.
+/// If moving forward would cause a collision with another object, the entity does not move forward.
 pub fn update_position(world:&World) {
   let mut query = world.query();
 
@@ -30,7 +28,6 @@ pub fn update_position(world:&World) {
     let id = entity.id;
 
     if position.0 != destination.0 {
-      let new_previous_position = PreviousPosition(position.0);
       let new_position = calculate_new_position(*position, *velocity, *destination);
       let mut collision_check = false;
       
@@ -47,8 +44,12 @@ pub fn update_position(world:&World) {
         }
       }
 
+      // dbg!(position.clone());
+      // dbg!(new_position.clone());
+      // dbg!(destination.clone());
+
       if !collision_check {
-        *previous_position = new_previous_position;
+        *previous_position = PreviousPosition::from(*position);
         *position = new_position;
       }
     }
@@ -56,7 +57,7 @@ pub fn update_position(world:&World) {
 }
 
 ///Test if the entity's new position is past its destination.
-/// If the entity has overshot its destination, set its return the destination, otherwise return the new position.
+/// If the entity has overshot its destination, return the destination, otherwise return the new position.
 fn calculate_new_position(position:Position, velocity:Velocity, destination:Destination)->Position{
   let new_position = Position(position.0 + velocity.0);
 
@@ -66,7 +67,7 @@ fn calculate_new_position(position:Position, velocity:Velocity, destination:Dest
   if d1 < d2 {
     new_position
   } else {
-    Position(destination.0)
+    Position::from(destination)
   }
 }
 

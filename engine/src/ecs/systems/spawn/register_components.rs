@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackMesh, AutoAttackScript, Colliding, Controllable, CrowdControlList, CrowdControlState, Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA}, 
+  component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackCooldown, AutoAttackMesh, AutoAttackScript, Colliding, Controllable, CrowdControlList, CrowdControlState, Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementScript, MovementState, Owner, Path, PathingRadius, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA}, 
   ecs::{query::ComponentRef, World}, 
   view::AABB3DDebugMesh
 };
@@ -14,6 +14,7 @@ pub fn register_components(world:&mut World){
     .register_component::<Velocity>()
     .register_component::<Colliding>()
     .register_component::<Path>()
+    .register_component::<MovementScript>()
     //Radii components
     .register_component::<SelectionRadius>()
     .register_component::<PathingRadius>()

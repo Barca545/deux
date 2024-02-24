@@ -2,8 +2,7 @@ use crate::{
   ecs::{
     world_resources::{DebugElements, ShaderPrograms},
     World
-  },
-  view::render_gl::render_pass
+  }, time::ServerTime, view::render_gl::render_pass
 };
 use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, STENCIL_BUFFER_BIT};
 
@@ -15,8 +14,9 @@ use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, S
 
 //I'll need to update the debug functionality
 
-pub fn render(world:&World, interpolation_factor:f64) {
+pub fn render(world:&World) {
   let gl = world.immut_get_resource::<Gl>().unwrap();
+  let interpolation_factor = world.immut_get_resource::<ServerTime>().unwrap().get_interpolation_factor();
   let programs = world.immut_get_resource::<ShaderPrograms>().unwrap();
   let debug_elements = world.immut_get_resource::<DebugElements>().unwrap();
 

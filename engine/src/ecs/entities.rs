@@ -1,5 +1,5 @@
 use eyre::Result;
-use std::{any::{Any, TypeId}, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{any::{Any, TypeId, type_name}, cell::RefCell, collections::HashMap, rc::Rc};
 use crate::errors::EcsErrors;
 use super::bundle::{Bundle, TypeInfo};
 
@@ -66,19 +66,20 @@ impl Entities {
   ///Used with `create_entity` to assign components and their initial values to
   /// the entity being created. Updates the entity's bitmap to indicate which components they contain.
   /// `with_component` will continue to update the same entity until a new entity is spawned.
-  pub fn with_component(&mut self, data:impl Any) -> Result<&mut Self> {
+  pub fn with_component<T:Any>(&mut self, data:T) -> Result<&mut Self> {
     let typeid:TypeId = data.type_id();
     let index = self.inserting_into_index;
 
     if let Some(components) = self.components.get_mut(&typeid) {
-      let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled)?;
+      let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled{component:type_name::<T>().to_string()})?;
       *component = Some(Rc::new(RefCell::new(Box::new(data))));
 
       let bitmask = self.bitmasks.get(&typeid).unwrap();
       self.map[index] |= *bitmask
     } 
     else {
-      return Err(EcsErrors::CreateComponentNeverCalled.into());
+      #[cfg(debug_assertions)]
+      return Err(EcsErrors::CreateComponentNeverCalled{component:type_name::<T>().to_string()}.into());
     };
     Ok(self)
   }
@@ -89,7 +90,7 @@ impl Entities {
       let index = self.inserting_into_index;
 
       if let Some(components) = self.components.get_mut(&typeid) {
-        let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled).unwrap();
+        let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled{component:ty.type_name().to_string()}).unwrap();
         *component = Some(Rc::new(RefCell::new(data)));
   
         let bitmask = self.bitmasks.get(&typeid).unwrap();

@@ -1,6 +1,6 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, MovementScript, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
+use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Destination, Exp, Gold, Level, MovementScript, Path, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, view::AABB3DDebugMesh};
 
 // Refactor
 // -Missing some component the combat system needs
@@ -8,29 +8,30 @@ use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Dest
 // -Add dynamic bundles like in Hecs
 // -Make spawn location based on player number
 // -Add command buffer so I can set up the situational components
+// -Add armor to JSON
+// -Controllable flag information needs to get passed in from somewhere else
+// -Team information needs to get passed in from somewhere else
 
 
 ///Spawns a player from a given champion name and player number.
 pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap();
   
-  //load player information JSON
+  //Load player information JSON
   let champion_info = load_champion_json(name)?;
 
-  //create the player entity 
-  //basic info
+  //Create the player entity 
+  //Basic info
   let player = Player(number);
-  //the controllable flag information needs to get passed in from somewhere else
   let controllable = Controllable;
   let health = champion_info.health;
-  //the team information needs to get passed in from somewhere else
   let team = Team::BLUE;
   let gold = Gold::default();
   let kda = KDA::default();
   let exp = Exp::default();
   let level = Level::default();
 
-  //movement and collision info
+  //Movement and collision info
   let position_vec = Vec3::new(0.0, 0.0, 0.0);
   let position = Position(position_vec);
   let previous_position = PreviousPosition(position_vec);
@@ -39,21 +40,22 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let velocity = Velocity::default();
   let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
   let pathing_radius = champion_info.pathing_radius;
+  let mut path = Path::new();
+  path.push(Destination::from([3.0,0.0,0.0]));
 
-  //render info
+  //Render info
   let (sprite_vertices, sprite_indices) = load_object(name)?;
   let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
   let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
 
-  //combat info 
+  //Combat info 
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
   let auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
   let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
   let auto_attack_cooldown = champion_info.auto_attack_cooldown;
   let attack_damage = champion_info.attack_damage;
-  //add armor to JSON
 
-  //scripts info
+  //Script info
   let auto_attack_script = AutoAttackScript::new(
     r#"
     attack_damage = world:get_attack_damage(owner.id)
@@ -61,10 +63,20 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     "#
   );
 
-  //just test the ability to add new stuff to the path here.
-  //I think I may need to update the world implementation to allow this
+  //How pathing should work:
+  // -Make the list of open/closed indexes a global in lua since it's constant throughout the game
+  // -Function to check the cell a given position is inside
+  // -Run an a* pathing script
   let movement_script = MovementScript::new(
     r#"
+    start = world:get_position(entity.id)
+    end = world:get_destination(entity.id)
+
+    function get_cell(position)
+
+    function heuristic(node, goal)
+
+    function Astar(grid, start, end)
     "#
   );
   
@@ -88,6 +100,8 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(velocity)?
     .with_component(selection_radius)?
     .with_component(pathing_radius)?
+    .with_component(path)?
+    .with_component(movement_script)?
     
     //combat components
     .with_component(auto_attack_mesh)?

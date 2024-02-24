@@ -15,9 +15,11 @@ pub fn update_path(world:&mut World){
     if position.0 == destination.0 {
       let mut path = entity.mut_get_component::<Path>().unwrap();
       //If there is another node in the path, set the destination equal to the node
-      *destination = path.next().unwrap();
+      if let Some(node) = path.next(){
+       *destination = node;
+      }
       //If the path has no more nodes, remove the path
-      if path.len() == 0 {
+      else {
         commands.remove_component::<Path>(entity.id);
       }
     }

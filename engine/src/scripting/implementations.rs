@@ -1,9 +1,8 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{component_lib::{Killed, Armor, AttackDamage, Health, Owner, Target}, ecs::World, utility::calc_post_mitigation_damage};
+use crate::{component_lib::{Armor, AttackDamage, Destination, Health, Killed, Owner, Path, Position, Target}, ecs::World, utility::calc_post_mitigation_damage};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
-// -Replace field method get with field like in movement? 
 
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -45,8 +44,24 @@ impl UserData for World {
       Ok(())
     });
 
+    //Retrieves an entity's Destination
+    methods.add_method("get_destination", |_,world,entity:usize|{
+      let destination = world.immut_get_component_by_entity_id::<Destination>(entity).unwrap();
+      dbg!(destination.clone());
+      Ok([destination.0.x,destination.0.y,destination.0.z])
+    });
+
+    //Retrieves an entity's Position
+    methods.add_method("get_position", |_,world,entity:usize|{
+      let position = world.immut_get_component_by_entity_id::<Position>(entity).unwrap();
+      Ok([position.0.x,position.0.y,position.0.z])
+    });
+
+    //Add a new node to an entity's Path component
     methods.add_method("add_node_to_path", |_,world, (entity,node):(usize,[f32;3])|{
-      //push the node into the target entity's Path
+      let mut path = world.mut_get_component_by_entity_id::<Path>(entity).unwrap();
+      let node = Destination::from(node);
+      path.push(node);
       Ok(())
     });
   }

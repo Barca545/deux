@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
-    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
-  }, filesystem::load_object, input::user_inputs::{FrameInputs, MousePosition, UserInputs}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
+    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  }, filesystem::load_object, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
@@ -16,6 +16,10 @@ use glfw::{Action, Context, Key, MouseButton};
 use mlua::Lua;
 
 // added a FileType enum to the file system
+
+// Refactor
+// -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
+// -Consider moving to a slower tick rate LoL uses 30hz
 
 fn main() {
   //Configure the location of the asset folders
@@ -33,6 +37,7 @@ fn main() {
     .add_resource(Transforms::new(&screen_dimensions.aspect))
     .add_resource(Selected::NONE)
     .add_resource(MouseRay::default())
+    .add_resource(FrameInputs::new())
     //add physics acceleration structure resource
     //add events resource
     //add window?
@@ -68,7 +73,7 @@ fn main() {
   spawn_player(&mut world, "warrior", 1).unwrap();
 
   //Create the dummy entity 
-  let dummy_position_vec:Vec3 = Vec3::new(3.0, 0.0, 0.0);
+  let dummy_position_vec:Vec3 = Vec3::new(-3.0, 0.0, 0.0);
   let dummy_position = Position(dummy_position_vec);
   let dummy_previous_position = PreviousPosition(dummy_position_vec);
   let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
@@ -100,8 +105,6 @@ fn main() {
     .with_component(Gold::default()).unwrap()
     .with_component(KDA::default()).unwrap();
 
-  let mut frame_inputs = FrameInputs::new();
-
   //Main loop
   while !window.should_close() {
     //For some reason if this is not here I get a black screen
@@ -117,8 +120,9 @@ fn main() {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
         glfw::WindowEvent::MouseButton(MouseButton::Button2, Action::Press, ..) => {
           let (x, y) = window.get_cursor_pos();
-          let event = UserInputs::MouseClick(MousePosition { x, y });
-          update_mouseray(&mut world, x, y);
+          let mouse_ray = update_mouseray(&mut world, x, y);
+          let event = UserInput::MouseClick(mouse_ray);
+          let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
           frame_inputs.add_event(event);
         }
         _ => {}
@@ -129,12 +133,13 @@ fn main() {
 
     //Update
     if server_time.should_update() == true {      
-      let (x, y) = window.get_cursor_pos();
-      update_selection(&mut world, x, y);
+      // let (x, y) = window.get_cursor_pos();
+      // update_selection(&mut world, x, y);
       movement(&mut world);
       combat(&mut world);
 
       //my concern is that clearing the frame inputs means it won't update properly
+      let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
       frame_inputs.clear();
 
       //I think this is where I update the delta timer
@@ -167,8 +172,7 @@ fn main() {
       }
 
       //can maybe make the render function handle the swapbuffers
-      let interpolation_factor = server_time.get_interpolation_factor();
-      render(&world, interpolation_factor);
+      render(&world);
 
       window.swap_buffers();
       let server_time = world.mut_get_resource::<ServerTime>().unwrap();

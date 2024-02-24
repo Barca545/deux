@@ -6,7 +6,8 @@ use crate::{
 //Refactor
 // -Can just query for velocity?
 
-///Updates the velocities of all entities in the world.
+///Updates the [`Velocity`] component of all entities in the [`World`].
+/// Sets calculates the `Velocity` as the vector betwenn an entity's [`Position`] and [`Destination`].
 pub fn update_velocity(world:&World) {
   let mut query = world.query();
   let entities = query

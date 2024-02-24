@@ -3,7 +3,6 @@ mod update_position;
 mod update_velocity;
 mod update_hitbox;
 mod update_path;
-mod scripts;
 mod movement;
 
 pub use self::{
@@ -12,6 +11,5 @@ pub use self::{
   update_hitbox::update_hitbox,
   update_path::update_path,
   update_velocity::update_velocity,
-  scripts::run_scripts,
   movement::movement
 };
