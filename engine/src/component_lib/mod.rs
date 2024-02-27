@@ -1,7 +1,7 @@
 mod movement;
 mod radii;
 mod identification;
-mod timers;
+mod cooldowns;
 mod combat;
 mod scripting;
 mod levels;
@@ -13,7 +13,7 @@ pub use self::{
   movement::{Destination,PreviousPosition,Position,Velocity,UnitSpeed,Colliding, Path},
   radii::{SelectionRadius,PathingRadius,GameplayRadius,VisionRadius},
   identification::{AutoAttack,Player,Controllable,Target,Owner,Team,Killed},
-  timers::{Timer,AutoAttackCooldown},
+  cooldowns::{Cooldowns,Cooldown},
   combat::{MissleSpeed,Armor,AttackDamage,Health,KDA},
   scripting::{AutoAttackScript,MovementScript},
   levels::{Level,Exp},

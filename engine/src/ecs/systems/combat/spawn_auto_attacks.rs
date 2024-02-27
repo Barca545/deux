@@ -1,4 +1,4 @@
-use crate::{component_lib::{AutoAttack, AutoAttackCooldown, AutoAttackMesh, AutoAttackScript, Destination, MissleSpeed, Owner, Player, Position, PreviousPosition, SkinnedMesh, Target, Timer, Velocity}, ecs::World};
+use crate::{component_lib::{AutoAttack, AutoAttackMesh, AutoAttackScript, Cooldowns, Destination, MissleSpeed, Owner, Player, Position, PreviousPosition, SkinnedMesh, Target, Velocity}, ecs::World};
 
 //Refactor: 
 // -Load all the meshes into a resource and get a ref to them to speed up creation
@@ -19,14 +19,15 @@ pub fn spawn_auto_attacks(world:&mut World) {
   //Spawn an auto attack for every player entity with a target.
   for entity in entities{
     //Get the cooldown
-    let mut cooldown = entity.mut_get_component::<AutoAttackCooldown>().unwrap();
+    let mut cooldowns = entity.mut_get_component::<Cooldowns>().unwrap();
+    let auto_attack_cooldown = cooldowns.get_real_remaing("auto attack");
 
-    if cooldown.remaining()==0.0 {
+    if auto_attack_cooldown == 0.0 {
       //Get the target
       let target = entity.immut_get_component::<Target>().unwrap();
       
       //Reset the cooldown after starting the attack spawning
-      cooldown.reset();
+      cooldowns.reset("auto attack");
 
       //Get the position
       let entity_position = entity.immut_get_component::<Position>().unwrap();

@@ -13,6 +13,7 @@ use super::champion::Champion;
 // -Each game object will need it's own named asset folder
 // -Move the path generation into its own function find/replace lowercase path
 // -Make load image not panic
+// -Loading in the grid might require flipping since I use Y as up but blender uses Z as up
 
 ///Loads a Texture's pixels.
 pub fn load_texture_image(name:&str, extension:&str) -> Result<DynamicImage> {

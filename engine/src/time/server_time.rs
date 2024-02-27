@@ -1,93 +1,55 @@
-use std::mem::zeroed;
+use std::{cell::RefCell, mem::zeroed, rc::Rc};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
-type Minutes = i32;
-type Seconds = f64;
-type PerSecond = f64;
-type Count = f64;
 
-//I kinda don't love this being it's own struct
-#[derive(Debug, Clone, Copy)]
-pub struct GameDuration {
-  minutes:Minutes,
-  seconds_in_current_minute:i32,
-  seconds_since_start:Seconds
-}
+use super::{aliases::Miliseconds, BasicTimer, Count, GameDuration, PerSecond, Seconds, Timer};
 
-impl GameDuration {
-  //Should this actually be intialized to zero? I think it should for
-  // consistency. Worst case it just get's overwritten to the accurate state the
-  // next count
-  pub fn new() -> Self {
-    GameDuration {
-      minutes:0,
-      seconds_in_current_minute:0,
-      seconds_since_start:0.0
-    }
-  }
+//  Refactor:
+// -The timers should all decrement each time the game logic changes
+// -Interpolation factor is calculated wrong
+// -Interpolation factor documentation/definition is wrong
+// -Document what the tick function is doing
+// -Why do I have the additional if check in the render decrement function?
+// -Is it better to set the time_since_last measurements to 0.0 after decementing or let them accumulate by just subtracting the frequency?
+// -Add logic for deleting timers and updating their duration
+// -For deleting the timer I might need to add bitmasks, options or generational indices or something like how the ECS handles it
 
-  pub fn update(&mut self, seconds:Seconds) {
-    self.minutes = (seconds / 60.0) as i32;
-    self.seconds_since_start = seconds;
-    self.seconds_in_current_minute = (seconds % 60.0) as i32;
-  }
-
-  pub fn get_seconds_since_start(&self) -> Seconds {
-    self.seconds_since_start
-  }
-
-  pub fn get_minutes(&self) -> Minutes {
-    self.minutes
-  }
-
-  pub fn get_seconds_in_current_minute(&self) -> i32 {
-    self.seconds_in_current_minute
-  }
-  // pub fn get_nanoseconds(&self)->Seconds{todo!()}
-
-  // pub fn get_milliseconds(&self)->Seconds{todo!()}
-}
-
-//if I later find out it is bad to use custom types this way just make the
-// types a comment next to the line might eventually need a ClientTime and make
-// the methods into a trait or something
-//I think this should also track the current tick in addition to the current count 
-// (which is just the current second 
-// but I am calling it counts because it starts when the timer is started)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct ServerTime {
+  //Number of the CPU count the game started on
   start_count:Count,
+  //Number of the current CPU count
   current_count:Count,
+  //Number of the previous CPU count
   previous_count:Count,
-  game_duration:GameDuration, //might need to be inside and Rc
-  seconds_since_render:Seconds, /* unprocessed time? This is the time left over if the time
-                               * between frames was bigger than a tick */
-  seconds_since_update:Seconds,
+  //Measurement of the CPU's count frequency
   counts_per_second:PerSecond,
-  tick_frequency:PerSecond, /* this might need a different name since it is not the ticks per
-                             * second but the duration of one tick (one tick is 1/60th of a
-                             * second) */
-  render_frequency:PerSecond
+  //Measurement of the CPU's count frequency
+  game_duration:GameDuration, 
+  //Time left over if the time between render frames was bigger than a tick
+  seconds_since_render:Seconds,
+  //Time left over if the time between logic frames was bigger than a tick
+  seconds_since_update:Seconds,
+  tick_frequency:PerSecond, 
+  render_frequency:PerSecond,
+  timers: Vec<Rc<RefCell<BasicTimer>>>
 }
 
 impl ServerTime {
   pub fn new() -> Self {
     let start = Self::get_system_count_current();
+    let counts_per_second = Self::get_counts_per_second();
 
     ServerTime {
       start_count:start,
       current_count:start,
       previous_count:start,
       game_duration:GameDuration::new(),
-      /*
-      Should this actually be intialized to zero? I think it should
-      for consistency. Worst case it just get's overwritten to the
-      accurate state the next count
-      */
       seconds_since_render:0.0,
       seconds_since_update:0.0,
-      counts_per_second:Self::get_counts_per_second(),
+      counts_per_second,
       tick_frequency:1.0 / 60.0,
-      render_frequency:1.0 / 240.0
+      render_frequency:1.0 / 240.0,
+      timers:Vec::default()
     }
   }
 
@@ -104,7 +66,7 @@ impl ServerTime {
     self.tick_frequency = 1.0 / ticks_per_second
   }
 
-  /// Updates the ServerTime's `seconds_since_last_update` and
+  /// Updates the [`ServerTime`]'s `seconds_since_last_update` and
   /// `unrendered_seconds` fields. Returns the "time" passed since this
   /// `update_seconds_since_last_count()` was last called. Calculates time by
   /// subtracting the previously registered count from the newly queried count
@@ -176,47 +138,84 @@ impl ServerTime {
     &self.game_duration
   }
 
-  ///Use at the end of a loop, decrements the unrendered time by the time 1
-  /// tick takes.
+  ///Use at the end of a loop. 
+  /// Decrements the unrendered time by the time render frequency.
+  /// Decrements the displayed remaining time for any timers in the game.
   pub fn decrement_seconds_since_render(&mut self) {
     if self.seconds_since_render != 0.0 {
       self.seconds_since_render -= self.render_frequency;
+      self.decrement_display_remaining()
     }
   }
 
+  ///Use at the end of a loop. 
+  /// Decrements the game logic time by the time logic tick frequency.
+  /// Decrements the real remaining time for any timers in the game.
   pub fn decrement_seconds_since_update(&mut self) {
-    //is it better to set this to zero or let it accumulate by just subtracting the
-    // frequency
     self.seconds_since_update -= self.tick_frequency;
+    self.decrement_real_remaining()
   }
 
-  //this docnote is wrong about what an interpolation factor is and also the
-  // calculation is wrong
-
-  //I do not think this calculation for the interpolation factor is accurate
   ///Returns the amount of time to render.
   pub fn get_interpolation_factor(&self) -> Seconds {
     let interpolation_factor = self.seconds_since_render / self.tick_frequency;
     interpolation_factor
   }
 
-  // pub fn timer_in_minutes_seconds(&self,minutes:u32,seconds:u32)->Seconds{
-  //   // let seconds = (minutes*60+seconds) as Seconds;
-  //   todo!()
-  // }
+  pub fn update_render_frequency(&mut self, hz:u32) {
+    self.render_frequency = 1.0 / (hz as f64)
+  }
 
-  // pub fn timer_in_seconds(&self,seconds:u32)->Seconds{
-  //   todo!()
-  // }
+  pub fn update_tick_frequency(&mut self, hz:u32) {
+    self.tick_frequency = 1.0 / (hz as f64)
+  }
 
-  // //is milliseconds a good interval?
-  // pub fn timer_in_milliseconds(&self,miliseconds:u32)->Seconds{
-  //   // let seconds = (miliseconds/1000) as Seconds;
-  //   todo!()
-  // }
+  pub fn get_tick_frequency(&self) -> Seconds{
+    self.tick_frequency
+  }
+}
 
+//Implementation block for timers
+impl ServerTime {
+  ///Adds a new timer to the [`ServerTime`]'s list of timers and returns an [`Rc`] to the timer alongside its index.
+  pub fn new_timer(&mut self, duration:Miliseconds) -> (Rc<RefCell<BasicTimer>>, usize){
+    let timer = Rc::new(RefCell::new(BasicTimer::new(duration)));
+    self.timers.push(timer);
+    let index = self.timers.len()-1;
+    let timer = self.timers[index].clone();
+    (timer, index)
+  }
+
+  pub fn remove_timer(&mut self, index:usize){}
+
+  ///Decrements all of the game's [`BasicTimer`]s by the duration of one logic tick.
+  fn decrement_real_remaining(&self){
+    for timer in &self.timers {
+      let mut borrowed_timer = timer.borrow_mut();
+      borrowed_timer.decrement_real_remaining(self.tick_frequency);
+      //Make sure the remaining time is not less than 0.0
+      if borrowed_timer.real_remaining() <= 0.0 {
+        borrowed_timer.zero_real()
+      }
+    }
+  }
+
+  ///Decrements all of the game's [`BasicTimer`]s by the duration of one render tick.
+  fn decrement_display_remaining(&self){
+    for timer in &self.timers {
+      let mut borrowed_timer = timer.borrow_mut();
+      borrowed_timer.decrement_display_remaining(self.tick_frequency);
+      if borrowed_timer.display_remaining() <= 0.0 {
+        borrowed_timer.zero_display()
+      }
+    }
+  }
+}
+
+//Implementation block for getting the CPU's count information
+impl ServerTime {
   fn get_counts_per_second() -> PerSecond {
-    //only reliable on a single core
+    //Only reliable on a single core
     let freq = unsafe {
       let mut freq = zeroed();
       QueryPerformanceFrequency(&mut freq);
@@ -233,19 +232,8 @@ impl ServerTime {
     };
     count
   }
-
-  pub fn update_render_frequency(&mut self, hz:u32) {
-    self.render_frequency = 1.0 / (hz as f64)
-  }
-
-  pub fn update_tick_frequency(&mut self, hz:u32) {
-    self.tick_frequency = 1.0 / (hz as f64)
-  }
-
-  pub fn get_tick_frequency(&self) -> Seconds{
-    self.tick_frequency
-  }
 }
+
 
 #[cfg(test)]
 mod tests {

@@ -5,8 +5,8 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   arena::Grid, component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
-    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
-  }, filesystem::{load_grid, load_object}, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
+    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  }, filesystem::load_object, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
     window::{create_gl, create_window},
     AABB3DDebugMesh,
   }
@@ -22,6 +22,14 @@ use mlua::Lua;
 // -Consider moving to a slower tick rate LoL uses 30hz
 // -Grid should load in from a JSON once I build the grid in the level editor
 // -Grid my also need to be a resource. I'm unsure if other systems will need it
+// -Dimensions should load from a settings file
+
+//use this wherever I handle the abilties to determine if they should check for a selection
+//targeted abilities should only run if there is a selection
+pub enum Ability{
+  Targeted(String),
+  Untargeted(String)
+}
 
 fn main() {
   //Configure the location of the asset folders
@@ -139,8 +147,8 @@ fn main() {
 
     //Update
     if server_time.should_update() == true {      
-      // let (x, y) = window.get_cursor_pos();
-      // update_selection(&mut world, x, y);
+      let (x, y) = window.get_cursor_pos();
+      update_selection(&mut world, x, y);
       movement(&mut world);
       combat(&mut world);
 
