@@ -77,7 +77,7 @@ impl From<Owner> for LuaEntity {
 
 impl From<Target> for LuaEntity {
   fn from(value: Target) -> Self {
-    LuaEntity(value.0)
+    LuaEntity(value.0.unwrap())
   }
 }
 

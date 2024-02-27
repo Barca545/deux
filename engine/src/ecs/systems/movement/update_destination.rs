@@ -1,12 +1,12 @@
 use mlua::Lua;
-use crate::{component_lib::{Controllable, Destination, MovementScript, Path, Velocity, Position}, ecs::World, input::user_inputs::{FrameInputs, UserInput}, scripting::LuaEntity};
+use crate::{component_lib::{Controllable, Destination, MovementScript, Path, Position, Target}, ecs::World, input::user_inputs::{FrameInputs, UserInput}, scripting::LuaEntity};
 
 //Refactor
 // -The mouse intersection should be calculated in the same place where the MouseRay is set
 // -This should only run if the selection test says nothing is selected
 //  needs selection needs to run first and do the AABB test
 // -Revisit the limit before using the pathing algorithm once the arena is added
-// -Figure out why scripts sometimes error when collecting the destination try debugging
+// -Add attack move as a toggle (If there is a target, move into attack range and no further)
 
 ///Updates the [`Destination`] component for the entity marked with the [`Controllable`] component.
 /// If the destination is less than 100 units away, sets the `Destination` to the location of the mouse click.
@@ -26,20 +26,24 @@ pub fn update_destination(world:&mut World){
     .run();
 
     for entity in entities { 
-      let position = entity.immut_get_component::<Position>().unwrap();
-      //Narrowing the scope of the mut borrow here otherwise trying to borrow it in the script causes errors
-      {
-        let mut destination = entity.mut_get_component::<Destination>().unwrap();
-        *destination = new_destination;
-      }
+      let target = entity.immut_get_component::<Target>().unwrap();
+      //Do not move if the entity has a selected target
+      if target.0 == None {
+        let position = entity.immut_get_component::<Position>().unwrap();
+        //Narrowing the scope of the mut borrow here otherwise trying to borrow it in the script causes errors
+        {
+          let mut destination = entity.mut_get_component::<Destination>().unwrap();
+          *destination = new_destination;
+        }
 
-      // If the distance between the current Position and the Destination is large run the pathing script and replace the destination with the first node of the calculated Path
-      if position.distance(&new_destination) > 100.0 {
-        run_scripts(world);
-        let mut path = entity.mut_get_component::<Path>().unwrap();
-        if let Some(first_node) = path.next() {
-         let mut destination = entity.mut_get_component::<Destination>().unwrap();
-         *destination = first_node;
+        // If the distance between the current Position and the Destination is large run the pathing script and replace the destination with the first node of the calculated Path
+        if position.distance(&new_destination) > 100.0 {
+          run_scripts(world);
+          let mut path = entity.mut_get_component::<Path>().unwrap();
+          if let Some(first_node) = path.next() {
+          let mut destination = entity.mut_get_component::<Destination>().unwrap();
+          *destination = first_node;
+          }
         }
       }
     }

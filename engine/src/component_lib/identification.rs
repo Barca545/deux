@@ -12,9 +12,9 @@ pub struct Player(pub u32);
 ///Component which flags an entity the player can control.
 pub struct Controllable;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 ///Component containing the id of an entity's target.
-pub struct Target(pub usize);
+pub struct Target(pub Option<usize>);
 
 #[derive(Debug, Clone, Copy)]
 ///Component containing the id of an entity's owner.

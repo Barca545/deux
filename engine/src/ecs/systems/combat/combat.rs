@@ -1,10 +1,9 @@
 use crate::{component_lib::{Gold, Player, KDA}, ecs::{world_resources::DebugElements, World}};
-use super::{decrement_cooldowns::decrement_cooldowns, move_attacks::move_attacks, resolve_attacks::resolve_attacks, scripts::run_scripts, spawn_auto_attacks::spawn_auto_attacks, update_target::update_target};
+use super::{move_attacks::move_attacks, resolve_attacks::resolve_attacks, scripts::run_scripts, spawn_auto_attacks::spawn_auto_attacks, update_target::update_target};
 
 pub fn combat(world:&mut World){
   update_target(world);
   spawn_auto_attacks(world);
-  decrement_cooldowns(world);
   move_attacks(world);
   run_scripts(world);
   resolve_attacks(world);

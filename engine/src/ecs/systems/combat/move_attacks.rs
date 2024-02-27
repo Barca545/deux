@@ -24,8 +24,8 @@ pub fn move_attacks(world:&mut World) {
     
     //Get the target information
     let target = entity.immut_get_component::<Target>().unwrap();
-    let target_position = world.immut_get_component_by_entity_id::<Position>(target.0).unwrap();
-    let target_radius = world.immut_get_component_by_entity_id::<GameplayRadius>(target.0).unwrap();
+    let target_position = world.immut_get_component_by_entity_id::<Position>(target.0.unwrap()).unwrap();
+    let target_radius = world.immut_get_component_by_entity_id::<GameplayRadius>(target.0.unwrap()).unwrap();
     
     //Check if the attack is colliding with the target using a circle-point test
 //I don't think I need to refetch the attack's position but double checks

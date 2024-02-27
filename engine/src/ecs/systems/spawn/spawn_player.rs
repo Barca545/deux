@@ -1,6 +1,6 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, Gold, Level, MovementScript, Path, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, time::ServerTime, view::AABB3DDebugMesh};
+use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, Gold, Level, MovementScript, Path, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, time::ServerTime, view::AABB3DDebugMesh};
 
 // Refactor
 // -Missing some component the combat system needs
@@ -24,6 +24,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let controllable = Controllable;
   let health = champion_info.health;
   let team = Team::BLUE;
+  let target = Target(None);
   let gold = Gold::default();
   let kda = KDA::default();
   let exp = Exp::default();
@@ -38,8 +39,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let velocity = Velocity::default();
   let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
   let pathing_radius = champion_info.pathing_radius;
-  let mut path = Path::new();
-  path.push(Destination::from([-2.0,0.0,0.0])).push(Destination::from([3.0,0.0,0.0]));
+  let path = Path::new();
 
   //Render info
   let gl = world.immut_get_resource::<Gl>().unwrap();
@@ -95,6 +95,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(controllable)?
     .with_component(health)?
     .with_component(team)?
+    .with_component(target)?
     .with_component(gold)?
     .with_component(kda)?
     .with_component(exp)?

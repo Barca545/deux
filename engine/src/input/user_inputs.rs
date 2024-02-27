@@ -5,6 +5,7 @@ use crate::math::MouseRay;
 // -Get input will have to be heavily refactored
 // -Maybe each input type is a stored as a different struct that way they can be searched with turbofish
 // -Alternatively just make a different fetch function for each input type
+// -UserInput may not need to hold the mouse coordinates.
 
 //this is lazy, probably shouldn't be public but whatever
 #[derive(Debug)]

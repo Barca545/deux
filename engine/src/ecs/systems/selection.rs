@@ -1,15 +1,15 @@
 use crate::{
   component_lib::SelectionRadius, ecs::{
     world_resources::{
-      ScreenDimensions, Selected::{self, HOVERED, NONE}
+      ScreenDimensions, Selected::{self, CLICKED, HOVERED, NONE}
     },
     World
-  }, math::{MouseRay, Transforms}, physics::ray_aabb3d_collision_test
+  }, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms}, physics::ray_aabb3d_collision_test
 };
 
-//does not work consistently, unclear why. most consistently does not work at
-// bottom of screen seems to think the hitbox is longer than it should be so
-// probably has something to do with that
+// Refactor: 
+// -The hovered thing needs to updated during a render but the clicked does not. It can take a callback
+
 fn update_hovered(world:&mut World, x:f64, y:f64) {
   let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
   let transforms = world.immut_get_resource::<Transforms>().unwrap();
@@ -35,6 +35,28 @@ fn update_hovered(world:&mut World, x:f64, y:f64) {
   *selection = selection_state;
 }
 
-pub fn update_selection(world:&mut World, x:f64, y:f64) {
-  update_hovered(world, x, y);
+pub fn update_clicked(world:&mut World){
+  let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
+    if let Some(UserInput::MouseClick(mouse_ray)) = frame_inputs.get_input(){
+      let mut query = world.query();
+      let entities = query.with_component::<SelectionRadius>().unwrap().run();
+    
+    let mut selection_state = NONE;
+
+    for entity in entities {
+      let hitbox = entity.immut_get_component::<SelectionRadius>().unwrap();
+      let hit_check = ray_aabb3d_collision_test(hitbox.0, mouse_ray.0);
+      if hit_check == true {
+        selection_state = CLICKED(entity.id)
+      }
+    }
+
+    let selection = world.mut_get_resource::<Selected>().unwrap();
+    *selection = selection_state;
+  }
+}
+
+pub fn update_selection(world:&mut World) {
+  // update_hovered(world, x, y);
+  update_clicked(world);
 }

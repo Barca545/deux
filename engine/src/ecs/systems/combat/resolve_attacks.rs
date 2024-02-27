@@ -37,7 +37,7 @@ pub fn resolve_attacks(world:&mut World) {
 
       //Update the KDAs
       let mut owner_kda = world.mut_get_component_by_entity_id::<KDA>(owner.0).unwrap();
-      let mut target_kda = world.mut_get_component_by_entity_id::<KDA>(target.0).unwrap();
+      let mut target_kda = world.mut_get_component_by_entity_id::<KDA>(target.0.unwrap()).unwrap();
       owner_kda.kill(1);
       target_kda.death(1);
 

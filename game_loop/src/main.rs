@@ -4,24 +4,26 @@ extern crate glfw;
 extern crate nalgebra_glm as glm;
 
 use engine::{
-  arena::Grid, component_lib::{GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, KDA}, config::asset_config, ecs::{
-    systems::{combat, movement, register_components, render, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
-  }, filesystem::load_object, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::{
-    window::{create_gl, create_window},
-    AABB3DDebugMesh,
-  }
+  arena::Grid, config::asset_config, ecs::{
+    systems::{combat, movement, register_components, render, spawn_dummy, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+  }, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::
+  window::{create_gl, create_window}
 };
 use gl::Gl;
 use glfw::{Action, Context, Key, MouseButton};
 use mlua::Lua;
+// Refactor:
+// -Switch to using FileType enum in the file system
+// -Update input system to be in one module
+// -Make window a resource?
+// -Update to cast abilities based on keyboard inputs.
+// -Add a skillshot, AS steroid, blink, and point and click to test the ability scripting
 
-// added a FileType enum to the file system
-
-// Refactor
+// Refactor - Grid
 // -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
 // -Consider moving to a slower tick rate LoL uses 30hz
 // -Grid should load in from a JSON once I build the grid in the level editor
-// -Grid my also need to be a resource. I'm unsure if other systems will need it
+// -Grid might also need to be a resource. I'm unsure if other systems will need it
 // -Dimensions should load from a settings file
 
 //use this wherever I handle the abilties to determine if they should check for a selection
@@ -83,41 +85,10 @@ fn main() {
   //Spawn the ground
   spawn_enviroment(&mut world, "ground").unwrap();
 
-  //Spawn the players
+  //Spawn the players and dummies 
   spawn_player(&mut world, "warrior", 1).unwrap();
-
-  //Create the dummy entity 
-  let dummy_position_vec:Vec3 = Vec3::new(-3.0, 0.0, 0.0);
-  let dummy_position = Position(dummy_position_vec);
-  let dummy_previous_position = PreviousPosition(dummy_position_vec);
-  let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
-  let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
-  
-  let (dummy_vertices, dummy_indices) = load_object("box").unwrap();
-  let dummy_mesh = SkinnedMesh::new(&gl,dummy_vertices,dummy_indices,"wall", 1.0);
-
-  //combat info
-  let dummy_team = Team::RED;
-  let dummy_health = Health::new(500);
-  // let dummy_target = Target(None);
-
-  world
-    .create_entity()
-    // .with_component(Player).unwrap()
-    .with_component(dummy_mesh).unwrap()
-    .with_component(dummy_position).unwrap()
-    .with_component(dummy_previous_position).unwrap()
-    // .with_component(Destination::new(0.0, 0.0, 0.0)).unwrap()
-    // .with_component(Speed(0.05)).unwrap()
-    // .with_component(Velocity::default()).unwrap()
-    .with_component(dummy_hitbox).unwrap()
-    .with_component(dummy_hitbox_mesh).unwrap()
-    .with_component(PathingRadius(0.2)).unwrap()
-    .with_component(GameplayRadius(0.1)).unwrap()
-    .with_component(dummy_team).unwrap()
-    .with_component(dummy_health).unwrap()
-    .with_component(Gold::default()).unwrap()
-    .with_component(KDA::default()).unwrap();
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, 0.0));
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, 2.0));
 
   //Main loop
   while !window.should_close() {
@@ -147,11 +118,11 @@ fn main() {
 
     //Update
     if server_time.should_update() == true {      
-      let (x, y) = window.get_cursor_pos();
-      update_selection(&mut world, x, y);
-      movement(&mut world);
+      // let (x, y) = window.get_cursor_pos();
+      update_selection(&mut world);
       combat(&mut world);
-
+      movement(&mut world);
+      
       //my concern is that clearing the frame inputs means it won't update properly
       let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
       frame_inputs.clear();
