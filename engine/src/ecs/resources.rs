@@ -1,36 +1,38 @@
 use std::{
-  any::{Any, TypeId},
-  collections::HashMap
+  any::{Any, TypeId}, cell::{Ref, RefCell}, collections::HashMap, rc::Rc
 };
 
 #[derive(Default, Debug)]
 pub struct Resource {
-  data:HashMap<TypeId, Box<dyn Any>>
+  data:HashMap<TypeId, Rc<RefCell<Box<dyn Any>>>>
 }
 
 //add documentation
 impl Resource {
   pub fn add_resource(&mut self, data:impl Any) {
     let typeid:TypeId = data.type_id();
-    self.data.insert(typeid, Box::new(data));
+    self.data.insert(typeid, Rc::new(RefCell::new(Box::new(data))));
   }
 
-  pub fn get_ref<T:Any>(&self) -> Option<&T> {
+  pub fn get_ref<T:Any>(&self) -> Result<Ref<T>> {
     let typeid:TypeId = TypeId::of::<T>();
-    if let Some(data) = self.data.get(&typeid) {
-      data.downcast_ref()
-    } else {
-      None
-    }
+    
+    // if let Some(data) = self.data.get(&typeid) {
+    //   data.downcast_ref()
+    // } 
+    // else {
+    //   None
+    // }
   }
 
   pub fn get_mut<T:Any>(&mut self) -> Option<&mut T> {
     let typeid:TypeId = TypeId::of::<T>();
-    if let Some(data) = self.data.get_mut(&typeid) {
-      data.downcast_mut()
-    } else {
-      None
-    }
+    // if let Some(data) = self.data.get_mut(&typeid) {
+    //   data.downcast_mut()
+    // } 
+    // else {
+    //   None
+    // }
   }
 
   pub fn remove<T:Any>(&mut self) {
