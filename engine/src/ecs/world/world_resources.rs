@@ -38,50 +38,50 @@ pub struct ShaderPrograms {
 
 impl ShaderPrograms {
   pub fn new(world:&World) -> Result<Self> {
-    let gl = world.immut_get_resource::<Gl>().unwrap();
+    let gl = world.get_resource::<Gl>().unwrap();
 
     let mut normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
     let mut highlight = Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER).unwrap();
     
     normal
-      .with_model(gl)?
-      .with_view(gl)?
-      .with_projection(gl)?;
+      .with_model(&gl)?
+      .with_view(&gl)?
+      .with_projection(&gl)?;
 
     highlight
-      .with_model(gl)?
-      .with_view(gl)?
-      .with_projection(gl)?;
+      .with_model(&gl)?
+      .with_view(&gl)?
+      .with_projection(&gl)?;
 
     Ok(Self { normal, highlight })
   }
   
   pub fn set_normal_uniforms(&self, world:&World) {
-    let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    let gl = world.immut_get_resource::<Gl>().unwrap();
+    let transforms = world.get_resource::<Transforms>().unwrap();
+    let gl = world.get_resource::<Gl>().unwrap();
     let program = self.normal;
 
-    program.use_program(gl);
+    program.use_program(&gl);
 
     //Set the view transform's value
-    program.set_view_matrix(gl, &transforms.view_transform);
+    program.set_view_matrix(&gl, &transforms.view_transform);
     
     //Set the projection transform's value
-    program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
+    program.set_projection_matrix(&gl, transforms.projection_transform.as_matrix());
   }
 
   pub fn set_highlight_uniforms(&self, world:&World) {
-    let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    let gl = world.immut_get_resource::<Gl>().unwrap();
+    let transforms = world.get_resource::<Transforms>().unwrap();
+    let gl = world.get_resource::<Gl>().unwrap();
     let program = self.highlight;
 
-    program.use_program(gl);
+    program.use_program(&gl);
 
     //Set the view transform's value
-    program.set_view_matrix(gl, &transforms.view_transform);
+    program.set_view_matrix(&gl, &transforms.view_transform);
     
     //Set the projection transform's value
-    program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
+    program.set_projection_matrix(&gl, transforms.projection_transform.as_matrix());
   }
 }
 
@@ -92,7 +92,7 @@ pub struct DbgShaderProgram {
 
 impl DbgShaderProgram {
   pub fn new(world:&World) -> Self {
-    let gl = world.immut_get_resource::<Gl>().unwrap();
+    let gl = world.get_resource::<Gl>().unwrap();
     
     let program = Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap();
 
@@ -102,8 +102,8 @@ impl DbgShaderProgram {
   }
 
   pub fn set_normal_uniforms(&self, world:&World) {
-    let transforms = world.immut_get_resource::<Transforms>().unwrap();
-    let gl = world.immut_get_resource::<Gl>().unwrap();
+    let transforms = world.get_resource::<Transforms>().unwrap();
+    let gl = world.get_resource::<Gl>().unwrap();
     let program = self.program;
 
     // program.use_program(gl);

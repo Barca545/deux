@@ -14,7 +14,7 @@ pub fn create_window(world:&World) -> (Glfw, Window, Receiver<(f64, WindowEvent)
   glfw.window_hint(ContextVersionMinor(3));
   glfw.window_hint(OpenGlProfile(OpenGlProfileHint::Core));
 
-  let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
+  let screen_dimensions = world.get_resource::<ScreenDimensions>().unwrap();
 
   let (mut window, events) = glfw
     .create_window(

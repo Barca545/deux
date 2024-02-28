@@ -12,8 +12,8 @@ use crate::{component_lib::{Controllable, Destination, MovementScript, Path, Pos
 /// If the destination is less than 100 units away, sets the `Destination` to the location of the mouse click.
 /// Otherwise calculates a [`Path`] using the pathing script.
 /// Does not update entity's [`Velocity`] components.
-pub fn update_destination(world:&mut World){
-  let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
+pub fn update_destination(world:&World){
+  let frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
   //Get the MouseClick and it's corresponding ray and convert them into a Destination
   if let Some(UserInput::MouseClick(mouse_ray)) = frame_inputs.get_input(){
     let new_destination = Destination::from(mouse_ray.ray_ground_intersection());
@@ -54,7 +54,7 @@ pub fn update_destination(world:&mut World){
 ///Run a unit's pathing script [`MovementScript`]s.
 pub fn run_scripts(world: &World) {
   //this works but any script that creates new entities *will* need to mutate world and be structured differently
-  let lua = world.immut_get_resource::<Lua>().unwrap();  
+  let lua = world.get_resource::<Lua>().unwrap();  
   
   let mut query = world.query();
 

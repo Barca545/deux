@@ -1,3 +1,3 @@
 mod game_events;
 
-pub use self::game_events::GameEventQueue;
+pub use self::game_events::{GameEventQueue, GameEvent};

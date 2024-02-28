@@ -4,16 +4,14 @@
 
 // use std::collections::HashMap;
 
+use crate::component_lib::Owner;
+
 // so maybe what I can do is instad of the event holding the timestamp I have a hashmap with timestamps as the index
 //then it just listens for events in the current tick and discards the rest?  
 pub enum GameEvent{
   //Combat events
-  AutoAttackHit{
-    timestamp: i64,
-    attack_id: usize,
-    target_id: usize
-  },
-  AutoAttackSpawn
+  AutoAttackStart{owner: Owner},
+  AutoAttackHit{attack_id: usize},
 }
 
 
@@ -32,7 +30,19 @@ impl GameEventQueue {
   //this should take in an event type 
   //debating if it should take in the system as an fn mut as an argument or just spit out the events that match the requested type
   //for not let's just have it return all the events matching the timestamp and type
-  pub fn process_event(&mut self){}
+  pub fn process_events(&mut self, call_back: &dyn Fn(&mut GameEvent)){
+    for event in &mut self.events {
+      call_back(event)
+    }
+  }
+
+  // pub fn map<U: ?Sized, F>(mut orig: RefMut<'b, T>, f: F) -> RefMut<'b, U>
+  // where
+  //     F: FnOnce(&mut T) -> &mut U,
+  // {
+  //     let value = NonNull::from(f(&mut *orig));
+  //     RefMut { value, borrow: orig.borrow, marker: PhantomData }
+  // }
 }
 
 

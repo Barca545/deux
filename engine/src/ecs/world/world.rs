@@ -63,7 +63,7 @@ impl World {
   assert_eq!(*resource,11)
   ```
   */
-  pub fn mut_get_resource<T:Any>(&mut self) -> Option<&mut T> {
+  pub fn get_resource_mut<T:Any>(&self) -> Result<RefMut<T>> {
     self.resources.get_mut::<T>()
   }
 
@@ -78,7 +78,7 @@ impl World {
   assert_eq!(*resource,10)
   ```
   */
-  pub fn immut_get_resource<T:Any>(&self) -> Option<&T> {
+  pub fn get_resource<T:Any>(&self) -> Result<Ref<T>> {
     self.resources.get_ref::<T>()
   }
 

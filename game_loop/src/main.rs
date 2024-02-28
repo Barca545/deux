@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 
 use engine::{
   arena::Grid, config::asset_config, ecs::{
-    systems::{combat, movement, register_components, render, spawn_dummy, spawn_enviroment, spawn_player, update_mouseray, update_selection}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
+    systems::{combat, movement, register_components, render, spawn_dummy, spawn_enviroment, spawn_player, update_mouseray, update_target}, world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms}, World
   }, input::user_inputs::{FrameInputs, UserInput}, math::{MouseRay, Transforms, Vec3}, time::ServerTime, view::
   window::{create_gl, create_window}
 };
@@ -16,8 +16,13 @@ use mlua::Lua;
 // -Switch to using FileType enum in the file system
 // -Update input system to be in one module
 // -Make window a resource?
+// -Glfw.poll_events could probably go inside a function that goes inside the input system but confirm this doesn't have threading issues or anything
 // -Update to cast abilities based on keyboard inputs.
-// -Add a skillshot, AS steroid, blink, and point and click to test the ability scripting
+// -Add a skillshot, AS steroid, blink, and point and click to test the ability scripting.
+//  The point and click should have a burn effect.
+// -Add death system
+// -Currently it seems like only one entity can be queried against which is why I can only select one dummy and ignore collisions with one dummy
+//  Issue is based on distance from screen, the entity closer to the user is selected first?
 
 // Refactor - Grid
 // -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
@@ -25,6 +30,7 @@ use mlua::Lua;
 // -Grid should load in from a JSON once I build the grid in the level editor
 // -Grid might also need to be a resource. I'm unsure if other systems will need it
 // -Dimensions should load from a settings file
+
 
 //use this wherever I handle the abilties to determine if they should check for a selection
 //targeted abilities should only run if there is a selection
@@ -59,7 +65,7 @@ fn main() {
     //add physics acceleration structure resource
     //add window?
     .add_resource(server_time)
-    .add_resource(DebugElements::new(false, false))
+    .add_resource(DebugElements::new(true, false))
     //Initialize Lua
     .add_resource(lua);
 
@@ -87,14 +93,14 @@ fn main() {
 
   //Spawn the players and dummies 
   spawn_player(&mut world, "warrior", 1).unwrap();
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, 0.0));
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, 2.0));
-
+  
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, -3.0));
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(5.0, 0.0, 0.0));
   //Main loop
   while !window.should_close() {
     //For some reason if this is not here I get a black screen
     {
-      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
+      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
       server_time.tick();
     }
 
@@ -107,28 +113,27 @@ fn main() {
           let (x, y) = window.get_cursor_pos();
           let mouse_ray = update_mouseray(&mut world, x, y);
           let event = UserInput::MouseClick(mouse_ray);
-          let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
+          let mut frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
           frame_inputs.add_event(event);
         }
         _ => {}
       }
     }
     
-    let server_time = world.immut_get_resource::<ServerTime>().unwrap().clone();
+    let server_time = world.get_resource::<ServerTime>().unwrap().clone();
 
     //Update
     if server_time.should_update() == true {      
-      // let (x, y) = window.get_cursor_pos();
-      update_selection(&mut world);
+      update_target(&mut world);
       combat(&mut world);
       movement(&mut world);
       
       //my concern is that clearing the frame inputs means it won't update properly
-      let frame_inputs = world.mut_get_resource::<FrameInputs>().unwrap();
+      let mut frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
       frame_inputs.clear();
 
       //I think this is where I update the delta timer
-      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
+      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
       server_time.decrement_seconds_since_update()
     }
 
@@ -141,18 +146,17 @@ fn main() {
       //have some flag so it only runs if it was resized
       let (width,height) = window.get_size();
       {
-        let dimensions = world.mut_get_resource::<ScreenDimensions>().unwrap();
+        let mut dimensions = world.get_resource_mut::<ScreenDimensions>().unwrap();
         *dimensions = ScreenDimensions::new(width, height);
       }
       
       {
-        let dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap().clone();
+        let dimensions = world.get_resource::<ScreenDimensions>().unwrap().clone();
         
-        let transforms = world.mut_get_resource::<Transforms>().unwrap();
-        
+        let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
         *transforms = Transforms::new(&dimensions.aspect);
 
-        let gl = world.immut_get_resource::<Gl>().unwrap();
+        let gl = world.get_resource::<Gl>().unwrap();
         unsafe{gl.Viewport(0, 0, width, height)}
       }
 
@@ -160,7 +164,7 @@ fn main() {
       render(&world);
 
       window.swap_buffers();
-      let server_time = world.mut_get_resource::<ServerTime>().unwrap();
+      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
       server_time.decrement_seconds_since_render()
     }
   }

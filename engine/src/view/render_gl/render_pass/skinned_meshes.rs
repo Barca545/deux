@@ -10,8 +10,8 @@ use super::render_mesh::render_mesh;
 // -Evaluate if the linear interpolation is needed at all since setting the render position equal to position seems to work fine
 
 pub fn skinned_meshes(world:&World, interpolation_factor:f64) {
-  let gl = world.immut_get_resource::<Gl>().unwrap();
-  let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
+  let gl = world.get_resource::<Gl>().unwrap();
+  let program = world.get_resource::<ShaderPrograms>().unwrap().normal;
 
   let mut query = world.query();
   let entities = query.with_component::<SkinnedMesh>().unwrap().with_component::<Position>().unwrap().with_component::<PreviousPosition>().unwrap().run();
@@ -28,9 +28,9 @@ pub fn skinned_meshes(world:&World, interpolation_factor:f64) {
     let model_transform:Mat4 = calculate_model_transform(&render_position, mesh.scale_factor);
     
     //Set the model transform's value
-    program.set_model_matrix(gl, &model_transform);
+    program.set_model_matrix(&gl, &model_transform);
     
-    render_mesh(gl, &mesh.mesh);
+    render_mesh(&gl, &mesh.mesh);
   }
 }
 

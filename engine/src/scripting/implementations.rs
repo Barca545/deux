@@ -1,5 +1,5 @@
 use mlua::{UserData, UserDataMethods};
-use crate::{arena::{Grid, Terrain}, component_lib::{Armor, AttackDamage, Destination, Health, Killed, Owner, Path, Position, Target}, ecs::World, math::Vec3, utility::calc_post_mitigation_damage};
+use crate::{arena::{Grid, Terrain}, component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh, Target, Velocity}, ecs::World, math::Vec3, utility::calc_post_mitigation_damage};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
@@ -7,6 +7,45 @@ use crate::{arena::{Grid, Terrain}, component_lib::{Armor, AttackDamage, Destina
 
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    //Get an entity's target
+    methods.add_method("getTarget", |_,world,entity:usize|{
+      let target = world.immut_get_component_by_entity_id::<Target>(entity).unwrap();
+      Ok(target.0)
+    });
+
+    //Spawn a targeted projectile
+    methods.add_method("spawnTargetedProjectile", |_,world,(owner, target):(usize, usize)|{
+      let bundle;
+      {
+        //Get the owner's position
+        let owner_position = world.immut_get_component_by_entity_id::<Position>(owner).unwrap();
+
+        //Create the projectile's position information
+        let attack_position = Position(owner_position.0);
+        let previous_attack_position = PreviousPosition(owner_position.0);
+        
+        //Get the target's position
+        let destination = Destination::from(*world.immut_get_component_by_entity_id::<Position>(target).unwrap());
+        
+        //Create the projectile speed
+        let speed = world.immut_get_component_by_entity_id::<MissleSpeed>(owner).unwrap();
+
+        //Calculate velocity
+        let velocity = Velocity::new(&attack_position, &destination, &speed.0);
+        
+        //Get the mesh info
+        let auto_attack_mesh = world.immut_get_component_by_entity_id::<AutoAttackMesh>(owner).unwrap();
+
+        //Create the Target and owner wrappers
+        let target = Target(Some(target));
+        let owner = Owner(owner);
+
+        bundle = (AutoAttack::default(), attack_position, previous_attack_position, *speed, velocity, SkinnedMesh::from(auto_attack_mesh.clone()), owner, target);
+      }
+      // world.create_entity().with_components(bundle).unwrap();
+      Ok(())
+   });
+   
    //Increments the health of the queried entity
     methods.add_method("add_health", |_,world, (target,value):(usize,i32)| {
       let mut health = world.mut_get_component_by_entity_id::<Health>(target as usize).unwrap();
@@ -90,6 +129,13 @@ impl From<usize> for LuaEntity {
 impl UserData for LuaEntity{
   fn add_fields<'lua, F: mlua::prelude::LuaUserDataFields<'lua, Self>>(fields: &mut F) {
     fields.add_field_method_get("id", |_,entity_id| Ok(entity_id.0))
+  }
+}
+
+pub struct Mesh{name:String}
+impl From<String> for Mesh {
+  fn from(value: String) -> Self {
+    Mesh{name:value}
   }
 }
 

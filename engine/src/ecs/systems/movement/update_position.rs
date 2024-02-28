@@ -42,11 +42,11 @@ pub fn update_position(world:&World) {
         if test_entity_id != id {
           collision_check = collision_test(world, new_position, pathing_radius.0, test_entity_id);
         }
+        //Return early if a collision is detected, there is no more reason to continue
+        if collision_check {
+          return
+        }
       }
-
-      // dbg!(position.clone());
-      // dbg!(new_position.clone());
-      // dbg!(destination.clone());
 
       if !collision_check {
         *previous_position = PreviousPosition::from(*position);

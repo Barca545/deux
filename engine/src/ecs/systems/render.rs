@@ -15,10 +15,10 @@ use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, S
 //I'll need to update the debug functionality
 
 pub fn render(world:&World) {
-  let gl = world.immut_get_resource::<Gl>().unwrap();
-  let interpolation_factor = world.immut_get_resource::<ServerTime>().unwrap().get_interpolation_factor();
-  let programs = world.immut_get_resource::<ShaderPrograms>().unwrap();
-  let debug_elements = world.immut_get_resource::<DebugElements>().unwrap();
+  let gl = world.get_resource::<Gl>().unwrap();
+  let interpolation_factor = world.get_resource::<ServerTime>().unwrap().get_interpolation_factor();
+  let programs = world.get_resource::<ShaderPrograms>().unwrap();
+  let debug_elements = world.get_resource::<DebugElements>().unwrap();
 
   unsafe {
     gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT)
@@ -30,7 +30,7 @@ pub fn render(world:&World) {
   programs.set_normal_uniforms(world);
 
   unsafe { gl.StencilMask(0x00) };
-  programs.normal.use_program(gl);
+  programs.normal.use_program(&gl);
   render_pass::static_geometry(&world);
 
   //First Render Pass
@@ -50,7 +50,7 @@ pub fn render(world:&World) {
     render_pass::debug(&world, interpolation_factor);
   }
 
-  programs.highlight.use_program(gl);
+  programs.highlight.use_program(&gl);
   render_pass::special_outlines(&world, interpolation_factor);
 
   unsafe {

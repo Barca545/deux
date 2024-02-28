@@ -6,7 +6,7 @@ pub fn spawn_dummy(world:&mut World, gl:Gl, position:Vec3){
   let dummy_position_vec:Vec3 = position;
   let dummy_position = Position(dummy_position_vec);
   let dummy_previous_position = PreviousPosition(dummy_position_vec);
-  let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.7, 0.7);
+  let dummy_hitbox = SelectionRadius::new(&dummy_position, 0.2, 0.7);
   let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
   
   let (dummy_vertices, dummy_indices) = load_object("box").unwrap();

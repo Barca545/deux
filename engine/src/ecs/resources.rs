@@ -1,6 +1,10 @@
 use std::{
-  any::{Any, TypeId}, cell::{Ref, RefCell}, collections::HashMap, rc::Rc
+  any::{Any, TypeId}, cell::{Ref, RefCell, RefMut}, collections::HashMap, rc::Rc
 };
+
+use crate::errors::EcsErrors;
+use eyre::Result;
+use super::bundle::TypeInfo;
 
 #[derive(Default, Debug)]
 pub struct Resource {
@@ -15,8 +19,10 @@ impl Resource {
   }
 
   pub fn get_ref<T:Any>(&self) -> Result<Ref<T>> {
-    let typeid:TypeId = TypeId::of::<T>();
-    
+    let ty = TypeInfo::of::<T>();
+    let resource_ref = self.data.get(&ty.id()).ok_or(EcsErrors::ResourceDataDoesNotExist{component:ty.type_name().to_string()})?;
+    let borrowed_resource = resource_ref.as_ref().borrow();
+    Ok(Ref::map(borrowed_resource, |resource| resource.downcast_ref::<T>().unwrap()))
     // if let Some(data) = self.data.get(&typeid) {
     //   data.downcast_ref()
     // } 
@@ -25,8 +31,11 @@ impl Resource {
     // }
   }
 
-  pub fn get_mut<T:Any>(&mut self) -> Option<&mut T> {
-    let typeid:TypeId = TypeId::of::<T>();
+  pub fn get_mut<T:Any>(&self) -> Result<RefMut<T>> {
+    let ty = TypeInfo::of::<T>();
+    let resource_ref = self.data.get(&ty.id()).ok_or(EcsErrors::ResourceDataDoesNotExist{component:ty.type_name().to_string()})?;
+    let borrowed_resource = resource_ref.as_ref().borrow_mut();
+    Ok(RefMut::map(borrowed_resource, |resource| resource.downcast_mut::<T>().unwrap()))
     // if let Some(data) = self.data.get_mut(&typeid) {
     //   data.downcast_mut()
     // } 
@@ -48,28 +57,29 @@ mod tests {
   #[test]
   fn add_resource() {
     let resources:Resource = init_resource();
-    let stored_resource:&Box<dyn Any> = resources.data.get(&TypeId::of::<WorldWidth>()).unwrap();
+    let stored_resource = resources.data.get(&TypeId::of::<WorldWidth>()).unwrap();
+    let borrowed_resource = stored_resource.as_ref().borrow();
 
-    let extracted_world_width:&WorldWidth = stored_resource.downcast_ref::<WorldWidth>().unwrap();
+    let extracted_world_width:&WorldWidth = borrowed_resource.downcast_ref::<WorldWidth>().unwrap();
     assert_eq!(extracted_world_width.0, 100.0)
   }
   #[test]
   fn immut_get_resource() {
     let resources:Resource = init_resource();
 
-    if let Some(extracted_world_width) = resources.get_ref::<WorldWidth>() {
+    if let Ok(extracted_world_width) = resources.get_ref::<WorldWidth>() {
       assert_eq!(extracted_world_width.0, 100.0)
-    }
+    };
   }
 
   #[test]
   fn mut_get_resource() {
-    let mut resources:Resource = init_resource();
+    let resources:Resource = init_resource();
     {
-      let world_width:&mut WorldWidth = resources.get_mut::<WorldWidth>().unwrap();
+      let mut world_width = resources.get_mut::<WorldWidth>().unwrap();
       world_width.0 += 1.0
     }
-    let world_width:&WorldWidth = resources.get_ref::<WorldWidth>().unwrap();
+    let world_width = resources.get_ref::<WorldWidth>().unwrap();
     assert_eq!(world_width.0, 101.0)
   }
 

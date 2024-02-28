@@ -2,15 +2,24 @@
 //these probably need to hold a duration so the can be timed
 #[derive(Debug, Clone, Copy)]
 pub enum MovementState {
-  DASHING,
-  WALKING
+  Dashing,
+  Walking,
+  Blinking
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub enum PlayerState{
+  #[default]
+  Idle,
+  Moving(MovementState),
+  Attacking
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum CrowdControlState {
-  STUNNED,
-  SLOWED,
-  AIRBORNE
+  Stunned,
+  Slowed,
+  Airborne
 }
 
 #[derive(Debug, Default, Clone)]

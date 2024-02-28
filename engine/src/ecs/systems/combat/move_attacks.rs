@@ -28,7 +28,7 @@ pub fn move_attacks(world:&mut World) {
     let target_radius = world.immut_get_component_by_entity_id::<GameplayRadius>(target.0.unwrap()).unwrap();
     
     //Check if the attack is colliding with the target using a circle-point test
-//I don't think I need to refetch the attack's position but double checks
+    //I don't think I need to refetch the attack's position but double checks
     let collision_check = circle_point_collision_test(position.0, target_position.0, target_radius.0);
 
     //If the attack has hit its target, buffer the command to give it the Colliding component

@@ -1,6 +1,6 @@
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, Gold, Level, MovementScript, Path, Player, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, time::ServerTime, view::AABB3DDebugMesh};
+use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, MovementScript, Path, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, time::ServerTime, view::AABB3DDebugMesh};
 
 // Refactor
 // -Missing some component the combat system needs
@@ -11,6 +11,7 @@ use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cool
 // -Add armor to JSON
 // -Controllable flag information needs to get passed in from somewhere else
 // -Team information needs to get passed in from somewhere else
+// -GamplayRadius needs to load in from JSON
 
 
 ///Spawns a player from a given champion name and player number.
@@ -38,37 +39,56 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let speed = champion_info.speed;
   let velocity = Velocity::default();
   let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
+  let gameplay_radius = GameplayRadius(1.0);
   let pathing_radius = champion_info.pathing_radius;
   let path = Path::new();
+  let status = PlayerState::default();
 
   //Render info
-  let gl = world.immut_get_resource::<Gl>().unwrap();
+  
   let (sprite_vertices, sprite_indices) = load_object(name)?;
-  let player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
-  let player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  let auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
-
-  //Get the server time so cooldowns can be created
-  let server_time = world.mut_get_resource::<ServerTime>().unwrap();
+  
+  let player_mesh;
+  let auto_attack_mesh;
+  let player_hitbox_mesh;
+  {
+  let gl = world.get_resource::<Gl>().unwrap();
+  player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
+  player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
+  auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
+  }
+  
 
   //Combat info 
   let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
   let attack_damage = champion_info.attack_damage;
   let basic_cooldown_duration = champion_info.auto_attack_cooldown;
-  let abilit_1_cooldown_duration = 0.0;
-  let abilit_2_cooldown_duration = 0.0;
-  let abilit_3_cooldown_duration = 0.0;
-  let abilit_4_cooldown_duration = 0.0;
-  let cooldowns = Cooldowns::new(server_time, basic_cooldown_duration, abilit_1_cooldown_duration, abilit_2_cooldown_duration, abilit_3_cooldown_duration, abilit_4_cooldown_duration);
+  let auto_windup = 0.0;
+  let ability_1_cooldown_duration = 0.0;
+  let ability_2_cooldown_duration = 0.0;
+  let ability_3_cooldown_duration = 0.0;
+  let ability_4_cooldown_duration = 0.0;
 
+  //Create timers
+  let cooldowns;
+  {
+  let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+  cooldowns = Cooldowns::new(&mut server_time, basic_cooldown_duration, auto_windup, ability_1_cooldown_duration, ability_2_cooldown_duration, ability_3_cooldown_duration, ability_4_cooldown_duration);
+  }
+  
   //Script info
   let auto_attack_script = AutoAttackScript::new(
-    r#"
-    attack_damage = world:get_attack_damage(owner.id)
-    world:remove_health(target.id,attack_damage)
+  r#"
+      target = world:getTarget(owner.id)
+      world:spawnTargetedProjectile(owner.id, 2)
     "#
   );
+
+  // r#"
+  // attack_damage = world:get_attack_damage(owner.id)
+  // world:remove_health(target.id,attack_damage)
+  // "#
 
   //How pathing should work:
   // -Make the list of open/closed indexes a global in lua since it's constant throughout the game
@@ -100,6 +120,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(kda)?
     .with_component(exp)?
     .with_component(level)?
+    .with_component(status)?
     
     //movement and collision components
     .with_component(position)?
@@ -108,6 +129,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(speed)?
     .with_component(velocity)?
     .with_component(selection_radius)?
+    .with_component(gameplay_radius)?
     .with_component(pathing_radius)?
     .with_component(path)?
     .with_component(movement_script)?
@@ -125,7 +147,7 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     //scripts
     .with_component(auto_attack_script)?;
   
-  let debug = world.immut_get_resource::<DebugElements>().unwrap();
+  let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.aabb {
     //if true add the dbg mesh
   }

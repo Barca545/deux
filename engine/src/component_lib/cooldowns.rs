@@ -10,14 +10,16 @@ pub struct Cooldowns(HashMap<String,Cooldown>);
 impl Cooldowns {
   pub fn new(
     server_time: &mut ServerTime,
-    auto:f64,
-    ability_1:f64,
-    ability_2:f64,
-    ability_3:f64,
-    ability_4:f64,
+    auto:Miliseconds,
+    auto_windup: Miliseconds,
+    ability_1:Miliseconds,
+    ability_2:Miliseconds,
+    ability_3:Miliseconds,
+    ability_4:Miliseconds,
   ) -> Self{
     let mut cooldowns = HashMap::new();
     cooldowns.insert(String::from("auto attack"), Cooldown::new(server_time, auto));
+    cooldowns.insert(String::from("auto windup"), Cooldown::new(server_time, auto_windup));
     cooldowns.insert(String::from("ability 1"), Cooldown::new(server_time, ability_1));
     cooldowns.insert(String::from("ability 2"), Cooldown::new(server_time, ability_2));
     cooldowns.insert(String::from("ability 3"), Cooldown::new(server_time, ability_3));

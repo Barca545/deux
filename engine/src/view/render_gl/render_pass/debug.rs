@@ -9,8 +9,8 @@ use gl::{Gl, FILL, FRONT, LINE, LINES};
 use glm::lerp;
 
 pub fn debug(world:&World, interpolation_factor:f64) {
-  let gl = world.immut_get_resource::<Gl>().unwrap();
-  let program = world.immut_get_resource::<DbgShaderProgram>().unwrap().program;
+  let gl = world.get_resource::<Gl>().unwrap();
+  let program = world.get_resource::<DbgShaderProgram>().unwrap().program;
 
   let mut query = world.query();
   let entities = query.with_component::<AABB3DDebugMesh>().unwrap().with_component::<Position>().unwrap().run();
@@ -25,7 +25,7 @@ pub fn debug(world:&World, interpolation_factor:f64) {
     let mesh = entity.immut_get_component::<AABB3DDebugMesh>().unwrap();
     let vao = &mesh.vao;
 
-    vao.bind(gl);
+    vao.bind(&gl);
 
     //bind the model transform
     // let model_transform = calculate_model_transform(&render_position, 1.1);
@@ -36,6 +36,6 @@ pub fn debug(world:&World, interpolation_factor:f64) {
       gl.DrawArrays(LINES, 0, 36);
       gl.PolygonMode(FRONT, FILL);
     }
-    vao.unbind(gl);
+    vao.unbind(&gl);
   }
 }

@@ -1,14 +1,26 @@
 use crate::{component_lib::{Gold, Player, KDA}, ecs::{world_resources::DebugElements, World}};
-use super::{move_attacks::move_attacks, resolve_attacks::resolve_attacks, scripts::run_scripts, spawn_auto_attacks::spawn_auto_attacks, update_target::update_target};
+use super::{move_attacks::move_attacks, resolve_attacks::resolve_attacks, scripts::run_scripts, spawn_auto_attacks::spawn_auto_attacks};
+// Refactor:
+// -Scripts shouldn't run each frame. 
+// -Scripts need some tag or something that indicate when they should run.
+// -Update Target should possibly be part of selection
+
 
 pub fn combat(world:&mut World){
-  update_target(world);
-  spawn_auto_attacks(world);
-  move_attacks(world);
+  //Check for a combat event
+  //if StartAuto/abilitynumber spawn attacks and update cooldowns
+  //Spawning the attacks should be handled by scripts 
+  //Wherever the events are created needs to check the target is valid and the auto cooldown is 0
+
+  // spawn_auto_attacks(world);
+  //move the attacks -> Should this go into the movement system?
   run_scripts(world);
+  move_attacks(world);
+  //Look for an attackhit event and resolve them and any onhit scripts
+  //Maybe resolve events is a separate system and this goes there
   resolve_attacks(world);
   //only run if debug attacks is enabled
-  let debug = world.immut_get_resource::<DebugElements>().unwrap();
+  let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.attacks {
     debug_combat(world);
   }

@@ -5,12 +5,15 @@ mod selection;
 mod combat;
 mod spawn;
 mod input;
+mod playerstate;
 
 pub use self::{
   movement::{movement,update_destination},
   render::render,
-  selection::update_selection,
+  // selection::update_selection,
   combat::combat,
   spawn::{spawn_player,spawn_enviroment,register_components, spawn_dummy},
-  input::update_mouseray::update_mouseray
+  input::{
+    update_mouseray::update_mouseray,
+    update_target}
 };

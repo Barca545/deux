@@ -8,6 +8,8 @@ pub enum EcsErrors {
   ComponentNotRegistered,
   #[error("Attempted to reference an entity that does not exist")]
   EntityDoesNotExist,
+  #[error("Attempted to access {component:?} which does not exist")]
+  ResourceDataDoesNotExist{component:String},
   #[error("Attempted to use component data that does not exist")]
   ComponentDataDoesNotExist,
   #[error("Attempted to downcast component to the wrong type")]

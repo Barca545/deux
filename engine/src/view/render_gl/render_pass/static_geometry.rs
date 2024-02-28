@@ -5,8 +5,8 @@ use gl::Gl;
 use super::render_mesh::render_mesh;
 
 pub fn static_geometry(world:&World) {
-  let gl = world.immut_get_resource::<Gl>().unwrap();
-  let program = world.immut_get_resource::<ShaderPrograms>().unwrap().normal;
+  let gl = world.get_resource::<Gl>().unwrap();
+  let program = world.get_resource::<ShaderPrograms>().unwrap().normal;
 
   let mut query = world.query();
 
@@ -24,8 +24,8 @@ pub fn static_geometry(world:&World) {
     let model_transform:Mat4 = calculate_model_transform(&render_position, 1.1);
     
     //Set the model transform's value
-    program.set_model_matrix(gl, &model_transform);
+    program.set_model_matrix(&gl, &model_transform);
     
-    render_mesh(gl, &mesh.0);
+    render_mesh(&gl, &mesh.0);
   }
 }
