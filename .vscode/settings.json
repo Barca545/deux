@@ -3,11 +3,14 @@
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
   "editor.indentSize": "tabSize",
-
   "rust-analyzer.linkedProjects": [
     "gl/Cargo.toml",
     "Cargo.toml",
     ".\\engine\\Cargo.toml"
   ],
-  "rust-analyzer.showUnlinkedFileNotification": false
+  "rust-analyzer.showUnlinkedFileNotification": false,
+  "editor.formatOnSave": false,
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
 }

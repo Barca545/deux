@@ -1,29 +1,26 @@
-use crate::{
-  ecs::entities::Entities,
-  errors::EcsErrors
-};
+use super::query_entity::QueryEntity;
+use crate::{ecs::entities::Entities, errors::EcsErrors};
 use eyre::Result;
 use std::any::{Any, TypeId};
-use super::query_entity::QueryEntity;
 
 #[derive(Debug)]
 pub struct Query<'a> {
-  map:u128,
-  entities:&'a Entities,
-  typeids:Vec<TypeId>
+  map: u128,
+  entities: &'a Entities,
+  typeids: Vec<TypeId>,
 }
 
 impl<'a> Query<'a> {
-  pub fn new(entities:&'a Entities) -> Self {
+  pub fn new(entities: &'a Entities) -> Self {
     Self {
-      map:0,
+      map: 0,
       entities,
-      typeids:vec![]
+      typeids: vec![],
     }
   }
   ///Tells the query the entities it pulls must contain the type passed in
   /// as an argument.
-  pub fn with_component<T:Any>(&mut self) -> Result<&mut Self> {
+  pub fn with_component<T: Any>(&mut self) -> Result<&mut Self> {
     let typeid = TypeId::of::<T>();
     if let Some(bit_mask) = self.entities.get_bitmask(&typeid) {
       self.map |= bit_mask;
@@ -35,7 +32,7 @@ impl<'a> Query<'a> {
   }
 
   ///Returns a query entity containing all entities containing the queried
-  /// components. Exposes the `immut_get_component` and `mut_get_component`
+  /// components. Exposes the `get_component` and `mut_get_component`
   /// methods for returned entities.
   pub fn run(&self) -> Vec<QueryEntity> {
     self
@@ -63,12 +60,12 @@ mod test {
 
   #[test]
   fn query_mask_updating_with_component() -> Result<()> {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
 
     entities.register_component::<u32>();
     entities.register_component::<f32>();
 
-    let mut query:Query<'_> = Query::new(&entities);
+    let mut query: Query<'_> = Query::new(&entities);
 
     query.with_component::<u32>()?.with_component::<f32>()?;
 
@@ -90,13 +87,13 @@ mod test {
 
     let mut query = Query::new(&entities);
 
-    let entities:Vec<QueryEntity> = query.with_component::<u32>()?.run();
+    let entities: Vec<QueryEntity> = query.with_component::<u32>()?.run();
 
     assert_eq!(entities.len(), 1);
 
     for entity in entities {
       assert_eq!(entity.id, 0);
-      let health:Ref<u32> = entity.immut_get_component::<u32>()?;
+      let health: Ref<u32> = entity.get_component::<u32>()?;
       assert_eq!(*health, 100);
     }
     Ok(())
@@ -114,28 +111,28 @@ mod test {
 
     let mut query = Query::new(&entities);
 
-    let entities:Vec<QueryEntity> = query.with_component::<Health>()?.run();
+    let entities: Vec<QueryEntity> = query.with_component::<Health>()?.run();
 
     assert_eq!(entities.len(), 1);
 
     for entity in entities {
       assert_eq!(entity.id, 0);
-      let mut health:RefMut<Health> = entity.mut_get_component::<Health>()?;
+      let mut health: RefMut<Health> = entity.get_component_mut::<Health>()?;
       assert_eq!(health.0, 100);
       health.0 += 1;
     }
 
-    let entities:Vec<QueryEntity> = query.with_component::<Health>()?.run();
+    let entities: Vec<QueryEntity> = query.with_component::<Health>()?.run();
 
     for entity in entities {
-      let health:Ref<Health> = entity.immut_get_component::<Health>()?;
+      let health: Ref<Health> = entity.get_component::<Health>()?;
       assert_eq!(health.0, 101);
     }
     Ok(())
   }
 
   #[test]
-  fn query_for_entity_after_component_delete()->Result<()>{
+  fn query_for_entity_after_component_delete() -> Result<()> {
     let mut entities = Entities::default();
     entities.register_component::<Health>();
     entities.register_component::<Damage>();
@@ -143,14 +140,14 @@ mod test {
     entities.create_entity().with_component(Health(100))?;
     entities.add_component_by_entity_id(0, Damage(100))?;
     entities.delete_component_by_entity_id::<Damage>(0)?;
-    
+
     let mut query = Query::new(&entities);
 
     let entities = query.with_component::<Health>()?.with_component::<Damage>()?.run();
     assert_eq!(entities.len(), 0);
     // let entity = &entities[0];
     //len should be zero
-    // 
+    //
 
     Ok(())
   }

@@ -1,6 +1,11 @@
 use crate::{
-  ecs::{bundle::{Bundle, TypeInfo}, entities::Entities, query::Query, resources::Resource},
-  errors::EcsErrors
+  ecs::{
+    bundle::{Bundle, TypeInfo},
+    entities::Entities,
+    query::Query,
+    resources::Resource,
+  },
+  errors::EcsErrors,
 };
 
 use eyre::Result;
@@ -19,8 +24,8 @@ use std::{
 
 #[derive(Default, Debug)]
 pub struct World {
-  resources:Resource,
-  entities:Entities
+  resources: Resource,
+  entities: Entities,
 }
 
 impl World {
@@ -43,7 +48,7 @@ impl World {
   world.add_resource(10_u32);
   ```
   */
-  pub fn add_resource(&mut self, data:impl Any) -> &mut Self {
+  pub fn add_resource(&mut self, data: impl Any) -> &mut Self {
     self.resources.add_resource(data);
     self
   }
@@ -63,7 +68,7 @@ impl World {
   assert_eq!(*resource,11)
   ```
   */
-  pub fn get_resource_mut<T:Any>(&self) -> Result<RefMut<T>> {
+  pub fn get_resource_mut<T: Any>(&self) -> Result<RefMut<T>> {
     self.resources.get_mut::<T>()
   }
 
@@ -78,12 +83,12 @@ impl World {
   assert_eq!(*resource,10)
   ```
   */
-  pub fn get_resource<T:Any>(&self) -> Result<Ref<T>> {
+  pub fn get_resource<T: Any>(&self) -> Result<Ref<T>> {
     self.resources.get_ref::<T>()
   }
 
   ///Query immutably for the specified component data from the entity whose ID matches the given index.
-  pub fn immut_get_component_by_entity_id<T:Any>(&self, index:usize) -> Result<Ref<T>> {
+  pub fn get_component<T: Any>(&self, index: usize) -> Result<Ref<T>> {
     let typid = TypeId::of::<T>();
 
     let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
@@ -94,7 +99,7 @@ impl World {
   }
 
   ///Query mutably for the specified component data from the entity whose ID matches the given index.
-  pub fn mut_get_component_by_entity_id<T:Any>(&self, index:usize) -> Result<RefMut<T>> {
+  pub fn get_component_mut<T: Any>(&self, index: usize) -> Result<RefMut<T>> {
     let typid = TypeId::of::<T>();
 
     let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
@@ -115,12 +120,12 @@ impl World {
   world.remove_resource::<u32>();
   ```
   */
-  pub fn remove_resource<T:Any>(&mut self) {
+  pub fn remove_resource<T: Any>(&mut self) {
     self.resources.remove::<T>()
   }
 
   ///Updates the Entities to include components of type T.
-  pub fn register_component<T:Any + 'static>(&mut self) -> &mut Entities {
+  pub fn register_component<T: Any + 'static>(&mut self) -> &mut Entities {
     self.entities.register_component::<T>()
   }
 
@@ -142,29 +147,29 @@ impl World {
     Query::new(&self.entities)
   }
 
-  ///Updates the bitmap of the entity matching the provided ID to indicate it does not contain the component type. 
-  pub fn remove_component<T:Any>(&mut self, index:usize) -> Result<()> {
+  ///Updates the bitmap of the entity matching the provided ID to indicate it does not contain the component type.
+  pub fn remove_component<T: Any>(&mut self, index: usize) -> Result<()> {
     self.entities.delete_component_by_entity_id::<T>(index)
   }
 
-  pub fn remove_component_by_typeinfo(&mut self, index:usize, ty:TypeInfo) -> Result<()> {
+  pub fn remove_component_by_typeinfo(&mut self, index: usize, ty: TypeInfo) -> Result<()> {
     self.entities.delete_component_by_type_info(index, ty)
   }
 
   ///Adds a component to the entity matching the provided ID.
-  pub fn add_component(&mut self, index:usize, data:impl Any, ) -> Result<()> {
+  pub fn add_component(&mut self, index: usize, data: impl Any) -> Result<()> {
     self.entities.add_component_by_entity_id(index, data)
   }
 
-  ///Adds a bundle of components to an entity. 
+  ///Adds a bundle of components to an entity.
   /// Does not error if component is unregistered but operation will fail.
-  pub fn add_components(&mut self, index:usize, components:impl Bundle){
+  pub fn add_components(&mut self, index: usize, components: impl Bundle) {
     self.entities.add_components(index, components)
   }
 
   ///Deletes an entity from the entities list matching the index.
   /// Leaves the slot open -- the next entity added will overwrite the emptied slot.
-  pub fn delete_entity(&mut self, index:usize) -> Result<()> {
+  pub fn delete_entity(&mut self, index: usize) -> Result<()> {
     self.entities.delete_entity(index)
   }
 }

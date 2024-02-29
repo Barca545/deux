@@ -1,7 +1,12 @@
-use eyre::Result;
-use std::{any::{Any, TypeId, type_name}, cell::RefCell, collections::HashMap, rc::Rc};
-use crate::errors::EcsErrors;
 use super::bundle::{Bundle, TypeInfo};
+use crate::errors::EcsErrors;
+use eyre::Result;
+use std::{
+  any::{type_name, Any, TypeId},
+  cell::RefCell,
+  collections::HashMap,
+  rc::Rc,
+};
 
 // Refactor:
 // -Make components private
@@ -23,18 +28,17 @@ use super::bundle::{Bundle, TypeInfo};
 pub type Component = Rc<RefCell<Box<dyn Any>>>;
 pub type Components = HashMap<TypeId, Vec<Option<Component>>>;
 
-
 #[derive(Debug, Default)]
 pub struct Entities {
-  pub components:Components,
-  bitmasks:HashMap<TypeId, u128>,
+  pub components: Components,
+  bitmasks: HashMap<TypeId, u128>,
   //contains the bitmaps for the registered components
-  pub map:Vec<u128>,
-  inserting_into_index:usize
+  pub map: Vec<u128>,
+  inserting_into_index: usize,
 }
 
 impl Entities {
-  pub fn register_component<T:Any + 'static>(&mut self) -> &mut Self {
+  pub fn register_component<T: Any + 'static>(&mut self) -> &mut Self {
     let typeid = TypeId::of::<T>();
     self.components.insert(typeid, vec![]);
     self.bitmasks.insert(typeid, 1 << self.bitmasks.len());
@@ -66,66 +70,76 @@ impl Entities {
   ///Used with `create_entity` to assign components and their initial values to
   /// the entity being created. Updates the entity's bitmap to indicate which components they contain.
   /// `with_component` will continue to update the same entity until a new entity is spawned.
-  pub fn with_component<T:Any>(&mut self, data:T) -> Result<&mut Self> {
-    let typeid:TypeId = data.type_id();
+  pub fn with_component<T: Any>(&mut self, data: T) -> Result<&mut Self> {
+    let typeid: TypeId = data.type_id();
     let index = self.inserting_into_index;
 
     if let Some(components) = self.components.get_mut(&typeid) {
-      let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled{component:type_name::<T>().to_string()})?;
+      let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled {
+        component: type_name::<T>().to_string(),
+      })?;
       *component = Some(Rc::new(RefCell::new(Box::new(data))));
 
       let bitmask = self.bitmasks.get(&typeid).unwrap();
       self.map[index] |= *bitmask
-    } 
-    else {
+    } else {
       #[cfg(debug_assertions)]
-      return Err(EcsErrors::CreateComponentNeverCalled{component:type_name::<T>().to_string()}.into());
+      return Err(
+        EcsErrors::CreateComponentNeverCalled {
+          component: type_name::<T>().to_string(),
+        }
+        .into(),
+      );
     };
     Ok(self)
   }
 
-  pub fn with_components(&mut self, bundle: impl Bundle) -> Result<()>{
-    bundle.safe_put(|ty, data|{
-      let typeid:TypeId = ty.id();
+  pub fn with_components(&mut self, bundle: impl Bundle) -> Result<()> {
+    bundle.safe_put(|ty, data| {
+      let typeid: TypeId = ty.id();
       let index = self.inserting_into_index;
 
       if let Some(components) = self.components.get_mut(&typeid) {
-        let component = components.get_mut(index).ok_or(EcsErrors::CreateComponentNeverCalled{component:ty.type_name().to_string()}).unwrap();
+        let component = components
+          .get_mut(index)
+          .ok_or(EcsErrors::CreateComponentNeverCalled {
+            component: ty.type_name().to_string(),
+          })
+          .unwrap();
         *component = Some(Rc::new(RefCell::new(data)));
-  
+
         let bitmask = self.bitmasks.get(&typeid).unwrap();
         self.map[index] |= *bitmask
-      } 
+      }
     });
     Ok(())
   }
 
-  pub fn get_bitmask(&self, typeid:&TypeId) -> Option<u128> {
+  pub fn get_bitmask(&self, typeid: &TypeId) -> Option<u128> {
     return self.bitmasks.get(typeid).copied();
   }
 
-  pub fn delete_component_by_entity_id<T:Any>(&mut self, index:usize) -> Result<()> {
+  pub fn delete_component_by_entity_id<T: Any>(&mut self, index: usize) -> Result<()> {
     let typeid = TypeId::of::<T>();
     if let Some(mask) = self.bitmasks.get(&typeid) {
       self.map[index] &= !*mask;
-    } 
+    }
     Ok(())
   }
 
-  pub fn delete_component_by_type_info(&mut self, index:usize, ty:TypeInfo) -> Result<()> {
+  pub fn delete_component_by_type_info(&mut self, index: usize, ty: TypeInfo) -> Result<()> {
     if let Some(mask) = self.bitmasks.get(&ty.id()) {
       self.map[index] &= !*mask;
-    } 
+    }
     Ok(())
   }
 
-  pub fn add_component_by_entity_id(&mut self, index:usize, data:impl Any) -> Result<()> {
+  pub fn add_component_by_entity_id(&mut self, index: usize, data: impl Any) -> Result<()> {
     let typeid = data.type_id();
 
     if let Some(mask) = self.bitmasks.get(&typeid) {
       self.map[index] |= *mask;
-    } 
-    else {
+    } else {
       return Err(EcsErrors::ComponentNotRegistered.into());
     };
 
@@ -135,13 +149,12 @@ impl Entities {
     Ok(())
   }
 
-  pub fn add_components(&mut self, index:usize, components: impl Bundle){
+  pub fn add_components(&mut self, index: usize, components: impl Bundle) {
     // let test = self.components.get_mut(&typeinfo.id()).unwrap();
-    components.safe_put(|typeinfo, data|{
+    components.safe_put(|typeinfo, data| {
       if let Some(mask) = self.bitmasks.get(&typeinfo.id()) {
         self.map[index] |= *mask;
-      } 
-      else{
+      } else {
         dbg!(format!("Component {:?} Not Registered", typeinfo.id()));
       }
       let components = self.components.get_mut(&typeinfo.id()).unwrap();
@@ -149,11 +162,10 @@ impl Entities {
     });
   }
 
-  pub fn delete_entity(&mut self, index:usize) -> Result<()> {
+  pub fn delete_entity(&mut self, index: usize) -> Result<()> {
     if let Some(map) = self.map.get_mut(index) {
       *map = 0;
-    } 
-    else {
+    } else {
       return Err(EcsErrors::EntityDoesNotExist.into());
     }
 
@@ -164,12 +176,12 @@ impl Entities {
 #[cfg(test)]
 #[allow(clippy::float_cmp)]
 mod tests {
-  use std::any::TypeId;
   use super::*;
+  use std::any::TypeId;
 
   #[test]
   fn register_an_entity() {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
     let typeid = TypeId::of::<Health>();
     entities.register_component::<Health>();
     let health_components = entities.components.get(&typeid).unwrap();
@@ -178,7 +190,7 @@ mod tests {
 
   #[test]
   fn bitmask_updated_when_register_an_entity() {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
 
     entities.register_component::<Health>();
     let typeid = TypeId::of::<Health>();
@@ -193,7 +205,7 @@ mod tests {
 
   #[test]
   fn create_an_entity() {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
     entities.create_entity();
@@ -205,13 +217,10 @@ mod tests {
 
   #[test]
   fn create_with_component() -> Result<()> {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
-    entities
-      .create_entity()
-      .with_component(Health(100))?
-      .with_component(Speed(15))?;
+    entities.create_entity().with_component(Health(100))?.with_component(Speed(15))?;
 
     let first_health = &entities.components.get(&TypeId::of::<Health>()).unwrap()[0];
     let wrapped_health = first_health.as_ref().unwrap();
@@ -223,7 +232,7 @@ mod tests {
 
   #[test]
   fn map_is_updated_when_creating_entities() -> Result<()> {
-    let mut entities:Entities = Entities::default();
+    let mut entities: Entities = Entities::default();
 
     entities.register_component::<Health>();
     entities.register_component::<Speed>();
@@ -249,13 +258,14 @@ mod tests {
     entities.register_component::<Speed>();
     entities.register_component::<Damage>();
 
-    entities.create_entity()
+    entities
+      .create_entity()
       .with_component(Health(100))?
       .with_component(Speed(50))?
       .with_component(Damage(50))?;
 
     assert_eq!(entities.map[0], 7);
-    
+
     entities.delete_component_by_entity_id::<Health>(0)?;
 
     assert_eq!(entities.map[0], 6);
@@ -273,7 +283,7 @@ mod tests {
     entities.create_entity().with_component(Health(100))?;
 
     //how are we finding the entity's id?
-    entities.add_component_by_entity_id( 0, Speed(50))?;
+    entities.add_component_by_entity_id(0, Speed(50))?;
 
     assert_eq!(entities.map[0], 3);
 

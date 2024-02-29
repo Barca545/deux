@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use crate::math::MouseRay;
+use std::fmt::Debug;
 
 //Refactor:
 // -Get input will have to be heavily refactored
@@ -10,11 +10,11 @@ use crate::math::MouseRay;
 //this is lazy, probably shouldn't be public but whatever
 #[derive(Debug)]
 pub struct MousePosition {
-  pub x:f64,
-  pub y:f64
+  pub x: f64,
+  pub y: f64,
 }
 
-#[derive(Debug,Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum UserInput {
   MoveCameraUp,
   MoveCameraDown,
@@ -24,7 +24,7 @@ pub enum UserInput {
   ZoomOutCamera,
   CenterCamera,
   AutoAttack,
-  MouseClick(MouseRay)
+  MouseClick(MouseRay),
 }
 
 // impl FromIterator<UserInput> for UserInput{
@@ -41,35 +41,33 @@ pub enum UserInput {
 
 #[derive(Debug)]
 pub struct FrameInputs {
-  inputs:Vec<UserInput>
+  inputs: Vec<UserInput>,
 }
 
 impl FrameInputs {
   pub fn new() -> Self {
-    FrameInputs { inputs:vec![] }
+    FrameInputs { inputs: vec![] }
   }
   // pub fn get_inputs(&self) -> &Vec<UserInput> {
   //   let inputs = &self.inputs;
   //   inputs
   // }
 
-  pub fn get_input(&self)  -> Option<UserInput> {
-    let filtered_input = self.inputs.clone().into_iter().find(|input|{
-      match input{
-        UserInput::MouseClick(_) => true,
-        _=> false
-      }
+  pub fn get_input(&self) -> Option<UserInput> {
+    let filtered_input = self.inputs.clone().into_iter().find(|input| match input {
+      UserInput::MouseClick(_) => true,
+      _ => false,
     });
     filtered_input
   }
 
-  pub fn add_event(&mut self, event:UserInput) {
+  pub fn add_event(&mut self, event: UserInput) {
     self.inputs.push(event)
   }
 
   ///Run at the end of each tick to reset the input list.
   pub fn clear(&mut self) {
     //This needs to do something like not clear the ones still being held down?
-    self.inputs = vec![]
+    self.inputs.clear()
   }
 }
