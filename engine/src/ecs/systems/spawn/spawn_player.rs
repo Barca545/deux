@@ -1,6 +1,16 @@
+use crate::{
+  component_lib::{
+    AbilityMap, AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, MovementScript, Path,
+    Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA,
+  },
+  ecs::{world_resources::DebugElements, World},
+  filesystem::{load_champion_json, load_object},
+  math::Vec3,
+  time::ServerTime,
+  view::AABB3DDebugMesh,
+};
 use eyre::Result;
 use gl::Gl;
-use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, MovementScript, Path, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA}, ecs::{world_resources::DebugElements, World}, filesystem::{load_champion_json, load_object}, math::Vec3, time::ServerTime, view::AABB3DDebugMesh};
 
 // Refactor
 // -Missing some component the combat system needs
@@ -12,14 +22,14 @@ use crate::{component_lib::{AutoAttackMesh, AutoAttackScript, Controllable, Cool
 // -Controllable flag information needs to get passed in from somewhere else
 // -Team information needs to get passed in from somewhere else
 // -GamplayRadius needs to load in from JSON
-
+// -Make mesh something stored as a resource not a component and just give entities access to wherever they're stored
 
 ///Spawns a player from a given champion name and player number.
-pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
+pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   //Load player information JSON
   let champion_info = load_champion_json(name)?;
 
-  //Create the player entity 
+  //Create the player entity
   //Basic info
   let player = Player(number);
   let controllable = Controllable;
@@ -38,29 +48,28 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let destination = Destination(position_vec);
   let speed = champion_info.speed;
   let velocity = Velocity::default();
-  let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);  
+  let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);
   let gameplay_radius = GameplayRadius(1.0);
   let pathing_radius = champion_info.pathing_radius;
   let path = Path::new();
   let status = PlayerState::default();
 
   //Render info
-  
   let (sprite_vertices, sprite_indices) = load_object(name)?;
   let (auto_attack_vertices, auto_attack_indices) = load_object("ball")?;
-  
+
   let player_mesh;
   let auto_attack_mesh;
   let player_hitbox_mesh;
+  //Spawn the meshes
   {
-  let gl = world.get_resource::<Gl>().unwrap();
-  player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
-  player_mesh = SkinnedMesh::new(&gl,sprite_vertices,sprite_indices,"blank_texture", 1.0);
-  auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
+    let gl = world.get_resource::<Gl>().unwrap();
+    player_hitbox_mesh = AABB3DDebugMesh::new(&gl, selection_radius.0, position_vec);
+    player_mesh = SkinnedMesh::new(&gl, sprite_vertices, sprite_indices, "blank_texture", 1.0);
+    auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
   }
-  
 
-  //Combat info 
+  //Combat info
   let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
   let attack_damage = champion_info.attack_damage;
   let basic_cooldown_duration = champion_info.auto_attack_cooldown;
@@ -69,20 +78,29 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   let ability_2_cooldown_duration = 0.0;
   let ability_3_cooldown_duration = 0.0;
   let ability_4_cooldown_duration = 0.0;
+  let ability_map = AbilityMap::new();
 
   //Create timers
   let cooldowns;
   {
-  let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-  cooldowns = Cooldowns::new(&mut server_time, basic_cooldown_duration, auto_windup, ability_1_cooldown_duration, ability_2_cooldown_duration, ability_3_cooldown_duration, ability_4_cooldown_duration);
+    let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+    cooldowns = Cooldowns::new(
+      &mut server_time,
+      basic_cooldown_duration,
+      auto_windup,
+      ability_1_cooldown_duration,
+      ability_2_cooldown_duration,
+      ability_3_cooldown_duration,
+      ability_4_cooldown_duration,
+    );
   }
-  
+
   //Script info
   let auto_attack_script = AutoAttackScript::new(
-  r#"
+    r#"
       target = world:getTarget(owner.id)
       world:spawnTargetedProjectile(owner.id, 2)
-    "#
+    "#,
   );
 
   // r#"
@@ -101,13 +119,13 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
 
     terrain = grid:is_passable(destination)
     print(terrain)
-    "#
+    "#,
   );
 
   // function heuristic(node, goal)
 
   // function Astar(grid, start, end)
-  
+
   world
     .create_entity()
     //general components
@@ -121,7 +139,6 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(exp)?
     .with_component(level)?
     .with_component(status)?
-    
     //movement and collision components
     .with_component(position)?
     .with_component(previous_position)?
@@ -133,20 +150,18 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
     .with_component(pathing_radius)?
     .with_component(path)?
     .with_component(movement_script)?
-    
     //combat components
     .with_component(auto_attack_mesh)?
     .with_component(auto_attack_missle_speed)?
     .with_component(cooldowns)?
     .with_component(attack_damage)?
-    
+    .with_component(ability_map)?
     //render components
     .with_component(player_mesh)?
     .with_component(player_hitbox_mesh)?
-
     //scripts
     .with_component(auto_attack_script)?;
-  
+
   let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.aabb {
     //if true add the dbg mesh
@@ -155,6 +170,6 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32) -> Result<()> {
   // if controllable {
   //   // add the controllable component only if controllable on the JSON is true
   // }
-  
+
   Ok(())
 }

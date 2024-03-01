@@ -1,5 +1,5 @@
-use crate::component_lib::{AutoAttack, AutoAttackScript, Controllable, Owner, Player, Target};
-use crate::ecs::{query::ComponentRef, World};
+use crate::component_lib::AutoAttackScript;
+use crate::ecs::World;
 use crate::scripting::LuaEntity;
 use mlua::Lua;
 

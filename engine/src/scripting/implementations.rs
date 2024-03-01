@@ -150,15 +150,6 @@ impl UserData for LuaEntity {
   }
 }
 
-pub struct Mesh {
-  name: String,
-}
-impl From<String> for Mesh {
-  fn from(value: String) -> Self {
-    Mesh { name: value }
-  }
-}
-
 impl UserData for Grid {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
     methods.add_method("is_passable", |_, grid, position: [f32; 3]| Ok(grid.is_passable(Vec3::from(position))));

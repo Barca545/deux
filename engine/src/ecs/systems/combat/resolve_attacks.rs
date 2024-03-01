@@ -5,9 +5,10 @@ use crate::{
 };
 
 //Refactor
-// -Add death system
+// -Add death system. Death system should listen for a "killed" event and update KDA, Gold and EXP
 // -Gold should vary based on external factors not be hard coded.
 // -EXP should vary depending on entity killed
+// -Get rid of Colliding component?
 
 ///Queries all entities with `AutoAttack` and `Colliding` components.
 /// If the auto attack killed, award its owner kill gold and increment their KDA.
@@ -58,14 +59,24 @@ pub fn resolve_attacks(world: &mut World) {
 }
 
 pub fn process_hits(world: &mut World) {
-  let events = world.get_resource::<GameEventQueue>().unwrap();
-  events.process_events(|event| match event {
-    GameEvent::AutoAttackHit { attack_id, owner } => resolve_auto_hits(world, attack_id, owner),
-    _ => {}
-  })
+  let mut attacks_to_clear = Vec::default();
+  {
+    let events = world.get_resource::<GameEventQueue>().unwrap();
+    events.process_events(|event| match event {
+      GameEvent::AutoAttackHit { attack_id, owner } => {
+        resolve_hit(world, attack_id, owner);
+        attacks_to_clear.push(*attack_id);
+      }
+      _ => {}
+    });
+  }
+  for attack in attacks_to_clear {
+    world.delete_entity(attack).unwrap();
+  }
 }
 
-fn resolve_auto_hits(world: &World, attack_id: &usize, owner: &Owner) {
-  //this is where script logic goes
-  world.delete_entity(index)
+fn resolve_hit(world: &World, attack_id: &usize, owner: &Owner) {
+  // This basically just calls the script logic
+  //unsure if I want to also kill the entity and award gold here or if there is some reason to handle it somewhere else.
+  // I think handling it in another system that notifies every player who got a kill etc is useful
 }

@@ -76,7 +76,7 @@ fn main() {
     .add_resource(FrameInputs::new())
     //add physics acceleration structure resource
     .add_resource(server_time)
-    .add_resource(DebugElements::new(true, false))
+    .add_resource(DebugElements::new(false, false))
     .add_resource(GameEventQueue::new())
     //Initialize Lua
     .add_resource(lua);
@@ -120,9 +120,29 @@ fn main() {
         glfw::WindowEvent::MouseButton(MouseButton::Button2, Action::Press, ..) => {
           let (x, y) = window.get_cursor_pos();
           let mouse_ray = update_mouseray(&world, x, y);
-          let event = UserInput::MouseClick(mouse_ray);
-          let mut frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-          frame_inputs.add_event(event);
+          let input = UserInput::MouseClick(mouse_ray);
+          let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+          inputs.push(input);
+        }
+        glfw::WindowEvent::Key(Key::Q, _, Action::Press, _) => {
+          let input = UserInput::AbilityOnePress;
+          let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+          inputs.push(input);
+        }
+        glfw::WindowEvent::Key(Key::W, _, Action::Press, _) => {
+          let input = UserInput::AbilityTwoPress;
+          let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+          inputs.push(input);
+        }
+        glfw::WindowEvent::Key(Key::E, _, Action::Press, _) => {
+          let input = UserInput::AbilityThreePress;
+          let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+          inputs.push(input);
+        }
+        glfw::WindowEvent::Key(Key::R, _, Action::Press, _) => {
+          let input = UserInput::AbilityFourPress;
+          let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+          inputs.push(input);
         }
         _ => {}
       }

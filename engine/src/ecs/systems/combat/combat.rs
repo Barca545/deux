@@ -1,23 +1,31 @@
-use super::{
-  auto_attack_start::auto_attack_start,
-  resolve_attacks::{process_hits, resolve_attacks},
-};
+use super::{auto_attack_start::auto_attack_start, resolve_attacks::process_hits};
 use crate::{
-  component_lib::{Gold, Player, KDA},
+  component_lib::{AbilityMap, Gold, Player, KDA},
   ecs::{world_resources::DebugElements, World},
+  event::{GameEvent, GameEventQueue},
 };
+
 // Refactor:
-// -Scripts shouldn't run each frame.
-// -Scripts need some tag or something that indicate when they should run.
-// -Moving the attacks should possible be part of the move system
+// -Update to also handle Auto attack casting
+// -Need functionality to add/replace abilties in the map
+// -Need the ability to control the logic of abilties from scripts
+
+pub fn ability_start(world: &mut World) {
+  let events = world.get_resource_mut::<GameEventQueue>().unwrap();
+  events.process_events(|event| {
+    if let GameEvent::AbilityStart { ability_type, owner } = event {
+      let map = world.get_component::<AbilityMap>(owner.0).unwrap();
+      let ability = map.get(*ability_type);
+      dbg!(ability);
+    }
+  });
+}
 
 pub fn combat(world: &mut World) {
   auto_attack_start(world);
-  //Look for an attackhit event and resolve them and any onhit scripts
-  //Maybe resolve events is a separate system and this goes there
-  resolve_attacks(world);
+  ability_start(world);
   process_hits(world);
-  //only run if debug attacks is enabled
+  //Only run if debug attacks is enabled
   let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.attacks {
     debug_combat(world);

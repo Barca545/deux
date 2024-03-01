@@ -1,17 +1,54 @@
+use std::any::TypeId;
+
 use crate::component_lib::Owner;
 
 //Refactor:
 // -Events might need to hold timestamps
 // -Consider adding a separate queue for buffered events that tracks how many frames they should be retried for since some events I might not want to discard each frame.
+// -Move the ability IDs into a separate folder?
+// -AutoAttackHit should become ability hit
 
+//Game Ability types used to query an entity's AbilityMap
+pub struct AbilityOne;
+pub struct AbilityTwo;
+pub struct AbilityThree;
+pub struct AbilityFour;
+pub struct AutoAttack;
+
+#[derive(Debug, Clone)]
 pub enum GameEvent {
   //Combat events
-  AutoAttackStart { owner: Owner },
-  AutoAttackHit { attack_id: usize, owner: Owner },
-  UpdateDestination { owner: Owner },
+  AbilityStart {
+    ability_type: TypeId,
+    owner: Owner,
+  },
+  AbilityHit {
+    ability_type: TypeId,
+    ability_id: TypeId,
+    owner: Owner,
+  },
+  AutoAttackHit {
+    attack_id: usize,
+    owner: Owner,
+  },
+
+  //Movement Events
+  UpdateDestination {
+    owner: Owner,
+  },
+
+  //Camera Events
+  MoveCameraUp,
+  MoveCameraDown,
+  MoveCameraRight,
+  MoveCameraLeft,
+  ZoomInCamera,
+  ZoomOutCamera,
+  CenterCamera,
 }
 
-///A sturcture which tracks the game events. Does not track input or other changes.
+#[derive(Debug, Clone)]
+///A stucture which tracks the game events. Does not track input or other changes.
 pub struct GameEventQueue {
   events: Vec<GameEvent>,
 }
@@ -43,14 +80,12 @@ impl GameEventQueue {
   }
 
   ///Iterates over the [`GameEvent`]s stored in the [`GameEventQueue`] and applies a callback function which mutates the `GameEvent`.
-  pub fn process_events_mut<F>(&mut self, f: F)
+  pub fn process_events_mut<F>(&mut self, mut f: F)
   where
-    F: Fn(&mut GameEvent),
+    F: FnMut(&mut GameEvent),
   {
     for event in &mut self.events {
       f(event)
     }
   }
 }
-
-//ok new plan each system just registers events and then I have a resolve ticks system at the end that consumes all of the events

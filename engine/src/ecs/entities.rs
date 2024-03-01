@@ -150,7 +150,6 @@ impl Entities {
   }
 
   pub fn add_components(&mut self, index: usize, components: impl Bundle) {
-    // let test = self.components.get_mut(&typeinfo.id()).unwrap();
     components.safe_put(|typeinfo, data| {
       if let Some(mask) = self.bitmasks.get(&typeinfo.id()) {
         self.map[index] |= *mask;

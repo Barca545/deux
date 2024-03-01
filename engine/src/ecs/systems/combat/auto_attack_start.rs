@@ -1,9 +1,11 @@
+use std::any::Any;
+
 use crate::{
   component_lib::{
     AutoAttack, AutoAttackMesh, Cooldowns, Destination, MissleSpeed, Owner, PlayerState, Position, PreviousPosition, SkinnedMesh, Target, Velocity,
   },
   ecs::{bundle::Bundle, World},
-  event::{GameEvent, GameEventQueue},
+  event::{AutoAttack as AutoAttackId, GameEvent, GameEventQueue},
 };
 
 // Refactor:
@@ -13,6 +15,7 @@ use crate::{
 // -System that registers attacks needs to:
 // -Check if the target is an enemy and later after this is added: alive
 // -Start the auto wind up -> this actually needs to be a different event, like queue auto is distinct from start auto
+// -Refactor this queries for AbilityStart now and AAs are considered abilities
 
 ///System for beginning auto attacks.
 /// Queries the [`GameEventQueue`] for `AutoAttackStart` events.
@@ -24,21 +27,23 @@ pub fn auto_attack_start(world: &mut World) {
 
     //Process any AutoAttackStart events
     events.process_events(|event| {
-      if let GameEvent::AutoAttackStart { owner } = event {
-        //Get the target
-        let target = world.get_component::<Target>(owner.0).unwrap();
+      if let GameEvent::AbilityStart { ability_type, owner } = event {
+        if *ability_type == AutoAttackId.type_id() {
+          //Get the target
+          let target = world.get_component::<Target>(owner.0).unwrap();
 
-        //Spawn the auto attack and push it into the spawner
-        let auto_attack = create_auto_attack(world, *owner, *target);
-        spawner.push(auto_attack);
+          //Spawn the auto attack and push it into the spawner
+          let auto_attack = create_auto_attack(world, *owner, *target);
+          spawner.push(auto_attack);
 
-        //Reset the auto attack cooldown
-        let mut cooldowns = world.get_component_mut::<Cooldowns>(owner.0).unwrap();
-        cooldowns.reset("auto attack");
+          //Reset the auto attack cooldown
+          let mut cooldowns = world.get_component_mut::<Cooldowns>(owner.0).unwrap();
+          cooldowns.reset("auto attack");
 
-        //Set the player state to attacking
-        let mut player_state = world.get_component_mut::<PlayerState>(owner.0).unwrap();
-        *player_state = PlayerState::Attacking;
+          //Set the player state to attacking
+          let mut player_state = world.get_component_mut::<PlayerState>(owner.0).unwrap();
+          *player_state = PlayerState::Attacking;
+        }
       }
     });
   }

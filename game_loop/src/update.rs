@@ -1,6 +1,6 @@
 use engine::{
   ecs::{
-    systems::{combat, movement, update_target},
+    systems::{combat, movement, process_inputs, update_target},
     World,
   },
   event::GameEventQueue,
@@ -9,8 +9,9 @@ use engine::{
 
 pub fn update(world: &mut World) {
   update_target(world);
-  combat(world);
+  process_inputs(world);
   movement(world);
+  combat(world);
 
   let mut frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
   frame_inputs.clear();

@@ -1,10 +1,15 @@
 use crate::{
-  component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackMesh, AutoAttackScript, Colliding, Controllable, Cooldowns, CrowdControlList, CrowdControlState, Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementScript, MovementState, Owner, Path, PathingRadius, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA}, 
-  ecs::{query::ComponentRef, World}, 
-  view::AABB3DDebugMesh
+  component_lib::{
+    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, AutoAttackScript, Colliding, Controllable, Cooldowns, CrowdControlList,
+    CrowdControlState, Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementScript, MovementState, Owner, Path,
+    PathingRadius, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, StaticMesh, Target, Team, UnitSpeed, Velocity,
+    VisionRadius, KDA,
+  },
+  ecs::{query::ComponentRef, World},
+  view::AABB3DDebugMesh,
 };
 
-pub fn register_components(world:&mut World){
+pub fn register_components(world: &mut World) {
   world
     //Movement components
     .register_component::<Position>()
@@ -20,6 +25,7 @@ pub fn register_components(world:&mut World){
     .register_component::<PathingRadius>()
     .register_component::<VisionRadius>()
     .register_component::<GameplayRadius>()
+    .register_component::<AbilityMap>()
     //Identification components
     .register_component::<AutoAttack>()
     .register_component::<Player>()

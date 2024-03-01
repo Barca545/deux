@@ -6,38 +6,17 @@ use std::fmt::Debug;
 // -Maybe each input type is a stored as a different struct that way they can be searched with turbofish
 // -Alternatively just make a different fetch function for each input type
 // -UserInput may not need to hold the mouse coordinates.
-
-//this is lazy, probably shouldn't be public but whatever
-#[derive(Debug)]
-pub struct MousePosition {
-  pub x: f64,
-  pub y: f64,
-}
+// -Replace the get input with the process input
 
 #[derive(Debug, Clone, Copy)]
 pub enum UserInput {
-  MoveCameraUp,
-  MoveCameraDown,
-  MoveCameraRight,
-  MoveCameraLeft,
-  ZoomInCamera,
-  ZoomOutCamera,
-  CenterCamera,
-  AutoAttack,
+  //this should probably all be game events, events are literally like WindowEvents (user inputs)
   MouseClick(MouseRay),
+  AbilityOnePress,
+  AbilityTwoPress,
+  AbilityThreePress,
+  AbilityFourPress,
 }
-
-// impl FromIterator<UserInput> for UserInput{
-//   fn from_iter<T: IntoIterator<Item = UserInput>>(iter: T) -> Self {
-//     iter.into_iter().find(||)
-//     match iter {
-//       UserInput::MouseClick(ray) => {
-//         return UserInput::MouseClick(ray)
-//       },
-//       _=> {}
-//     }
-//   }
-// }
 
 #[derive(Debug)]
 pub struct FrameInputs {
@@ -48,10 +27,6 @@ impl FrameInputs {
   pub fn new() -> Self {
     FrameInputs { inputs: vec![] }
   }
-  // pub fn get_inputs(&self) -> &Vec<UserInput> {
-  //   let inputs = &self.inputs;
-  //   inputs
-  // }
 
   pub fn get_input(&self) -> Option<UserInput> {
     let filtered_input = self.inputs.clone().into_iter().find(|input| match input {
@@ -61,7 +36,18 @@ impl FrameInputs {
     filtered_input
   }
 
-  pub fn add_event(&mut self, event: UserInput) {
+  ///Iterates over the [`UserInput`]s stored in the [`FrameInputs`] and applies a callback function.
+  pub fn process_inputs<F>(&self, mut f: F)
+  where
+    F: FnMut(&UserInput),
+  {
+    for input in &self.inputs {
+      f(input)
+    }
+  }
+
+  ///Add a [`UserInput`] to the [`FrameInputs`].
+  pub fn push(&mut self, event: UserInput) {
     self.inputs.push(event)
   }
 
