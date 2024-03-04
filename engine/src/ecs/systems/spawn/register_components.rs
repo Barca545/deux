@@ -1,11 +1,10 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, AutoAttackScript, Colliding, Controllable, Cooldowns, CrowdControlList,
-    CrowdControlState, Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementScript, MovementState, Owner, Path,
-    PathingRadius, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, StaticMesh, Target, Team, UnitSpeed, Velocity,
-    VisionRadius, KDA,
+    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Colliding, Controllable, Cooldowns, CrowdControlList, CrowdControlState,
+    Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, PlayerState,
+    Position, PreviousPosition, SelectionRadius, SkinnedMesh, SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
-  ecs::{query::ComponentRef, World},
+  ecs::World,
   view::AABB3DDebugMesh,
 };
 
@@ -19,13 +18,11 @@ pub fn register_components(world: &mut World) {
     .register_component::<Velocity>()
     .register_component::<Colliding>()
     .register_component::<Path>()
-    .register_component::<MovementScript>()
     //Radii components
     .register_component::<SelectionRadius>()
     .register_component::<PathingRadius>()
     .register_component::<VisionRadius>()
     .register_component::<GameplayRadius>()
-    .register_component::<AbilityMap>()
     //Identification components
     .register_component::<AutoAttack>()
     .register_component::<Player>()
@@ -36,6 +33,8 @@ pub fn register_components(world: &mut World) {
     .register_component::<Killed>()
     //Timer components
     .register_component::<Cooldowns>()
+    //Casting components
+    .register_component::<SpellResource>()
     //Combat components
     .register_component::<MissleSpeed>()
     .register_component::<Armor>()
@@ -44,8 +43,7 @@ pub fn register_components(world: &mut World) {
     .register_component::<Health>()
     .register_component::<KDA>()
     //Script components
-    .register_component::<AutoAttackScript>()
-    .register_component::<ComponentRef<AutoAttackScript>>()
+    .register_component::<AbilityMap>()
     //Level components
     .register_component::<Exp>()
     .register_component::<Level>()

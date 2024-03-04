@@ -1,30 +1,35 @@
-use super::{auto_attack_start::auto_attack_start, resolve_attacks::process_hits};
+use super::{
+  ability_start::ability_start,
+  auto_attack_start::auto_attack_start,
+  resolve_attacks::{process_hits, resolve_ability_hit},
+};
 use crate::{
-  component_lib::{AbilityMap, Gold, Player, KDA},
+  component_lib::{Gold, Player, KDA},
   ecs::{world_resources::DebugElements, World},
-  event::{GameEvent, GameEventQueue},
 };
 
 // Refactor:
-// -Update to also handle Auto attack casting
 // -Need functionality to add/replace abilties in the map
 // -Need the ability to control the logic of abilties from scripts
 
-pub fn ability_start(world: &mut World) {
-  let events = world.get_resource_mut::<GameEventQueue>().unwrap();
-  events.process_events(|event| {
-    if let GameEvent::AbilityStart { ability_type, owner } = event {
-      let map = world.get_component::<AbilityMap>(owner.0).unwrap();
-      let ability = map.get(*ability_type);
-      dbg!(ability);
-    }
-  });
-}
+// Refactor - Casting:
+// -Need check that confirms they're not casting another spell
+// -The checks should maybe be script side and not exe side
+// -Need cast timers that take x amount of time before casting
+// -Need player state check where a player can only be doing one cast/movement at a time
+// -Buffer for events so If you try to cast one action while another is going it will queue the next action
+// -Figure out how to ensure the first ability processed is the first one pressed. I might need a DequeVec or something?
+// -Cooldowns should have a unique id they're identified by instead of a string
+//  stuff that wants to access them just holds that id.
+//  need to make a script strict that holds a bundle of all the data a script might need to run
+//  could do it as a lazier version of the resources struct? that way the types it holds are not hard coded?
+// -Add handling or if the tests are failed
 
 pub fn combat(world: &mut World) {
   auto_attack_start(world);
   ability_start(world);
-  process_hits(world);
+  // process_hits(world);
+  resolve_ability_hit(world);
   //Only run if debug attacks is enabled
   let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.attacks {

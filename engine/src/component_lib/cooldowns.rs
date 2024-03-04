@@ -5,6 +5,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 // -Add script plugin to create, check and remove cooldowns.
 // -Remove the AutoAttackCooldown structure
 // -Make the names an enum?
+// -Rework Cooldowns to take TypeId or something
 
 pub struct Cooldowns(HashMap<String, Cooldown>);
 
@@ -26,6 +27,10 @@ impl Cooldowns {
 
   pub fn get_duration(&self, cooldown_name: &str) -> Miliseconds {
     self.0.get(cooldown_name).unwrap().duration()
+  }
+
+  pub fn is_zero(&self, cooldown_name: &str) -> bool {
+    self.0.get(cooldown_name).unwrap().is_zero()
   }
 
   pub fn get_real_remaing(&self, cooldown_name: &str) -> Miliseconds {
@@ -75,6 +80,10 @@ impl Timer for Cooldown {
   ///Returns the [`Cooldown`]'s real remaining time in [`Miliseconds`].
   fn real_remaining(&self) -> Miliseconds {
     self.timer.borrow().real_remaining()
+  }
+
+  fn is_zero(&self) -> bool {
+    self.timer.borrow().is_zero()
   }
 
   ///Returns the [`Cooldown`]'s display remaining time in [`Miliseconds`].

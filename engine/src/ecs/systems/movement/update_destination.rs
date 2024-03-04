@@ -1,8 +1,9 @@
+use std::rc::Rc;
+
 use crate::{
-  component_lib::{Controllable, Destination, MovementScript, Path, Position, Target},
+  component_lib::{Controllable, Destination, Owner, Path, Position, Target},
   ecs::World,
   input::user_inputs::{FrameInputs, UserInput},
-  scripting::LuaEntity,
 };
 use mlua::Lua;
 
@@ -12,6 +13,7 @@ use mlua::Lua;
 //  needs selection needs to run first and do the AABB test
 // -Revisit the limit before using the pathing algorithm once the arena is added
 // -Add attack move as a toggle (If there is a target, move into attack range and no further)
+// -Update the run scripts function to use the new scripting set up
 
 ///Updates the [`Destination`] component for the entity marked with the [`Controllable`] component.
 /// If the destination is less than 100 units away, sets the `Destination` to the location of the mouse click.
@@ -45,7 +47,7 @@ pub fn update_destination(world: &World) {
 
         // If the distance between the current Position and the Destination is large run the pathing script and replace the destination with the first node of the calculated Path
         if position.distance(&new_destination) > 100.0 {
-          run_scripts(world);
+          run_scripts(world, Owner(entity.id));
           let mut path = entity.get_component_mut::<Path>().unwrap();
           if let Some(first_node) = path.next() {
             let mut destination = entity.get_component_mut::<Destination>().unwrap();
@@ -58,32 +60,6 @@ pub fn update_destination(world: &World) {
 }
 
 ///Run a unit's pathing script [`MovementScript`]s.
-pub fn run_scripts(world: &World) {
-  //this works but any script that creates new entities *will* need to mutate world and be structured differently
-  let lua = world.get_resource::<Lua>().unwrap();
-
-  let mut query = world.query();
-
-  //Search for all entities with a MovementScript component
-  let entities = query.with_component::<MovementScript>().unwrap().run();
-
-  for entity in entities {
-    let script = entity.get_component::<MovementScript>().unwrap();
-
-    let entity_id = LuaEntity::from(entity.id);
-
-    lua
-      .scope(|scope| {
-        //Set the id of the entity
-        lua.globals().set("entity", scope.create_userdata_ref(&entity_id)?)?;
-
-        //Add the world
-        lua.globals().set("world", scope.create_userdata_ref(world)?)?;
-
-        //Run the script
-        lua.load(script.script()).exec()?;
-        Ok(())
-      })
-      .unwrap();
-  }
+pub fn run_scripts(world: &World, _owner: Owner) {
+  let _lua = world.get_resource::<Rc<Lua>>().unwrap();
 }

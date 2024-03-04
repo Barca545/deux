@@ -1,7 +1,8 @@
 use crate::{
-  component_lib::{AutoAttack, Colliding, Exp, Gold, Killed, Owner, Target, KDA},
+  component_lib::{AbilityMap, AutoAttack, Colliding, Exp, Gold, Killed, Owner, Target, KDA},
   ecs::World,
   event::{GameEvent, GameEventQueue},
+  utility::eval_scripts,
 };
 
 //Refactor
@@ -9,6 +10,40 @@ use crate::{
 // -Gold should vary based on external factors not be hard coded.
 // -EXP should vary depending on entity killed
 // -Get rid of Colliding component?
+// -This should consume an event like incoming damage or something that holds the damage amoun target and owner
+//  If an attack kills should be handled by another system.
+// -Need to measure which attack hit first
+// -Can't run the end script, what if it hits and then applies an ability?
+//  Also can't delete the entity for the same reason.
+
+pub fn resolve_ability_hit(world: &mut World) {
+  let mut buffered_scripts = Vec::new();
+  {
+    //Process AbilityHit events.
+    let events = world.get_resource::<GameEventQueue>().unwrap();
+    events.process_events(|event| {
+      if let GameEvent::AbilityHit { ability_type, ability_id, owner } = event {
+        //Get the ability script
+        let map = world.get_component::<AbilityMap>(owner.0).unwrap();
+        let ability = map.get(*ability_type);
+        if let Some(onhit) = ability.onhit() {
+          dbg!(onhit.clone());
+          //Buffer the scripts to be evaluated
+          buffered_scripts.push((*owner, *ability_id, onhit));
+        }
+      }
+    });
+  }
+  //Evaluate the stop script to get the damage of the ability.
+  for (owner, id, script) in &buffered_scripts {
+    if let Some(damage) = eval_scripts::<u32>(world, owner, script) {
+      dbg!(damage);
+      //Pass the damage into the damage calculation
+      //If the ability kills the target create a killed event
+    }
+    //Delete the ability
+  }
+}
 
 ///Queries all entities with `AutoAttack` and `Colliding` components.
 /// If the auto attack killed, award its owner kill gold and increment their KDA.

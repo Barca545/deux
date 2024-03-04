@@ -1,3 +1,4 @@
+mod abilities;
 mod combat;
 mod cooldowns;
 mod identification;
@@ -10,7 +11,8 @@ mod scripting;
 mod status;
 
 pub use self::{
-  combat::{AbilityMap, Armor, AttackDamage, Health, MissleSpeed, KDA},
+  abilities::AbilityMap,
+  combat::{Armor, AttackDamage, Health, MissleSpeed, SpellResource, KDA},
   cooldowns::{Cooldown, Cooldowns},
   identification::{AutoAttack, Controllable, Killed, Owner, Player, Target, Team},
   income::Gold,
@@ -18,6 +20,6 @@ pub use self::{
   movement::{Colliding, Destination, Path, Position, PreviousPosition, UnitSpeed, Velocity},
   radii::{GameplayRadius, PathingRadius, SelectionRadius, VisionRadius},
   render::{AutoAttackMesh, SkinnedMesh, StaticMesh},
-  scripting::{AutoAttackScript, AutoAttackScripts, MovementScript},
+  scripting::Script,
   status::{CrowdControlList, CrowdControlState, MovementState, PlayerState},
 };

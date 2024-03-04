@@ -1,7 +1,7 @@
 use crate::{
   component_lib::{
-    AbilityMap, AutoAttackMesh, AutoAttackScript, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, MovementScript, Path,
-    Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Target, Team, Velocity, KDA,
+    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedMesh,
+    SpellResource, Target, Team, Velocity, KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::{load_champion_json, load_object},
@@ -69,6 +69,9 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
   }
 
+  //Casting info
+  let spell_resource = SpellResource(1000);
+
   //Combat info
   let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
   let attack_damage = champion_info.attack_damage;
@@ -78,7 +81,21 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let ability_2_cooldown_duration = 0.0;
   let ability_3_cooldown_duration = 0.0;
   let ability_4_cooldown_duration = 0.0;
-  let ability_map = AbilityMap::new();
+  //Script info
+  let ability_1 = Script::new("start", "onhit", "running", "stop");
+  let ability_2 = Script::new("start", "onhit", "running", "stop");
+  let ability_3 = Script::new("start", "onhit", "running", "stop");
+  let ability_4 = Script::new("start", "onhit", "running", "stop");
+  let autoattack = Script::new(
+    r#"
+  target = world:getTarget(owner.id)
+  world:spawnTargetedProjectile(owner.id, target)
+"#,
+    "23",
+    "running",
+    "stop",
+  );
+  let ability_map = AbilityMap::new(ability_1, ability_2, ability_3, ability_4, autoattack);
 
   //Create timers
   let cooldowns;
@@ -95,40 +112,9 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     );
   }
 
-  //Script info
-  let auto_attack_script = AutoAttackScript::new(
-    r#"
-      target = world:getTarget(owner.id)
-      world:spawnTargetedProjectile(owner.id, 2)
-    "#,
-  );
-
-  // r#"
-  // attack_damage = world:get_attack_damage(owner.id)
-  // world:remove_health(target.id,attack_damage)
-  // "#
-
-  //How pathing should work:
-  // -Make the list of open/closed indexes a global in lua since it's constant throughout the game
-  // -Function to check the cell a given position is inside
-  // -Run an a* pathing script
-  let movement_script = MovementScript::new(
-    r#"
-    start = world:get_position(entity.id)
-    destination = world:get_destination(entity.id)
-
-    terrain = grid:is_passable(destination)
-    print(terrain)
-    "#,
-  );
-
-  // function heuristic(node, goal)
-
-  // function Astar(grid, start, end)
-
   world
     .create_entity()
-    //general components
+    //General components
     .with_component(player)?
     .with_component(controllable)?
     .with_component(health)?
@@ -139,7 +125,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     .with_component(exp)?
     .with_component(level)?
     .with_component(status)?
-    //movement and collision components
+    //Movement and collision components
     .with_component(position)?
     .with_component(previous_position)?
     .with_component(destination)?
@@ -149,18 +135,17 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     .with_component(gameplay_radius)?
     .with_component(pathing_radius)?
     .with_component(path)?
-    .with_component(movement_script)?
-    //combat components
+    //Casting components
+    .with_component(spell_resource)?
+    //Combat components
     .with_component(auto_attack_mesh)?
     .with_component(auto_attack_missle_speed)?
     .with_component(cooldowns)?
     .with_component(attack_damage)?
     .with_component(ability_map)?
-    //render components
+    //Render components
     .with_component(player_mesh)?
-    .with_component(player_hitbox_mesh)?
-    //scripts
-    .with_component(auto_attack_script)?;
+    .with_component(player_hitbox_mesh)?;
 
   let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.aabb {

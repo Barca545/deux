@@ -1,17 +1,24 @@
-use std::{any::Any, cell::{Ref, RefCell, RefMut}, rc::Rc};
 use std::marker::PhantomData;
+use std::{
+  any::Any,
+  cell::{Ref, RefCell, RefMut},
+  rc::Rc,
+};
+
+// Refactor:
+// -Delete ComponentRef, I don't think I really need it
 
 #[derive(Debug, Clone)]
-pub struct ComponentRef<T>{
-  component_ref:Rc<RefCell<Box<dyn Any>>>,
-  component_type: PhantomData<T>
+pub struct ComponentRef<T> {
+  component_ref: Rc<RefCell<Box<dyn Any>>>,
+  component_type: PhantomData<T>,
 }
 
-impl<T:Any> ComponentRef<T> {
-  pub fn new<Takes>(component_ref:Rc<RefCell<Box<dyn Any>>>) -> Self {
-    ComponentRef{
+impl<T: Any> ComponentRef<T> {
+  pub fn new<Takes>(component_ref: Rc<RefCell<Box<dyn Any>>>) -> Self {
+    ComponentRef {
       component_ref,
-      component_type: PhantomData
+      component_type: PhantomData,
     }
   }
 

@@ -5,6 +5,8 @@ extern crate gl;
 extern crate glfw;
 extern crate nalgebra_glm as glm;
 
+use std::rc::Rc;
+
 use engine::{
   arena::Grid,
   config::asset_config,
@@ -44,6 +46,11 @@ use update::update;
 // -Dimensions should load from a settings file
 // -Any way to make window a resource? Maybe I just pass it in directly to the system that handles inputs, or just pass a copy of the raw event pump and handle it there?
 
+// Refactor - Movement:
+// -Make the list of open/closed indexes a global in lua since it's constant throughout the game
+// -Function to check the cell a given position is inside
+// -Run an a* pathing script
+
 //use this wherever I handle the abilties to determine if they should check for a selection
 //targeted abilities should only run if there is a selection
 pub enum Ability {
@@ -65,7 +72,7 @@ fn main() {
   // let grid = load_grid("5v5", "json").unwrap();
   let grid = Grid::new(100, 100, 1.0).unwrap();
 
-  let lua = Lua::new();
+  let lua = Rc::new(Lua::new());
   lua.globals().set("grid", grid).unwrap();
 
   world

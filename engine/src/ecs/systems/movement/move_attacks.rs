@@ -1,7 +1,9 @@
+use std::any::Any;
+
 use crate::{
   component_lib::{AutoAttack, Colliding, GameplayRadius, Owner, Position, PreviousPosition, Target, Velocity},
   ecs::World,
-  event::{GameEvent, GameEventQueue},
+  event::{AutoAttack as AutoAttackId, GameEvent, GameEventQueue},
   physics::circle_point_collision_test,
 };
 
@@ -45,8 +47,9 @@ pub fn move_attacks(world: &mut World) {
     if collision_check {
       colliding.push(entity.id);
       let owner = entity.get_component::<Owner>().unwrap();
-      let event = GameEvent::AutoAttackHit {
-        attack_id: entity.id,
+      let event = GameEvent::AbilityHit {
+        ability_type: AutoAttackId.type_id(),
+        ability_id: entity.id,
         owner: *owner,
       };
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
@@ -55,7 +58,5 @@ pub fn move_attacks(world: &mut World) {
   }
 
   //Loop through the buffered entity IDs and give them the Colliding component
-  colliding
-    .into_iter()
-    .for_each(|entity_id| world.add_component(entity_id, Colliding).unwrap());
+  colliding.into_iter().for_each(|entity_id| world.add_component(entity_id, Colliding).unwrap());
 }

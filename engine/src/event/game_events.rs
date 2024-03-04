@@ -18,24 +18,12 @@ pub struct AutoAttack;
 #[derive(Debug, Clone)]
 pub enum GameEvent {
   //Combat events
-  AbilityStart {
-    ability_type: TypeId,
-    owner: Owner,
-  },
-  AbilityHit {
-    ability_type: TypeId,
-    ability_id: TypeId,
-    owner: Owner,
-  },
-  AutoAttackHit {
-    attack_id: usize,
-    owner: Owner,
-  },
+  AbilityStart { ability_type: TypeId, owner: Owner },
+  AbilityHit { ability_type: TypeId, ability_id: usize, owner: Owner },
+  AutoAttackHit { attack_id: usize, owner: Owner },
 
   //Movement Events
-  UpdateDestination {
-    owner: Owner,
-  },
+  UpdateDestination { owner: Owner },
 
   //Camera Events
   MoveCameraUp,

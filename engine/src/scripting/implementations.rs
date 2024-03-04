@@ -1,9 +1,6 @@
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{
-    Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh,
-    Target, Velocity,
-  },
+  component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh, Target, Velocity},
   ecs::World,
   math::Vec3,
   utility::calc_post_mitigation_damage,
@@ -86,12 +83,12 @@ impl UserData for World {
 
     //Deal mitigated damage to target enemy.
     //If the entity dies, give the script's owner a Killed component.
-    methods.add_method_mut("deal_mitigated_damage", |_, world, (target, owner, damage): (usize, usize, i32)| {
+    methods.add_method_mut("deal_mitigated_damage", |_, world, (target, owner, damage): (usize, usize, u32)| {
       {
         let armor = world.get_component::<Armor>(target).unwrap();
         let post_mitigation_damage = calc_post_mitigation_damage(damage, armor.0);
         let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
-        health.remaining -= post_mitigation_damage;
+        health.remaining -= post_mitigation_damage as i32;
       }
 
       let health = world.get_component::<Health>(target as usize).unwrap().remaining;

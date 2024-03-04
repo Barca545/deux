@@ -4,22 +4,22 @@
 pub enum MovementState {
   Dashing,
   Walking,
-  Blinking
+  Blinking,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-pub enum PlayerState{
+pub enum PlayerState {
   #[default]
-  Idle,
+  Unoccupied,
   Moving(MovementState),
-  Attacking
+  Attacking,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum CrowdControlState {
   Stunned,
   Slowed,
-  Airborne
+  Airborne,
 }
 
 #[derive(Debug, Default, Clone)]

@@ -16,10 +16,13 @@ pub struct MissleSpeed(pub f32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 ///Component containing the attack damage of an entity.
-pub struct AttackDamage(pub i32);
+pub struct AttackDamage(pub u32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Armor(pub i32);
+pub struct Armor(pub u32);
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SpellResource(pub u32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health {
@@ -53,25 +56,5 @@ impl KDA {
   ///Increments the tracked assists by 1.
   pub fn assist(&mut self, number: u32) {
     self.assists += number;
-  }
-}
-
-pub struct AbilityMap {
-  map: HashMap<TypeId, String>,
-}
-
-impl AbilityMap {
-  pub fn new() -> Self {
-    let mut map = HashMap::new();
-    map.insert(AbilityOne.type_id(), String::from("Ability One"));
-    map.insert(AbilityTwo.type_id(), String::from("Ability Two"));
-    map.insert(AbilityThree.type_id(), String::from("Ability Three"));
-    map.insert(AbilityFour.type_id(), String::from("Ability Four"));
-    map.insert(AutoAttackId.type_id(), String::from("Auto Attack"));
-    AbilityMap { map }
-  }
-
-  pub fn get(&self, id: TypeId) -> &str {
-    self.map.get(&id).unwrap()
   }
 }
