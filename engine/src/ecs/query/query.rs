@@ -7,16 +7,11 @@ use std::any::{Any, TypeId};
 pub struct Query<'a> {
   map: u128,
   entities: &'a Entities,
-  typeids: Vec<TypeId>,
 }
 
 impl<'a> Query<'a> {
   pub fn new(entities: &'a Entities) -> Self {
-    Self {
-      map: 0,
-      entities,
-      typeids: vec![],
-    }
+    Self { map: 0, entities }
   }
   ///Tells the query the entities it pulls must contain the type passed in
   /// as an argument.
@@ -24,7 +19,6 @@ impl<'a> Query<'a> {
     let typeid = TypeId::of::<T>();
     if let Some(bit_mask) = self.entities.get_bitmask(&typeid) {
       self.map |= bit_mask;
-      self.typeids.push(typeid)
     } else {
       return Err(EcsErrors::ComponentNotRegistered.into());
     }
@@ -40,13 +34,15 @@ impl<'a> Query<'a> {
       .map
       .iter()
       .enumerate()
-      .filter_map(|(index, entity_map)| {
-        if entity_map & self.map == self.map {
-          Some(QueryEntity::new(index, self.entities))
-        } else {
-          None
-        }
-      })
+      .filter_map(
+        |(index, entity_map)| {
+          if entity_map & self.map == self.map {
+            Some(QueryEntity::new(index, self.entities))
+          } else {
+            None
+          }
+        },
+      )
       .collect()
   }
 }
@@ -70,8 +66,8 @@ mod test {
     query.with_component::<u32>()?.with_component::<f32>()?;
 
     assert_eq!(query.map, 3);
-    assert_eq!(TypeId::of::<u32>(), query.typeids[0]);
-    assert_eq!(TypeId::of::<f32>(), query.typeids[1]);
+    // assert_eq!(TypeId::of::<u32>(), query.typeids[0]);
+    // assert_eq!(TypeId::of::<f32>(), query.typeids[1]);
     Ok(())
   }
 
