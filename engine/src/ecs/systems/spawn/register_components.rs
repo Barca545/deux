@@ -1,8 +1,8 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Colliding, Controllable, Cooldowns, CrowdControlList, CrowdControlState,
-    Destination, Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, PlayerState,
-    Position, PreviousPosition, SelectionRadius, SkinnedMesh, SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
+    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Colliding, Controllable, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp,
+    GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, PlayerState, Position, PreviousPosition,
+    SelectionRadius, SkinnedMesh, SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
   ecs::World,
   view::AABB3DDebugMesh,
@@ -31,6 +31,7 @@ pub fn register_components(world: &mut World) {
     .register_component::<Owner>()
     .register_component::<Team>()
     .register_component::<Killed>()
+    .register_component::<Dead>()
     //Timer components
     .register_component::<Cooldowns>()
     //Casting components

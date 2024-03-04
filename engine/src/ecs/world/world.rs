@@ -89,11 +89,16 @@ impl World {
 
   ///Query immutably for the specified component data from the entity whose ID matches the given index.
   pub fn get_component<T: Any>(&self, index: usize) -> Result<Ref<T>> {
-    let typid = TypeId::of::<T>();
+    let ty = TypeInfo::of::<T>();
 
-    let components = self.entities.components.get(&typid).ok_or(EcsErrors::ComponentNotRegistered)?;
+    let components = self.entities.components.get(&ty.id()).ok_or(EcsErrors::ComponentNotRegistered)?;
 
-    let borrowed_component = components[index].as_ref().ok_or(EcsErrors::ComponentDataDoesNotExist)?.borrow();
+    let borrowed_component = components[index]
+      .as_ref()
+      .ok_or(EcsErrors::CreateComponentNeverCalled {
+        component: ty.type_name().to_string(),
+      })?
+      .borrow();
 
     Ok(Ref::map(borrowed_component, |any| any.downcast_ref::<T>().unwrap()))
   }
@@ -152,7 +157,7 @@ impl World {
     self.entities.delete_component_by_entity_id::<T>(index)
   }
 
-  pub fn remove_component_by_typeinfo(&mut self, index: usize, ty: TypeInfo) -> Result<()> {
+  pub(crate) fn remove_component_by_typeinfo(&mut self, index: usize, ty: TypeInfo) -> Result<()> {
     self.entities.delete_component_by_type_info(index, ty)
   }
 

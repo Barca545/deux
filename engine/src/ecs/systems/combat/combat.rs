@@ -1,8 +1,4 @@
-use super::{
-  ability_start::ability_start,
-  auto_attack_start::auto_attack_start,
-  resolve_attacks::{process_hits, resolve_ability_hit},
-};
+use super::{ability_hit_resolve::ability_hit_resolve, ability_start::ability_start};
 use crate::{
   component_lib::{Gold, Player, KDA},
   ecs::{world_resources::DebugElements, World},
@@ -26,10 +22,9 @@ use crate::{
 // -Add handling or if the tests are failed
 
 pub fn combat(world: &mut World) {
-  auto_attack_start(world);
   ability_start(world);
-  // process_hits(world);
-  resolve_ability_hit(world);
+  //cast_ability(world);
+  ability_hit_resolve(world);
   //Only run if debug attacks is enabled
   let debug = world.get_resource::<DebugElements>().unwrap();
   if debug.attacks {

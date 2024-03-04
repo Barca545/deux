@@ -26,14 +26,18 @@ pub fn run_scripts(world: &mut World, owner: &Owner, script: &String) {
 }
 
 ///Returns the result of running a [`Script`].
-pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope> + Clone>(world: &mut World, owner: &Owner, script: &String) -> Option<T> {
-  let owner_id = LuaEntity::from(owner.0);
+pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope> + Clone>(world: &mut World, entity: &usize, owner: &usize, script: &String) -> Option<T> {
+  let owner_id = LuaEntity::from(owner);
+  let entity_id = LuaEntity::from(entity);
   let lua = world.get_resource::<Rc<Lua>>().unwrap().clone();
 
   lua
     .scope(|scope| {
-      //Set the ids for the attack's owner
+      //Set the ids for the scripts's owner
       lua.globals().set("owner", scope.create_userdata_ref(&owner_id)?)?;
+
+      //Set the id for the script entity (  )
+      lua.globals().set("entity", scope.create_userdata_ref(&entity_id)?)?;
 
       //Add the world
       lua.globals().set("world", scope.create_userdata_ref_mut(world)?)?;

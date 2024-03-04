@@ -20,7 +20,7 @@ pub enum GameEvent {
   //Combat events
   AbilityStart { ability_type: TypeId, owner: Owner },
   AbilityHit { ability_type: TypeId, ability_id: usize, owner: Owner },
-  AutoAttackHit { attack_id: usize, owner: Owner },
+  EntityKilled { entity: usize, killer: usize },
 
   //Movement Events
   UpdateDestination { owner: Owner },

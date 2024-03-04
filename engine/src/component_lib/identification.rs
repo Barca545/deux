@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+// Refactor:
+// -Probably need to remove the Killed and Colliding components
+
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 ///Component which identifies an entity  as an auto attack.
 pub struct AutoAttack;
@@ -24,10 +27,14 @@ pub struct Owner(pub usize);
 ///Component containing the id of an entity the holder has killed.
 pub struct Killed(pub usize);
 
+///Component indicating an entity is dead.
+#[derive(Debug, Clone, Copy)]
+pub struct Dead;
+
 #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 ///Component containing an entity's team identification.
-pub enum Team{
-  BLUE,
-  RED,
-  NEUTRAL
+pub enum Team {
+  Blue,
+  Red,
+  Neutral,
 }

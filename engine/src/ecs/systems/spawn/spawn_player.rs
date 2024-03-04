@@ -1,7 +1,7 @@
 use crate::{
   component_lib::{
-    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedMesh,
-    SpellResource, Target, Team, Velocity, KDA,
+    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition, Script,
+    SelectionRadius, SkinnedMesh, SpellResource, Target, Team, Velocity, KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::{load_champion_json, load_object},
@@ -34,7 +34,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let player = Player(number);
   let controllable = Controllable;
   let health = champion_info.health;
-  let team = Team::BLUE;
+  let team = Team::Blue;
   let target = Target(None);
   let gold = Gold::default();
   let kda = KDA::default();

@@ -10,6 +10,7 @@ use std::{
 
 // Refactor:
 // -Make components private
+// -Make functions private
 // -Instead of calling not registered could add components just register the
 // -Use https://lib.rs/crates/list-any instead of Rc<RefCell<dyn Any>>;
 // -Look into sparse arrays? https://discord.com/channels/676678179678715904/677286494033018924/1207030703888531457
@@ -149,14 +150,24 @@ impl Entities {
     Ok(())
   }
 
+  pub fn add_component_by_type_info(&mut self, index: usize, ty: TypeInfo, data: impl Any) {
+    if let Some(mask) = self.bitmasks.get(&ty.id()) {
+      self.map[index] |= *mask;
+    } else {
+      panic!("Component {:?} Not Registered", ty.type_name());
+    }
+    let components = self.components.get_mut(&ty.id()).unwrap();
+    components[index] = Some(Rc::new(RefCell::new(Box::new(data))));
+  }
+
   pub fn add_components(&mut self, index: usize, components: impl Bundle) {
-    components.safe_put(|typeinfo, data| {
-      if let Some(mask) = self.bitmasks.get(&typeinfo.id()) {
+    components.safe_put(|ty, data| {
+      if let Some(mask) = self.bitmasks.get(&ty.id()) {
         self.map[index] |= *mask;
       } else {
-        dbg!(format!("Component {:?} Not Registered", typeinfo.id()));
+        panic!("Component {:?} Not Registered", ty.type_name());
       }
-      let components = self.components.get_mut(&typeinfo.id()).unwrap();
+      let components = self.components.get_mut(&ty.id()).unwrap();
       components[index] = Some(Rc::new(RefCell::new(data)));
     });
   }

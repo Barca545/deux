@@ -3,17 +3,24 @@ use crate::{ecs::entities::Entities, errors::EcsErrors};
 use eyre::Result;
 use std::any::{Any, TypeId};
 
+// Refactor:
+// -Alternate query branch statement: (entity_map & self.map == self.map) && (entity_map & self.exlude_map == 0)
+
 #[derive(Debug)]
 pub struct Query<'a> {
   map: u128,
-  exlude_map: u128,
+  exclude_map: u128,
   entities: &'a Entities,
 }
 
 impl<'a> Query<'a> {
   ///Create a new [`Query`].
   pub fn new(entities: &'a Entities) -> Self {
-    Self { map: 0, exlude_map: 0, entities }
+    Self {
+      map: 0,
+      exclude_map: 0,
+      entities,
+    }
   }
 
   ///Add a component the queried entities must hold.
@@ -31,7 +38,7 @@ impl<'a> Query<'a> {
   pub fn without_component<T: Any>(&mut self) -> Result<&mut Self> {
     let typeid = TypeId::of::<T>();
     if let Some(bit_mask) = self.entities.get_bitmask(&typeid) {
-      self.exlude_map |= bit_mask;
+      self.exclude_map |= bit_mask;
     } else {
       return Err(EcsErrors::ComponentNotRegistered.into());
     }
@@ -46,7 +53,7 @@ impl<'a> Query<'a> {
       .iter()
       .enumerate()
       .filter_map(|(index, entity_map)| {
-        if (entity_map & self.map == self.map) && (entity_map & self.exlude_map == 0) {
+        if (entity_map & (self.map | self.exclude_map)) == self.map {
           Some(QueryEntity::new(index, self.entities))
         } else {
           None
@@ -155,10 +162,11 @@ mod test {
     entities.register_component::<Health>();
     entities.register_component::<Damage>();
     entities.register_component::<usize>();
+    entities.register_component::<f32>();
 
     entities.create_entity().with_component(Damage(100))?;
     entities.create_entity().with_component(Damage(100))?.with_component(Health(100))?;
-    entities.create_entity().with_component(Health(30))?;
+    entities.create_entity().with_component(Health(30))?.with_component(5_usize)?;
 
     let mut query = Query::new(&entities);
     let entities = query.with_component::<Health>()?.without_component::<Damage>()?.run();

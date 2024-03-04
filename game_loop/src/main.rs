@@ -110,8 +110,9 @@ fn main() {
   //Spawn the players and dummies
   spawn_player(&mut world, "warrior", 1).unwrap();
 
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, -3.0));
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(5.0, 0.0, 0.0));
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, -3.0)).unwrap();
+  spawn_dummy(&mut world, gl.clone(), Vec3::new(5.0, 0.0, 0.0)).unwrap();
+
   //Main loop
   while !window.should_close() {
     //For some reason if this is not here I get a black screen

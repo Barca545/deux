@@ -26,11 +26,11 @@ pub struct SpellResource(pub u32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health {
-  pub max: i32,
-  pub remaining: i32,
+  pub max: u32,
+  pub remaining: u32,
 }
 impl Health {
-  pub fn new(max: i32) -> Self {
+  pub fn new(max: u32) -> Self {
     Health { max, remaining: max }
   }
 }

@@ -1,12 +1,13 @@
+pub mod bundle;
+mod command_buffer;
 pub mod entities;
 pub mod query;
 pub mod resources;
 pub mod systems;
-mod command_buffer;
 mod world;
-mod bundle;
 
 pub use self::{
-  world::{world::World,world_resources},
-  command_buffer::{CommandBuffer,Command}
+  bundle::Bundle,
+  command_buffer::{Command, CommandBuffer},
+  world::{world::World, world_resources},
 };

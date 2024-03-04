@@ -1,6 +1,8 @@
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh, Target, Velocity},
+  component_lib::{
+    Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh, Target, Velocity,
+  },
   ecs::World,
   math::Vec3,
   utility::calc_post_mitigation_damage,
@@ -62,14 +64,14 @@ impl UserData for World {
     });
 
     //Increments the health of the queried entity
-    methods.add_method("add_health", |_, world, (target, value): (usize, i32)| {
+    methods.add_method("add_health", |_, world, (target, value): (usize, u32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining += value;
       Ok(())
     });
 
     //Decrements the health of the queried entity
-    methods.add_method("remove_health", |_, world, (target, value): (usize, i32)| {
+    methods.add_method("remove_health", |_, world, (target, value): (usize, u32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining -= value;
       Ok(())
@@ -88,7 +90,7 @@ impl UserData for World {
         let armor = world.get_component::<Armor>(target).unwrap();
         let post_mitigation_damage = calc_post_mitigation_damage(damage, armor.0);
         let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
-        health.remaining -= post_mitigation_damage as i32;
+        health.remaining -= post_mitigation_damage;
       }
 
       let health = world.get_component::<Health>(target as usize).unwrap().remaining;
@@ -138,6 +140,12 @@ impl From<Target> for LuaEntity {
 impl From<usize> for LuaEntity {
   fn from(value: usize) -> Self {
     LuaEntity(value)
+  }
+}
+
+impl From<&usize> for LuaEntity {
+  fn from(value: &usize) -> Self {
+    LuaEntity(*value)
   }
 }
 

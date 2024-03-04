@@ -14,7 +14,7 @@ pub use self::{
   abilities::AbilityMap,
   combat::{Armor, AttackDamage, Health, MissleSpeed, SpellResource, KDA},
   cooldowns::{Cooldown, Cooldowns},
-  identification::{AutoAttack, Controllable, Killed, Owner, Player, Target, Team},
+  identification::{AutoAttack, Controllable, Dead, Killed, Owner, Player, Target, Team},
   income::Gold,
   levels::{Exp, Level},
   movement::{Colliding, Destination, Path, Position, PreviousPosition, UnitSpeed, Velocity},
