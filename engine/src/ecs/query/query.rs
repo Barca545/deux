@@ -6,15 +6,17 @@ use std::any::{Any, TypeId};
 #[derive(Debug)]
 pub struct Query<'a> {
   map: u128,
+  exlude_map: u128,
   entities: &'a Entities,
 }
 
 impl<'a> Query<'a> {
+  ///Create a new [`Query`].
   pub fn new(entities: &'a Entities) -> Self {
-    Self { map: 0, entities }
+    Self { map: 0, exlude_map: 0, entities }
   }
-  ///Tells the query the entities it pulls must contain the type passed in
-  /// as an argument.
+
+  ///Add a component the queried entities must hold.
   pub fn with_component<T: Any>(&mut self) -> Result<&mut Self> {
     let typeid = TypeId::of::<T>();
     if let Some(bit_mask) = self.entities.get_bitmask(&typeid) {
@@ -25,24 +27,31 @@ impl<'a> Query<'a> {
     Ok(self)
   }
 
-  ///Returns a query entity containing all entities containing the queried
-  /// components. Exposes the `get_component` and `mut_get_component`
-  /// methods for returned entities.
+  ///Add a component the queried entities must not hold.
+  pub fn without_component<T: Any>(&mut self) -> Result<&mut Self> {
+    let typeid = TypeId::of::<T>();
+    if let Some(bit_mask) = self.entities.get_bitmask(&typeid) {
+      self.exlude_map |= bit_mask;
+    } else {
+      return Err(EcsErrors::ComponentNotRegistered.into());
+    }
+    Ok(self)
+  }
+
+  ///Consumes the [`Query`]. Returns a [`Vec`] of [`QueryEntity`] containing all entities who hold the queried components.
   pub fn run(&self) -> Vec<QueryEntity> {
     self
       .entities
       .map
       .iter()
       .enumerate()
-      .filter_map(
-        |(index, entity_map)| {
-          if entity_map & self.map == self.map {
-            Some(QueryEntity::new(index, self.entities))
-          } else {
-            None
-          }
-        },
-      )
+      .filter_map(|(index, entity_map)| {
+        if (entity_map & self.map == self.map) && (entity_map & self.exlude_map == 0) {
+          Some(QueryEntity::new(index, self.entities))
+        } else {
+          None
+        }
+      })
       .collect()
   }
 }
@@ -50,10 +59,8 @@ impl<'a> Query<'a> {
 #[cfg(test)]
 #[allow(clippy::float_cmp)]
 mod test {
-  // use super::entities::query_entity::QueryEntity;
   use super::*;
   use std::cell::{Ref, RefMut};
-
   #[test]
   fn query_mask_updating_with_component() -> Result<()> {
     let mut entities: Entities = Entities::default();
@@ -63,11 +70,9 @@ mod test {
 
     let mut query: Query<'_> = Query::new(&entities);
 
-    query.with_component::<u32>()?.with_component::<f32>()?;
+    query.with_component::<u32>()?.with_component::<f32>()?.without_component::<usize>()?;
 
     assert_eq!(query.map, 3);
-    // assert_eq!(TypeId::of::<u32>(), query.typeids[0]);
-    // assert_eq!(TypeId::of::<f32>(), query.typeids[1]);
     Ok(())
   }
 
@@ -141,9 +146,28 @@ mod test {
 
     let entities = query.with_component::<Health>()?.with_component::<Damage>()?.run();
     assert_eq!(entities.len(), 0);
-    // let entity = &entities[0];
-    //len should be zero
-    //
+    Ok(())
+  }
+
+  #[test]
+  fn query_for_entity_without_component() -> Result<()> {
+    let mut entities = Entities::default();
+    entities.register_component::<Health>();
+    entities.register_component::<Damage>();
+    entities.register_component::<usize>();
+
+    entities.create_entity().with_component(Damage(100))?;
+    entities.create_entity().with_component(Damage(100))?.with_component(Health(100))?;
+    entities.create_entity().with_component(Health(30))?;
+
+    let mut query = Query::new(&entities);
+    let entities = query.with_component::<Health>()?.without_component::<Damage>()?.run();
+
+    assert_eq!(entities.len(), 1);
+
+    let entity = &entities[0];
+    let health = entity.get_component::<Health>()?;
+    assert_eq!(health.0, 30);
 
     Ok(())
   }
