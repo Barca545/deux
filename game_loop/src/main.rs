@@ -38,6 +38,10 @@ use update::update;
 //  Issue is based on distance from screen, the entity closer to the user is selected first?
 // -Move the resize window code into its own function and only run it if one of the events was a window resize
 
+// Refactor - Rendering:
+// -Experiment with putting Gl in an Rc
+// -Meshes need to be a resource
+
 // Refactor - Grid
 // -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
 // -Consider moving to a slower tick rate LoL uses 30hz
@@ -50,13 +54,6 @@ use update::update;
 // -Make the list of open/closed indexes a global in lua since it's constant throughout the game
 // -Function to check the cell a given position is inside
 // -Run an a* pathing script
-
-//use this wherever I handle the abilties to determine if they should check for a selection
-//targeted abilities should only run if there is a selection
-pub enum Ability {
-  Targeted(String),
-  Untargeted(String),
-}
 
 fn main() {
   //Configure the location of the asset folders
@@ -92,7 +89,7 @@ fn main() {
   let gl = create_gl(&mut window);
 
   //Add gl as a resource
-  world.add_resource(gl.clone());
+  world.add_resource(gl);
 
   //Create the shader programs
   let programs = ShaderPrograms::new(&world).unwrap();
@@ -110,8 +107,8 @@ fn main() {
   //Spawn the players and dummies
   spawn_player(&mut world, "warrior", 1).unwrap();
 
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(3.0, 0.0, -3.0)).unwrap();
-  spawn_dummy(&mut world, gl.clone(), Vec3::new(5.0, 0.0, 0.0)).unwrap();
+  spawn_dummy(&mut world, Vec3::new(3.0, 0.0, -3.0)).unwrap();
+  spawn_dummy(&mut world, Vec3::new(5.0, 0.0, 0.0)).unwrap();
 
   //Main loop
   while !window.should_close() {

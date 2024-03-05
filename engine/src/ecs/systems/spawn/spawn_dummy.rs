@@ -8,18 +8,22 @@ use crate::{
 use eyre::Result;
 use gl::Gl;
 
-pub fn spawn_dummy(world: &mut World, gl: Gl, position: Vec3) -> Result<()> {
+pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
   //Create the dummy entity
+
   let dummy_position_vec: Vec3 = position;
   let dummy_position = Position(dummy_position_vec);
   let dummy_previous_position = PreviousPosition(dummy_position_vec);
-  let dummy_hitbox = SelectionRadius::new(&dummy_position, 2.0, 0.1);
-  let dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
-
+  let dummy_hitbox = SelectionRadius::new(&dummy_position, 2.0, 1.0);
   let (dummy_vertices, dummy_indices) = load_object("box").unwrap();
-  let dummy_mesh = SkinnedMesh::new(&gl, dummy_vertices, dummy_indices, "wall", 1.0);
-
-  //combat info
+  let dummy_mesh;
+  let dummy_hitbox_mesh;
+  {
+    let gl = world.get_resource::<Gl>().unwrap();
+    dummy_mesh = SkinnedMesh::new(&gl, dummy_vertices, dummy_indices, "wall", 1.0);
+    dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, dummy_position_vec);
+  }
+  //Combat info
   let dummy_team = Team::Red;
   let dummy_health = Health::new(500);
   // let dummy_target = Target(None);

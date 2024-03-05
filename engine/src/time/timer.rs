@@ -76,8 +76,8 @@ impl BasicTimer {
   pub fn new(duration: Miliseconds) -> Self {
     BasicTimer {
       duration,
-      real_remaining: duration,
-      display_remaining: duration,
+      real_remaining: 0.0,
+      display_remaining: 0.0,
     }
   }
 

@@ -1,5 +1,5 @@
 // Refactor:
-// -Will eventually need to factor in pen I suppose.
+// -Will eventually need to factor in pen.
 // -Need separate equation for AP damage and AD damage
 
 use crate::{
@@ -8,10 +8,10 @@ use crate::{
 };
 
 ///Calculate damage mitigation from resistance
-pub fn calc_post_mitigation_damage(damage: u32, resist: u32) -> u32 {
-  let resist_factor = 100 / (100 + resist);
-  let post_resist_damage = damage * resist_factor;
-  post_resist_damage
+pub fn calc_post_mitigation_damage(damage: i32, resist: i32) -> i32 {
+  let resist_factor = 100.0 / (100.0 + resist as f32);
+  let post_resist_damage = damage as f32 * resist_factor;
+  post_resist_damage as i32
 }
 
 ///Returns a [`Bundle`] containing the data needed to spawn an auto attack entity.

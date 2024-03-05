@@ -1,8 +1,8 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Colliding, Controllable, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp,
-    GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, PlayerState, Position, PreviousPosition,
-    SelectionRadius, SkinnedMesh, SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
+    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Controllable, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp, GameplayRadius,
+    Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, Player, PlayerState, Position, PreviousPosition, SelectionRadius, SkinnedMesh,
+    SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
   ecs::World,
   view::AABB3DDebugMesh,
@@ -16,7 +16,6 @@ pub fn register_components(world: &mut World) {
     .register_component::<Destination>()
     .register_component::<UnitSpeed>()
     .register_component::<Velocity>()
-    .register_component::<Colliding>()
     .register_component::<Path>()
     //Radii components
     .register_component::<SelectionRadius>()

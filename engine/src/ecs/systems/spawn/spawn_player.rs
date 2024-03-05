@@ -1,7 +1,7 @@
 use crate::{
   component_lib::{
-    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition, Script,
-    SelectionRadius, SkinnedMesh, SpellResource, Target, Team, Velocity, KDA,
+    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition,
+    Script, SelectionRadius, SkinnedMesh, SpellResource, Target, Team, Velocity, KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::{load_champion_json, load_object},
@@ -88,10 +88,20 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let ability_4 = Script::new("start", "onhit", "running", "stop");
   let autoattack = Script::new(
     r#"
-  target = world:getTarget(owner.id)
-  world:spawnTargetedProjectile(owner.id, target)
+  local target = world:getTarget(owner.id);
+  local cost = 50;
+  if world:has_resource(owner.id, cost) and world:target_is_alive(target) and world:is_enemy(owner.id, target) then 
+    world:remove_resource(owner.id, cost);
+    world:spawnTargetedProjectile(owner.id, target);
+    return true
+  else
+    return false
+  end
 "#,
-    "23",
+    r#"
+    local damage = world:get_attack_damage(owner.id);
+    return damage
+    "#,
     "running",
     "stop",
   );

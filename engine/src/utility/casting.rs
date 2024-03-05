@@ -6,15 +6,16 @@ use crate::{
 // Refactor:
 // -Figure out if it is possible to pass a QueryEntity between systems
 // -Rework Cooldowns to take TypeId or something
+// -These should create debug GameEvents like Oom{player, ...} if they fail
 
 ///Returns true if the requested cooldown is 0.0.
-pub fn off_cooldown(world: &World, entity: usize, ability_name: &str) -> bool {
+pub fn off_cooldown(world: &World, entity: usize, ability_name: String) -> bool {
   let cooldowns = world.get_component::<Cooldowns>(entity).unwrap();
-  cooldowns.is_zero(ability_name)
+  cooldowns.is_zero(ability_name.as_str())
 }
 
 ///Returns true if an entity has enough [`SpellResource`] to complete an action.
-pub fn has_resource(world: &World, entity: usize, cost: u32) -> bool {
+pub fn has_resource(world: &World, entity: usize, cost: i32) -> bool {
   let resource = world.get_component::<SpellResource>(entity).unwrap();
   resource.0 >= cost
 }
@@ -38,7 +39,7 @@ pub fn target_is_alive(world: &World, target: usize) -> bool {
 pub fn is_enemy(world: &World, entity: usize, target: usize) -> bool {
   let entity_team = world.get_component::<Team>(entity).unwrap();
   let target_team = world.get_component::<Team>(target).unwrap();
-  *entity_team == *target_team
+  *entity_team != *target_team
 }
 
 /// Returns true if the target's [`Team`] is neutral.

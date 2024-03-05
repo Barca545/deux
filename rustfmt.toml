@@ -20,7 +20,7 @@ trailing_semicolon = true
 where_single_line = true
 
 #WRAPPING
-max_width = 170
+max_width = 160
 wrap_comments = true
 binop_separator = "Front"
 

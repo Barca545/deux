@@ -1,9 +1,4 @@
-use crate::event::{AbilityFour, AbilityOne, AbilityThree, AbilityTwo, AutoAttack as AutoAttackId};
 use serde::{Deserialize, Serialize};
-use std::{
-  any::{Any, TypeId},
-  collections::HashMap,
-};
 
 // Refactor:
 // -Ability map should probably be stored on the entity not as a resource
@@ -19,18 +14,18 @@ pub struct MissleSpeed(pub f32);
 pub struct AttackDamage(pub u32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Armor(pub u32);
+pub struct Armor(pub i32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SpellResource(pub u32);
+pub struct SpellResource(pub i32);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Health {
-  pub max: u32,
-  pub remaining: u32,
+  pub max: i32,
+  pub remaining: i32,
 }
 impl Health {
-  pub fn new(max: u32) -> Self {
+  pub fn new(max: i32) -> Self {
     Health { max, remaining: max }
   }
 }

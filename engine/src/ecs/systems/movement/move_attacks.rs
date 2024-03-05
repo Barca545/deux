@@ -1,14 +1,13 @@
 use std::any::Any;
 
 use crate::{
-  component_lib::{AutoAttack, Colliding, GameplayRadius, Owner, Position, PreviousPosition, Target, Velocity},
+  component_lib::{AutoAttack, GameplayRadius, Owner, Position, PreviousPosition, Target, Velocity},
   ecs::World,
   event::{AutoAttack as AutoAttackId, GameEvent, GameEventQueue},
   physics::circle_point_collision_test,
 };
 
 // Refactor:
-// -Get rid of the colliding component and just use the auto_attack_hit event.
 //  This will let me feed autoattacks landing into the combat system, death systems and any other relevant system
 //  Can also have the event hold time stamps which will allow me to see which attack hit first?
 
@@ -17,8 +16,6 @@ use crate::{
 pub fn move_attacks(world: &mut World) {
   let mut query = world.query();
   let entities = query.with_component::<AutoAttack>().unwrap().run();
-
-  let mut colliding = Vec::default();
 
   for entity in entities {
     //Get position and velocity
@@ -45,7 +42,6 @@ pub fn move_attacks(world: &mut World) {
 
     //If the attack has hit its target, buffer the command to give it the Colliding component
     if collision_check {
-      colliding.push(entity.id);
       let owner = entity.get_component::<Owner>().unwrap();
       let event = GameEvent::AbilityHit {
         ability_type: AutoAttackId.type_id(),
@@ -56,7 +52,4 @@ pub fn move_attacks(world: &mut World) {
       events.push(event)
     }
   }
-
-  //Loop through the buffered entity IDs and give them the Colliding component
-  colliding.into_iter().for_each(|entity_id| world.add_component(entity_id, Colliding).unwrap());
 }

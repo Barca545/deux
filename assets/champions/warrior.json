@@ -10,6 +10,6 @@
   },
   "pathing_radius":0.5,
   "auto_attack_missle_speed":0.07,
-  "auto_attack_cooldown":1.0,
-  "attack_damage":100
+  "auto_attack_cooldown":0.5,
+  "attack_damage":10000
 }

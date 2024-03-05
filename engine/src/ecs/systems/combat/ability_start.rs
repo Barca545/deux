@@ -2,7 +2,7 @@ use crate::{
   component_lib::{AbilityMap, Cooldowns, PlayerState},
   ecs::World,
   event::{GameEvent, GameEventQueue},
-  utility::eval_scripts,
+  utility::{eval_scripts, off_cooldown},
 };
 
 // Refactor:
@@ -23,11 +23,14 @@ pub fn ability_start(world: &mut World) {
     let events = world.get_resource::<GameEventQueue>().unwrap();
     events.process_events(|event| {
       if let GameEvent::AbilityStart { ability_type, owner } = event {
-        let map = world.get_component::<AbilityMap>(owner.0).unwrap();
-        let ability = map.get(*ability_type);
-        if let Some(start) = ability.start() {
-          //Buffer the scripts to be executed
-          buffered_scripts.push((owner.0, *ability_type, start.clone()));
+        //Check cooldown, other casting checks are in the script but this is constant for all abilities
+        if off_cooldown(world, owner.0, String::from("auto attack")) {
+          let map = world.get_component::<AbilityMap>(owner.0).unwrap();
+          let ability = map.get(*ability_type);
+          if let Some(start) = ability.start() {
+            //Buffer the scripts to be executed
+            buffered_scripts.push((owner.0, *ability_type, start.clone()));
+          }
         }
       }
     });
@@ -35,11 +38,11 @@ pub fn ability_start(world: &mut World) {
 
   for (owner, ability_type, script) in &buffered_scripts {
     let owner = owner;
-    let cast = eval_scripts::<bool>(world, owner, owner, script).unwrap();
+    let cast = eval_scripts::<bool>(world, ability_type, owner, owner, script).unwrap();
     if cast {
       //Reset the cooldowns
       let mut cooldowns = world.get_component_mut::<Cooldowns>(*owner).unwrap();
-      cooldowns.reset("auto windup");
+      cooldowns.reset("auto attack");
 
       //Set the player state to Casting and
       let mut player_state = world.get_component_mut::<PlayerState>(*owner).unwrap();

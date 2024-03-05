@@ -1,17 +1,18 @@
+use std::any::TypeId;
+
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{
-    Armor, AttackDamage, AutoAttack, AutoAttackMesh, Destination, Health, Killed, MissleSpeed, Owner, Path, Position, PreviousPosition, SkinnedMesh, Target, Velocity,
-  },
+  component_lib::{AbilityMap, AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target},
   ecs::World,
   math::Vec3,
-  utility::calc_post_mitigation_damage,
+  utility::{create_ranged_auto_attack, has_resource, is_enemy, is_neutral, is_unoccupied, off_cooldown, target_is_alive},
 };
-use mlua::{UserData, UserDataMethods};
+use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
 // -Convert terrain to lua. ergonomically, I think I'll do strings until it shows as a performance issue
+// -I think the damage calculation might need to be here so I can have stuff like lifesteal etc
 
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -21,57 +22,52 @@ impl UserData for World {
       Ok(target.0)
     });
 
-    //Spawn a targeted projectile
-    methods.add_method_mut("spawnTargetedProjectile", |_, world, (owner, target): (usize, usize)| {
-      let bundle;
-      {
-        //Get the owner's position
-        let owner_position = world.get_component::<Position>(owner).unwrap();
+    //Pre-cast checks. Read more in the utility functions' casting module.
+    methods.add_method("off_cooldown", |_, world, (entity, ability_name)| Ok(off_cooldown(world, entity, ability_name)));
+    methods.add_method("has_resource", |_, world, (entity, cost)| Ok(has_resource(world, entity, cost)));
+    methods.add_method("is_unoccupied", |_, world, entity| Ok(is_unoccupied(world, entity)));
+    methods.add_method("target_is_alive", |_, world, target| Ok(target_is_alive(world, target)));
+    methods.add_method("is_enemy", |_, world, (entity, target)| Ok(is_enemy(world, entity, target)));
+    methods.add_method("is_neutral", |_, world, target| Ok(is_neutral(world, target)));
 
-        //Create the projectile's position information
-        let attack_position = Position(owner_position.0);
-        let previous_attack_position = PreviousPosition(owner_position.0);
-
-        //Get the target's position
-        let destination = Destination::from(*world.get_component::<Position>(target).unwrap());
-
-        //Create the projectile speed
-        let speed = world.get_component::<MissleSpeed>(owner).unwrap();
-
-        //Calculate velocity
-        let velocity = Velocity::new(&attack_position, &destination, &speed.0);
-
-        //Get the mesh info
-        let auto_attack_mesh = world.get_component::<AutoAttackMesh>(owner).unwrap();
-
-        //Create the Target and owner wrappers
-        let target = Target(Some(target));
-        let owner = Owner(owner);
-
-        bundle = (
-          AutoAttack::default(),
-          attack_position,
-          previous_attack_position,
-          *speed,
-          velocity,
-          SkinnedMesh::from(auto_attack_mesh.clone()),
-          owner,
-          target,
-        );
-      }
-      world.create_entity().with_components(bundle).unwrap();
+    //Update resources
+    methods.add_method("add_resource", |_, world, (entity, amount): (usize, i32)| {
+      let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
+      resource.0 += amount;
       Ok(())
     });
 
+    methods.add_method("remove_resource", |_, world, (entity, amount): (usize, i32)| {
+      let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
+      resource.0 -= amount;
+      Ok(())
+    });
+
+    //Spawn a targeted projectile
+    methods.add_method_mut("spawnTargetedProjectile", |_, world, (owner, target): (usize, usize)| {
+      let auto_attack = create_ranged_auto_attack(world, Owner(owner), Target(Some(target)));
+      world.create_entity().with_components(auto_attack).unwrap();
+      Ok(())
+    });
+
+    //Runs the script's stop script
+    methods.add_method("stop", |_, world, (owner, key): (usize, LuaTypeId)| {
+      let map = world.get_component::<AbilityMap>(owner).unwrap();
+      let id = key.0;
+      let ability = map.get(id);
+      let stop = ability.stop().to_owned().unwrap();
+      Ok(stop)
+    });
+
     //Increments the health of the queried entity
-    methods.add_method("add_health", |_, world, (target, value): (usize, u32)| {
+    methods.add_method("add_health", |_, world, (target, value): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining += value;
       Ok(())
     });
 
     //Decrements the health of the queried entity
-    methods.add_method("remove_health", |_, world, (target, value): (usize, u32)| {
+    methods.add_method("remove_health", |_, world, (target, value): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining -= value;
       Ok(())
@@ -81,24 +77,6 @@ impl UserData for World {
     methods.add_method("get_attack_damage", |_, world, entity_id: usize| {
       let attack_damage = world.get_component::<AttackDamage>(entity_id).unwrap().0;
       Ok(attack_damage)
-    });
-
-    //Deal mitigated damage to target enemy.
-    //If the entity dies, give the script's owner a Killed component.
-    methods.add_method_mut("deal_mitigated_damage", |_, world, (target, owner, damage): (usize, usize, u32)| {
-      {
-        let armor = world.get_component::<Armor>(target).unwrap();
-        let post_mitigation_damage = calc_post_mitigation_damage(damage, armor.0);
-        let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
-        health.remaining -= post_mitigation_damage;
-      }
-
-      let health = world.get_component::<Health>(target as usize).unwrap().remaining;
-      //Apply the Killed component to the attack's owner if applicable
-      if health < 0 {
-        world.add_component(owner, Killed).unwrap();
-      }
-      Ok(())
     });
 
     //Retrieves an entity's Destination
@@ -152,6 +130,18 @@ impl From<&usize> for LuaEntity {
 impl UserData for LuaEntity {
   fn add_fields<'lua, F: mlua::prelude::LuaUserDataFields<'lua, Self>>(fields: &mut F) {
     fields.add_field_method_get("id", |_, entity_id| Ok(entity_id.0))
+  }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct LuaTypeId(pub TypeId);
+impl UserData for LuaTypeId {}
+impl<'lua> FromLua<'lua> for LuaTypeId {
+  fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> LuaResult<Self> {
+    match value {
+      Value::UserData(ud) => Ok(*ud.borrow::<Self>()?),
+      _ => unreachable!(),
+    }
   }
 }
 

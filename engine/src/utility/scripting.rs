@@ -1,6 +1,10 @@
-use crate::{component_lib::Owner, ecs::World, scripting::LuaEntity};
+use crate::{
+  component_lib::Owner,
+  ecs::World,
+  scripting::{LuaEntity, LuaTypeId},
+};
 use mlua::{FromLua, Lua};
-use std::rc::Rc;
+use std::{any::TypeId, rc::Rc};
 
 // Refactor:
 // -Should these take in the actual scripts and handle them there?
@@ -26,9 +30,10 @@ pub fn run_scripts(world: &mut World, owner: &Owner, script: &String) {
 }
 
 ///Returns the result of running a [`Script`].
-pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope> + Clone>(world: &mut World, entity: &usize, owner: &usize, script: &String) -> Option<T> {
+pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope>>(world: &mut World, ability_type: &TypeId, id: &usize, owner: &usize, script: &String) -> Option<T> {
   let owner_id = LuaEntity::from(owner);
-  let entity_id = LuaEntity::from(entity);
+  let entity_id = LuaEntity::from(id);
+  let key = LuaTypeId(*ability_type);
   let lua = world.get_resource::<Rc<Lua>>().unwrap().clone();
 
   lua
@@ -36,8 +41,11 @@ pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope> + Clone>(world: &mut Wo
       //Set the ids for the scripts's owner
       lua.globals().set("owner", scope.create_userdata_ref(&owner_id)?)?;
 
-      //Set the id for the script entity (  )
+      //Set the id for the script entity
       lua.globals().set("entity", scope.create_userdata_ref(&entity_id)?)?;
+
+      //Set the ability's key (its TypeId)
+      lua.globals().set("key", scope.create_any_userdata_ref(&key)?)?;
 
       //Add the world
       lua.globals().set("world", scope.create_userdata_ref_mut(world)?)?;
