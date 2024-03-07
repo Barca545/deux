@@ -26,6 +26,6 @@ pub fn update_velocity(world: &World) {
     let position = entity.get_component_mut::<Position>().unwrap();
     let speed = entity.get_component::<UnitSpeed>().unwrap();
     let mut velocity = entity.get_component_mut::<Velocity>().unwrap();
-    *velocity = Velocity::new(&position, &destination, &speed.0);
+    *velocity = Velocity::new(&position, &destination, &speed.total());
   }
 }

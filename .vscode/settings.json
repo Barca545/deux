@@ -13,4 +13,8 @@
   "[rust]": {
     "editor.formatOnSave": true
   },
+  "Lua.diagnostics.globals": [
+    "world",
+    "owner"
+  ],
 }

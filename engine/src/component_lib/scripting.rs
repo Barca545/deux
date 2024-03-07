@@ -16,16 +16,14 @@ pub struct Script {
   start: BaseScript,
   running: BaseScript,
   onhit: BaseScript,
-  stop: BaseScript,
 }
 
 impl Script {
-  pub fn new(start: &str, onhit: &str, running: &str, stop: &str) -> Script {
+  pub fn new(start: Option<&str>, onhit: Option<&str>, running: Option<&str>) -> Script {
     let start = BaseScript::new(start);
     let running = BaseScript::new(running);
     let onhit = BaseScript::new(onhit);
-    let stop = BaseScript::new(stop);
-    Script { start, onhit, running, stop }
+    Script { start, onhit, running }
   }
 
   pub fn start(&self) -> Option<Rc<String>> {
@@ -39,16 +37,15 @@ impl Script {
   pub fn onhit(&self) -> Option<Rc<String>> {
     self.onhit.0.clone()
   }
-
-  pub fn stop(&self) -> Option<Rc<String>> {
-    self.stop.0.clone()
-  }
 }
 
 #[derive(Debug, Clone)]
 pub struct BaseScript(Option<Rc<String>>);
 impl BaseScript {
-  pub fn new(script_slice: &str) -> Self {
-    BaseScript(Some(Rc::new(String::from(script_slice))))
+  pub fn new(script_slice: Option<&str>) -> Self {
+    match script_slice {
+      Some(string) => BaseScript(Some(Rc::new(String::from(string)))),
+      None => BaseScript(None),
+    }
   }
 }

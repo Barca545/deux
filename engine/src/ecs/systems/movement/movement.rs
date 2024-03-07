@@ -35,12 +35,12 @@ mod test {
   fn get_direction() {
     let position = Position(Vec3::new(0.0, 0.0, 0.0));
     let destination = Destination(Vec3::new(3.0, 4.0, 0.0));
-    let speed = UnitSpeed(1.0);
+    let speed = UnitSpeed::new(1.0);
 
-    let velocity = Velocity::new(&position, &destination, &speed.0);
+    let velocity = Velocity::new(&position, &destination, &speed.total());
     dbg!(velocity.0);
 
-    let velocity = Velocity::new(&position, &destination, &speed.0);
+    let velocity = Velocity::new(&position, &destination, &speed.total());
 
     dbg!(velocity.0);
   }
@@ -49,8 +49,8 @@ mod test {
   fn test_update_position() -> Result<()> {
     let position = Position(Vec3::new(0.0, 0.0, 0.0));
     let destination = Destination(Vec3::new(3.0, 0.0, 3.0));
-    let speed = UnitSpeed(5.0);
-    let velocity = Velocity::new(&position, &destination, &speed.0);
+    let speed = UnitSpeed::new(5.0);
+    let velocity = Velocity::new(&position, &destination, &speed.total());
     dbg!(velocity);
 
     let mut world = World::new();

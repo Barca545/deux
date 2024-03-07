@@ -1,12 +1,13 @@
 use std::any::TypeId;
 
-use crate::component_lib::Owner;
+use crate::{component_lib::Owner, math::MouseRay};
 
 //Refactor:
 // -Events might need to hold timestamps
 // -Consider adding a separate queue for buffered events that tracks how many frames they should be retried for since some events I might not want to discard each frame.
 // -Move the ability IDs into a separate folder?
 // -AutoAttackHit should become ability hit
+// -Could the start event just get passed a ground intersection and target from the intersection instead of holding the mouseray and calculating it?
 
 //Game Ability types used to query an entity's AbilityMap
 pub struct AbilityOne;
@@ -18,12 +19,13 @@ pub struct AutoAttack;
 #[derive(Debug, Clone)]
 pub enum GameEvent {
   //Combat events
-  AbilityStart { ability_type: TypeId, owner: Owner },
-  AbilityHit { ability_type: TypeId, ability_id: usize, owner: Owner },
+  AbilityStart { owner: Owner, ability_type: TypeId, mouseray: MouseRay },
+  //Ability id is the entity id of the ability
+  AbilityHit { owner: Owner, ability_type: TypeId, ability_id: usize },
   EntityKilled { entity: usize, killer: usize },
 
   //Movement Events
-  UpdateDestination { owner: Owner },
+  UpdateDestination { owner: Owner, mouseray: MouseRay },
 
   //Camera Events
   MoveCameraUp,

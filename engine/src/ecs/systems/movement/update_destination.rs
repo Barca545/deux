@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use crate::{
-  component_lib::{Controllable, Destination, Owner, Path, Position, Target},
+  component_lib::{Destination, Owner, Path, Position},
   ecs::World,
-  input::user_inputs::{FrameInputs, UserInput},
+  event::{GameEvent, GameEventQueue},
 };
 use mlua::Lua;
 
@@ -20,43 +20,30 @@ use mlua::Lua;
 /// Otherwise calculates a [`Path`] using the pathing script.
 /// Does not update entity's [`Velocity`] components.
 pub fn update_destination(world: &World) {
-  let frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-  //Get the MouseClick and it's corresponding ray and convert them into a Destination
-  if let Some(UserInput::MouseClick(mouse_ray)) = frame_inputs.get_input() {
-    let new_destination = Destination::from(mouse_ray.ray_ground_intersection());
+  let events = world.get_resource::<GameEventQueue>().unwrap();
+  events.process_events(|event| {
+    if let GameEvent::UpdateDestination { owner, mouseray } = event {
+      let mut destination = world.get_component_mut::<Destination>(owner.0).unwrap();
+      let position = world.get_component_mut::<Position>(owner.0).unwrap();
 
-    //Check how far the new destination is from the mouse click
-    let mut query = world.query();
-    let entities = query
-      .with_component::<Controllable>()
-      .unwrap()
-      .with_component::<Destination>()
-      .unwrap()
-      .run();
+      //Get the MouseClick and it's corresponding ray and convert them into a Destination
+      let new_destination = Destination::from(mouseray.ray_ground_intersection());
 
-    for entity in entities {
-      let target = entity.get_component::<Target>().unwrap();
-      //Do not move if the entity has a selected target
-      if target.0 == None {
-        let position = entity.get_component::<Position>().unwrap();
-        //Narrowing the scope of the mut borrow here otherwise trying to borrow it in the script causes errors
-        {
-          let mut destination = entity.get_component_mut::<Destination>().unwrap();
-          *destination = new_destination;
-        }
-
-        // If the distance between the current Position and the Destination is large run the pathing script and replace the destination with the first node of the calculated Path
-        if position.distance(&new_destination) > 100.0 {
-          run_scripts(world, Owner(entity.id));
-          let mut path = entity.get_component_mut::<Path>().unwrap();
-          if let Some(first_node) = path.next() {
-            let mut destination = entity.get_component_mut::<Destination>().unwrap();
-            *destination = first_node;
-          }
+      // If the distance between the current Position and the Destination is small run the pathing script
+      if position.distance(&new_destination) < 100.0 {
+        *destination = new_destination;
+      } else {
+        run_scripts(world, *owner);
+        // let mut path = entity.get_component_mut::<Path>().unwrap();
+        let mut path = world.get_component_mut::<Path>(owner.0).unwrap();
+        if let Some(first_node) = path.next() {
+          // let mut destination = entity.get_component_mut::<Destination>().unwrap();
+          let mut destination = world.get_component_mut::<Destination>(owner.0).unwrap();
+          *destination = first_node;
         }
       }
     }
-  }
+  });
 }
 
 ///Run a unit's pathing script [`MovementScript`]s.

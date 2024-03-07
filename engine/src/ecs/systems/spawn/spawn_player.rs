@@ -1,7 +1,7 @@
 use crate::{
   component_lib::{
-    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Level, Path, Player, PlayerState, Position, PreviousPosition,
-    Script, SelectionRadius, SkinnedMesh, SpellResource, Target, Team, Velocity, KDA,
+    AbilityMap, AttackDamage, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Path, Player,
+    PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedMesh, SpellResource, Target, Team, UnitSpeed, Velocity, KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::{load_champion_json, load_object},
@@ -33,7 +33,8 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   //Basic info
   let player = Player(number);
   let controllable = Controllable;
-  let health = champion_info.health;
+  let health = Health::new(champion_info.health);
+  let spell_resource = SpellResource::new(1000);
   let team = Team::Blue;
   let target = Target(None);
   let gold = Gold::default();
@@ -46,7 +47,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let position = Position(position_vec);
   let previous_position = PreviousPosition(position_vec);
   let destination = Destination(position_vec);
-  let speed = champion_info.speed;
+  let speed = UnitSpeed::new(champion_info.unit_speed);
   let velocity = Velocity::default();
   let selection_radius = SelectionRadius::new(&position, champion_info.selection_radius.height, champion_info.selection_radius.radius);
   let gameplay_radius = GameplayRadius(1.0);
@@ -69,12 +70,9 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     auto_attack_mesh = AutoAttackMesh::new(&gl, auto_attack_vertices, auto_attack_indices, "allied_attack", 0.5);
   }
 
-  //Casting info
-  let spell_resource = SpellResource(1000);
-
   //Combat info
-  let auto_attack_missle_speed = champion_info.auto_attack_missle_speed;
-  let attack_damage = champion_info.attack_damage;
+  let auto_attack_missle_speed = MissleSpeed::new(champion_info.auto_attack_missle_speed);
+  let attack_damage = AttackDamage::new(champion_info.attack_damage);
   let basic_cooldown_duration = champion_info.auto_attack_cooldown;
   let auto_windup = 0.0;
   let ability_1_cooldown_duration = 0.0;
@@ -82,28 +80,40 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let ability_3_cooldown_duration = 0.0;
   let ability_4_cooldown_duration = 0.0;
   //Script info
-  let ability_1 = Script::new("start", "onhit", "running", "stop");
-  let ability_2 = Script::new("start", "onhit", "running", "stop");
-  let ability_3 = Script::new("start", "onhit", "running", "stop");
-  let ability_4 = Script::new("start", "onhit", "running", "stop");
+  let ability_1 = Script::new(Some("start"), Some("onhit"), Some("running"));
+  let ability_2 = Script::new(Some("start"), Some("onhit"), Some("running"));
+  let ability_3 = Script::new(
+    Some(
+      r#"
+      local pos = mouse:ground_intersection()
+      world:blink(owner.id,pos)
+      "#,
+    ),
+    Some("onhit"),
+    Some("running"),
+  );
+  let ability_4 = Script::new(Some("start"), Some("onhit"), Some("running"));
   let autoattack = Script::new(
-    r#"
-  local target = world:getTarget(owner.id);
-  local cost = 50;
-  if world:has_resource(owner.id, cost) and world:target_is_alive(target) and world:is_enemy(owner.id, target) then 
-    world:remove_resource(owner.id, cost);
-    world:spawnTargetedProjectile(owner.id, target);
-    return true
-  else
-    return false
-  end
-"#,
-    r#"
+    Some(
+      r#"
+      local target = world:getTarget(owner.id);
+      local cost = 50;
+      if world:has_resource(owner.id, cost) and world:target_is_alive(target) and world:is_enemy(owner.id, target) then 
+        world:remove_resource(owner.id, cost);
+        world:spawnTargetedProjectile(owner.id, target);
+        return true
+      else
+        return false
+      end
+    "#,
+    ),
+    Some(
+      r#"
     local damage = world:get_attack_damage(owner.id);
     return damage
     "#,
-    "running",
-    "stop",
+    ),
+    Some("running"),
   );
   let ability_map = AbilityMap::new(ability_1, ability_2, ability_3, ability_4, autoattack);
 

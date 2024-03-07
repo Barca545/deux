@@ -1,5 +1,4 @@
 use crate::math::Vec3;
-use serde::{Deserialize, Serialize};
 
 // Refactor:
 // -Does distance for Position need to be taken to the square root?
@@ -10,6 +9,11 @@ pub struct Position(pub Vec3);
 impl From<Destination> for Position {
   fn from(value: Destination) -> Self {
     Position(value.0)
+  }
+}
+impl From<[f32; 3]> for Position {
+  fn from(value: [f32; 3]) -> Self {
+    Position(Vec3::from(value))
   }
 }
 
@@ -61,10 +65,6 @@ impl Velocity {
     Velocity(velocity)
   }
 }
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-///Component holding a unit entity's speed.
-pub struct UnitSpeed(pub f32);
 
 ///Component containing a `Vec<Destination>` used for storing an entity's path.
 pub struct Path {

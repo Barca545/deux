@@ -34,7 +34,7 @@ pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
     .with_component(dummy_mesh)?
     .with_component(dummy_position)?
     .with_component(dummy_previous_position)?
-    .with_component(Armor(100))?
+    .with_component(Armor::new(100))?
     // .with_component(Destination::new(0.0, 0.0, 0.0))?
     // .with_component(Speed(0.05))?
     // .with_component(Velocity::default())?

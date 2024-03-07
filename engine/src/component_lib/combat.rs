@@ -1,34 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-// Refactor:
-// -Ability map should probably be stored on the entity not as a resource
-// -Ability map needs the ability to add/update scripts
-// -Ability map scripts probably will need to hold multiple data, they will have spawn logic, some will have on hit logic, and some will have on tick logic
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-///Component containing the speed of a missle entity.
-pub struct MissleSpeed(pub f32);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-///Component containing the attack damage of an entity.
-pub struct AttackDamage(pub u32);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Armor(pub i32);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SpellResource(pub i32);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Health {
-  pub max: i32,
-  pub remaining: i32,
-}
-impl Health {
-  pub fn new(max: i32) -> Self {
-    Health { max, remaining: max }
-  }
-}
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// pub struct Health {
+//   pub max: i32,
+//   pub remaining: i32,
+// }
+// impl Health {
+//   pub fn new(max: i32) -> Self {
+//     Health { max, remaining: max }
+//   }
+// }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 ///Component which tracks the kills, deaths, and assits of an entity.

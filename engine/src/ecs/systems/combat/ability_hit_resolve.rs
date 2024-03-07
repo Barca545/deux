@@ -36,22 +36,22 @@ pub fn ability_hit_resolve(world: &mut World) {
         let ability = map.get(*ability_type);
         if let Some(onhit) = ability.onhit() {
           //Buffer the scripts to be evaluated
-          buffered_scripts.push((owner.0, *ability_type, *ability_id, onhit));
+          buffered_scripts.push((owner.0, *ability_id, onhit));
         }
       }
     });
   }
   //Evaluate the stop script to get the damage of the ability.
-  for (owner, ability_type, entity, script) in &buffered_scripts {
+  for (owner, entity, script) in &buffered_scripts {
     let entity = entity;
-    if let Some(damage) = eval_scripts::<i32>(world, ability_type, entity, owner, script) {
+    if let Some(damage) = eval_scripts::<i32>(world, entity, owner, script) {
       //Get the target's information
       let target = world.get_component::<Target>(*entity).unwrap().0.unwrap();
       let remaining_health;
       {
         let resist = world.get_component::<Armor>(target).unwrap();
         //Pass the damage and resist into the damage calculation
-        let damage = calc_post_mitigation_damage(damage, resist.0);
+        let damage = calc_post_mitigation_damage(damage, resist.total());
         //Deal damage
         let mut target_health = world.get_component_mut::<Health>(target).unwrap();
         target_health.remaining = max(0, target_health.remaining - damage);

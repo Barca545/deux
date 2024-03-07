@@ -2,9 +2,9 @@ use std::any::TypeId;
 
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{AbilityMap, AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target},
+  component_lib::{AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target, UnitSpeed},
   ecs::World,
-  math::Vec3,
+  math::{MouseRay, Vec3},
   utility::{create_ranged_auto_attack, has_resource, is_enemy, is_neutral, is_unoccupied, off_cooldown, target_is_alive},
 };
 use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
@@ -33,13 +33,12 @@ impl UserData for World {
     //Update resources
     methods.add_method("add_resource", |_, world, (entity, amount): (usize, i32)| {
       let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
-      resource.0 += amount;
+      resource.remaining += amount;
       Ok(())
     });
-
     methods.add_method("remove_resource", |_, world, (entity, amount): (usize, i32)| {
       let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
-      resource.0 -= amount;
+      resource.remaining -= amount;
       Ok(())
     });
 
@@ -50,23 +49,20 @@ impl UserData for World {
       Ok(())
     });
 
-    //Runs the script's stop script
-    methods.add_method("stop", |_, world, (owner, key): (usize, LuaTypeId)| {
-      let map = world.get_component::<AbilityMap>(owner).unwrap();
-      let id = key.0;
-      let ability = map.get(id);
-      let stop = ability.stop().to_owned().unwrap();
-      Ok(stop)
+    //Deletes the script entity
+    methods.add_method_mut("stop", |_, world, entity: usize| {
+      world.delete_entity(entity).unwrap();
+      Ok(())
     });
 
-    //Increments the health of the queried entity
+    //Increments the health an entity
     methods.add_method("add_health", |_, world, (target, value): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining += value;
       Ok(())
     });
 
-    //Decrements the health of the queried entity
+    //Decrements the health of an entity
     methods.add_method("remove_health", |_, world, (target, value): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
       health.remaining -= value;
@@ -75,7 +71,7 @@ impl UserData for World {
 
     //Returns the attack damage of the queried entity
     methods.add_method("get_attack_damage", |_, world, entity_id: usize| {
-      let attack_damage = world.get_component::<AttackDamage>(entity_id).unwrap().0;
+      let attack_damage = world.get_component::<AttackDamage>(entity_id).unwrap().total();
       Ok(attack_damage)
     });
 
@@ -98,6 +94,27 @@ impl UserData for World {
       path.push(node);
       Ok(())
     });
+
+    //Instantly move an entity to a new position
+    methods.add_method("blink", |_, world, (owner, new_position): (usize, [f32; 3])| {
+      //set the position of the entity and its destination equal to the target position
+      let mut position = world.get_component_mut::<Position>(owner).unwrap();
+      let mut destination = world.get_component_mut::<Destination>(owner).unwrap();
+      *position = Position::from(new_position);
+      *destination = Destination::from(new_position);
+      //need logic to eject a player if they're inside another hitbox
+      //loop through entities, check for a collision, if inside push in direction facing by collided entity radius then check again not inside, etc
+      // if it does this more than two times, try another direction
+      // (backwards then 90 degrees etc)
+      Ok(())
+    });
+
+    //Increase a unit's movement speed
+    methods.add_method("accelerate", |_, world, (owner, amount): (usize, f32)| {
+      let mut speed = world.get_component_mut::<UnitSpeed>(owner).unwrap();
+      speed.add_bonus(amount);
+      Ok(())
+    })
   }
 }
 
@@ -133,11 +150,12 @@ impl UserData for LuaEntity {
   }
 }
 
+//Could be useful if I ever have scripts that swap or something
 #[derive(Debug, Clone, Copy)]
 pub struct LuaTypeId(pub TypeId);
 impl UserData for LuaTypeId {}
 impl<'lua> FromLua<'lua> for LuaTypeId {
-  fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> LuaResult<Self> {
+  fn from_lua(value: Value<'lua>, _: &'lua Lua) -> LuaResult<Self> {
     match value {
       Value::UserData(ud) => Ok(*ud.borrow::<Self>()?),
       _ => unreachable!(),
@@ -150,6 +168,16 @@ impl UserData for Grid {
     methods.add_method("is_passable", |_, grid, position: [f32; 3]| Ok(grid.is_passable(Vec3::from(position))));
 
     // methods.add_method("test", |_,grid,|)
+  }
+}
+
+impl UserData for MouseRay {
+  //Returns the mouse's position on the ground
+  fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    methods.add_method("ground_intersection", |_, mouse, ()| {
+      let position = mouse.ray_ground_intersection();
+      Ok([position.x, position.y, position.z])
+    });
   }
 }
 

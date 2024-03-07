@@ -19,6 +19,12 @@ pub struct Controllable;
 ///Component containing the id of an entity's target.
 pub struct Target(pub Option<usize>);
 
+impl Target {
+  pub fn new(entity: usize) -> Self {
+    Target(Some(entity))
+  }
+}
+
 #[derive(Debug, Clone, Copy)]
 ///Component containing the id of an entity's owner.
 pub struct Owner(pub usize);

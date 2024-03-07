@@ -1,4 +1,3 @@
-use eyre::Result;
 use std::{
   alloc::Layout,
   any::{type_name, Any, TypeId},
@@ -145,7 +144,7 @@ mod test {
     let id = world.reserve_entity();
 
     let health = Health::new(453);
-    let speed = UnitSpeed(5.0);
+    let speed = UnitSpeed::new(5.0);
 
     let healthid = TypeInfo::of::<Health>().id();
     assert_eq!(healthid, TypeId::of::<Health>());
@@ -155,6 +154,6 @@ mod test {
     world.add_components(id, bundle);
 
     let queried_health = world.get_component::<Health>(id).unwrap();
-    assert_eq!(queried_health.max, health.max);
+    assert_eq!(queried_health.max(), health.max());
   }
 }

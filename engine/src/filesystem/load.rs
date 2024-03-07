@@ -1,9 +1,16 @@
-use crate::{arena::Grid, errors::FilesystemErrors, view::render_gl::Vertex};
+use super::champion::Champion;
+use crate::{arena::Grid, component_lib::AbilityMap, errors::FilesystemErrors, view::render_gl::Vertex};
 use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
-use std::{collections::HashMap, env::{var, current_dir}, ffi::CString, fs::{self, File}, io::Read, path::Path};
-use super::champion::Champion;
+use std::{
+  collections::HashMap,
+  env::{current_dir, var},
+  ffi::CString,
+  fs::{self, File},
+  io::Read,
+  path::Path,
+};
 
 //Refactor
 // -Use a config file to load each PC will need a unique one so do gitignore
@@ -16,13 +23,13 @@ use super::champion::Champion;
 // -Loading in the grid might require flipping since I use Y as up but blender uses Z as up
 
 ///Loads a Texture's pixels.
-pub fn load_texture_image(name:&str, extension:&str) -> Result<DynamicImage> {
+pub fn load_texture_image(name: &str, extension: &str) -> Result<DynamicImage> {
   let path = var("texture_folder")? + "/" + name + "." + extension;
   let texture = load_image(&path)?;
   Ok(texture)
 }
 
-fn load_image(path:&str) -> Result<DynamicImage> {
+fn load_image(path: &str) -> Result<DynamicImage> {
   let image = Reader::open(path)
     .unwrap_or_else(|_| panic!("{}", FilesystemErrors::FailedToLoadImage))
     .decode()
@@ -30,25 +37,33 @@ fn load_image(path:&str) -> Result<DynamicImage> {
   Ok(image)
 }
 
-pub fn load_champion_json(name:&str)->Result<Champion>{
+pub fn load_champion_json(name: &str) -> Result<Champion> {
   let path = var("champion_folder")? + "/" + name + "." + "json";
   let champion_string = fs::read_to_string(path)?;
-  
-  let champion:Champion = serde_json::from_str(&champion_string)?;
+
+  let champion: Champion = serde_json::from_str(&champion_string)?;
   Ok(champion)
 }
 
-pub fn load_shader(name:&str, extension:&str) -> Result<CString> {
+///Load an entity's [`AbilityMap`].
+pub fn load_scripts(name: &str) -> Result<AbilityMap> {
+  let path = var("champion_folder")? + name + "/scripts";
+
+  // Ok(path)
+  todo!()
+}
+
+pub fn load_shader(name: &str, extension: &str) -> Result<CString> {
   let path = var("shader_folder")? + "/" + name + "." + extension;
   let shader = load_cstring(&path)?;
   Ok(shader)
 }
 
 ///Loads an object's vertices and indices from a file name.
-pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
+pub fn load_object(name: &str) -> Result<(Vec<Vertex>, Vec<u32>)> {
   let path = var("model_folder")? + "/" + name + "." + "obj";
   let path = Path::new(&path);
-  
+
   let load_options = &tobj::LoadOptions {
     single_index: true,
     triangulate: true,
@@ -66,37 +81,33 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
   //--load in texture from the mtl file or wherever or figure out how to export a texture as a jpg
   //--fix wrapping
   //----UV wrapping?
-  //----first thing to check is if the loaded textures match the textures the gpu is getting 
-  
-  let (models,_) = tobj::load_obj(path, load_options)?;
-  
-  for model in &models{
+  //----first thing to check is if the loaded textures match the textures the gpu is getting
+
+  let (models, _) = tobj::load_obj(path, load_options)?;
+
+  for model in &models {
     let mesh = &model.mesh;
 
-    for index in &mesh.indices{
+    for index in &mesh.indices {
       let position_offset = (index * 3) as usize;
       let texture_offset = (index * 2) as usize;
-      
+
       let position = [
         mesh.positions[position_offset],
         mesh.positions[position_offset + 1],
         mesh.positions[position_offset + 2],
       ];
-      if position[1] < lowest_y{
+      if position[1] < lowest_y {
         lowest_y = position[1];
       }
 
-      let texture = [
-        mesh.texcoords[texture_offset],
-        mesh.texcoords[texture_offset + 1]
-      ];
+      let texture = [mesh.texcoords[texture_offset], mesh.texcoords[texture_offset + 1]];
 
       let vertex = Vertex::new(position, texture);
-      
-      if let Some(index) = unique_vertices.get(&vertex){
+
+      if let Some(index) = unique_vertices.get(&vertex) {
         indices.push(*index as u32)
-      }
-      else {
+      } else {
         let index = vertices.len();
         unique_vertices.insert(vertex, index);
         vertices.push(vertex);
@@ -104,17 +115,17 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
       }
     }
   }
-  
-  for vertex in vertices.iter_mut(){
+
+  for vertex in vertices.iter_mut() {
     vertex.pos[1] += lowest_y.abs();
   }
 
-  Ok((vertices,indices))
+  Ok((vertices, indices))
 }
 
-pub fn load_cstring(path:&str) -> Result<CString> {
+pub fn load_cstring(path: &str) -> Result<CString> {
   let mut file = File::open(path)?;
-  let mut buffer:Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
+  let mut buffer: Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
 
   file.read_to_end(&mut buffer)?;
 
@@ -125,10 +136,10 @@ pub fn load_cstring(path:&str) -> Result<CString> {
 }
 
 ///Loads the a [`Grid`]'s information.
-pub fn load_grid(name:&str,extension:&str) -> Result<Grid> {
+pub fn load_grid(name: &str, extension: &str) -> Result<Grid> {
   let path = var("grid_folder")? + "/" + name + "." + extension;
   let grid_path = fs::read_to_string(path)?;
-  let grid:Grid = serde_json::from_str(&grid_path)?;
+  let grid: Grid = serde_json::from_str(&grid_path)?;
   Ok(grid)
 }
 
@@ -137,10 +148,7 @@ pub fn load_config() -> Result<Config> {
   let root_directory = load_root_directory()?;
   let config_path = &(root_directory + "config");
 
-  let config = Config::builder()
-  .add_source(ConfigFile::with_name(config_path))
-  .build()
-  .unwrap();
+  let config = Config::builder().add_source(ConfigFile::with_name(config_path)).build().unwrap();
   Ok(config)
 }
 
@@ -152,18 +160,25 @@ fn load_root_directory() -> Result<String> {
 
 #[cfg(test)]
 mod test {
-  use crate::{errors::FilesystemErrors, filesystem::load::{load_config, load_root_directory}, view::render_gl::Vertex};
+  use super::{load_champion_json, load_shader};
+  use crate::{
+    errors::FilesystemErrors,
+    filesystem::load::{load_config, load_root_directory},
+    view::render_gl::Vertex,
+  };
   use eyre::Result;
   use image::io::Reader;
+  use std::{
+    env::{set_var, var},
+    path::Path,
+  };
   use tobj;
-  use std::{env::{set_var, var}, path::Path};
-  use super::{load_shader, load_champion_json};
 
   #[test]
   fn get_config() -> Result<()> {
     let config = load_config()?;
-    let shader_path:String = config.get("shader_path")?;
-    
+    let shader_path: String = config.get("shader_path")?;
+
     set_var("shader_path", shader_path);
     let test = var("shader_path")?;
     dbg!(test);
@@ -195,7 +210,7 @@ mod test {
     let config = load_config()?;
     let shader_path = config.get::<String>("shader_path")?;
     set_var("shader_path", shader_path);
-    
+
     let shader = load_shader("textured", "vert")?;
     dbg!(shader);
     Ok(())
@@ -206,7 +221,7 @@ mod test {
     let champion = load_champion_json("test_champion")?;
     let health = champion.health;
     dbg!(health);
-    let speed = champion.speed;
+    let speed = champion.unit_speed;
     dbg!(speed);
     let selection_radius = champion.selection_radius;
     dbg!(selection_radius);
@@ -227,14 +242,14 @@ mod test {
     let name = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/box.obj";
     let path = Path::new(name);
     // let load_options = tobj::LoadOptions { single_index: (), triangulate: (), ignore_points: (), ignore_lines: () }
-    let (models,_materials) = tobj::load_obj(path, &tobj::GPU_LOAD_OPTIONS)?;
+    let (models, _materials) = tobj::load_obj(path, &tobj::GPU_LOAD_OPTIONS)?;
     let mesh = &models[0].mesh;
     //unsure cloning is the way but I want to own the data not reference it
     let indices = &mesh.indices;
-    
+
     let mut vertices = vec![];
 
-    for index  in indices{
+    for index in indices {
       let position_offset = (index * 3) as usize;
       let texture_offset = (index * 2) as usize;
       let position = [
@@ -242,10 +257,7 @@ mod test {
         mesh.positions[position_offset + 1],
         mesh.positions[position_offset + 2],
       ];
-      let texture = [
-        mesh.positions[texture_offset],
-        mesh.positions[texture_offset + 1]
-      ];
+      let texture = [mesh.positions[texture_offset], mesh.positions[texture_offset + 1]];
 
       let vertex = Vertex::new(position, texture);
       vertices.push(vertex)
