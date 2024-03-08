@@ -11,8 +11,8 @@ pub struct Cooldowns(HashMap<String, Cooldown>);
 
 impl Cooldowns {
   pub fn new(
-    server_time: &mut ServerTime, auto: Miliseconds, auto_windup: Miliseconds, ability_1: Miliseconds, ability_2: Miliseconds,
-    ability_3: Miliseconds, ability_4: Miliseconds,
+    server_time: &mut ServerTime, auto: Miliseconds, auto_windup: Miliseconds, ability_1: Miliseconds, ability_2: Miliseconds, ability_3: Miliseconds,
+    ability_4: Miliseconds,
   ) -> Self {
     let mut cooldowns = HashMap::new();
     cooldowns.insert(String::from("auto attack"), Cooldown::new(server_time, auto));
@@ -109,9 +109,15 @@ impl Timer for Cooldown {
 }
 
 impl Cooldown {
-  ///Creates a new `AutoAttackCooldown` instance from the max value.
+  ///Creates a new [`Cooldown`] instance from the max value.
   pub fn new(server_time: &mut ServerTime, max: f64) -> Self {
     let (timer, index) = server_time.new_timer(max);
     Cooldown { timer, index }
+  }
+
+  ///Delete a [`Cooldown`] from the [`ServerTime`].
+  /// Must also delete the entity holding the `Cooldown`.
+  pub fn remove(&mut self, server_time: &mut ServerTime) {
+    server_time.remove_timer(self.index);
   }
 }

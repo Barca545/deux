@@ -66,6 +66,12 @@ impl Velocity {
   }
 }
 
+impl From<Vec3> for Velocity {
+  fn from(value: Vec3) -> Self {
+    Velocity(value)
+  }
+}
+
 ///Component containing a `Vec<Destination>` used for storing an entity's path.
 pub struct Path {
   pub nodes: Vec<Destination>,

@@ -30,7 +30,7 @@ pub fn ability_start(world: &mut World) {
           let ability = map.get(*ability_type);
           if let Some(start) = ability.start() {
             //Buffer the scripts to be executed
-            buffered_scripts.push((*mouseray, owner.0, *ability_type, start.clone()));
+            buffered_scripts.push((*mouseray, owner.0, *ability_type, start.0.clone()));
           }
         }
       }

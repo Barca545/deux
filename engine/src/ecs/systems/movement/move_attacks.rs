@@ -10,9 +10,9 @@ use crate::{
 // Refactor:
 //  This will let me feed autoattacks landing into the combat system, death systems and any other relevant system
 //  Can also have the event hold time stamps which will allow me to see which attack hit first?
+// -This also needs to check if an untargeted projectile has hit an enemy
 
 ///Moves all entities with the `AutoAttack` component forward each game logic tick.
-/// Marks auto attacks which reach their target with a `Colliding` component.
 pub fn move_attacks(world: &mut World) {
   let mut query = world.query();
   let entities = query.with_component::<AutoAttack>().unwrap().run();

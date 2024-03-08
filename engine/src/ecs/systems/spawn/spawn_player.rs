@@ -80,23 +80,31 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let ability_3_cooldown_duration = 0.0;
   let ability_4_cooldown_duration = 0.0;
   //Script info
-  let ability_1 = Script::new(Some("start"), Some("onhit"), Some("running"));
-  let ability_2 = Script::new(Some("start"), Some("onhit"), Some("running"));
+  let ability_1 = Script::new(Some("start"), Some("onhit"), Some("running"), Some("stop"));
+  let ability_2 = Script::new(Some("start"), Some("onhit"), Some("running"), Some("stop"));
   let ability_3 = Script::new(
     Some(
       r#"
-      local pos = mouse:ground_intersection()
-      world:blink(owner.id,pos)
+      world:accelerate(owner.id,3.0)
+      world:spawn_persistent_script(owner.id,5.0);
       "#,
+      // local pos = mouse:ground_intersection()
+      // world:blink(owner.id,pos)
     ),
     Some("onhit"),
-    Some("running"),
+    None,
+    Some(
+      r#"
+    print("stoping");
+    world:accelerate(owner.id,-3.0);
+    "#,
+    ),
   );
-  let ability_4 = Script::new(Some("start"), Some("onhit"), Some("running"));
+  let ability_4 = Script::new(Some("start"), Some("onhit"), Some("running"), Some("stop"));
   let autoattack = Script::new(
     Some(
       r#"
-      local target = world:getTarget(owner.id);
+      local target = world:get_target(entity.id);
       local cost = 50;
       if world:has_resource(owner.id, cost) and world:target_is_alive(target) and world:is_enemy(owner.id, target) then 
         world:remove_resource(owner.id, cost);
@@ -109,11 +117,14 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     ),
     Some(
       r#"
+    local target = world:get_target(entity.id);
+    world:knockback(owner.id,target,0.1,1.0);
     local damage = world:get_attack_damage(owner.id);
     return damage
     "#,
     ),
     Some("running"),
+    Some("stop"),
   );
   let ability_map = AbilityMap::new(ability_1, ability_2, ability_3, ability_4, autoattack);
 

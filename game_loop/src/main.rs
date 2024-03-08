@@ -56,7 +56,6 @@ fn main() -> Result<()> {
   //Configure the location of the asset folders
   asset_config();
 
-  //could the thing where components are registered be part of world::default()
   let mut world = World::new();
 
   //Register the resources and create the window

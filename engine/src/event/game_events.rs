@@ -78,4 +78,8 @@ impl GameEventQueue {
       f(event)
     }
   }
+
+  pub fn len(&self) -> usize {
+    self.events.len()
+  }
 }

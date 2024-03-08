@@ -55,7 +55,9 @@ pub fn eval_scripts_mouse<'lua, T: for<'scope> FromLua<'scope>>(world: &mut Worl
 
 ///Returns the result of running a [`Script`].
 pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope>>(world: &mut World, id: &usize, owner: &usize, script: &String) -> Option<T> {
+  //The id of the owner of the script
   let owner_id = LuaEntity::from(owner);
+  //The id of the entity holding the script
   let entity_id = LuaEntity::from(id);
   let lua = world.get_resource::<Rc<Lua>>().unwrap().clone();
 

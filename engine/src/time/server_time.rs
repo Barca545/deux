@@ -11,27 +11,29 @@ use super::{aliases::Miliseconds, BasicTimer, Count, GameDuration, PerSecond, Se
 // -Why do I have the additional if check in the render decrement function?
 // -Is it better to set the time_since_last measurements to 0.0 after decementing or let them accumulate by just subtracting the frequency?
 // -Add logic for deleting timers and updating their duration
-// -For deleting the timer I might need to add bitmasks, options or generational indices or something like how the ECS handles it
+// -See if updating so it does not decrement the timers is a performance gain
 
 #[derive(Debug, Clone)]
 pub struct ServerTime {
   //Number of the CPU count the game started on
-  start_count:Count,
+  start_count: Count,
   //Number of the current CPU count
-  current_count:Count,
+  current_count: Count,
   //Number of the previous CPU count
-  previous_count:Count,
+  previous_count: Count,
   //Measurement of the CPU's count frequency
-  counts_per_second:PerSecond,
+  counts_per_second: PerSecond,
   //Measurement of the CPU's count frequency
-  game_duration:GameDuration, 
+  game_duration: GameDuration,
   //Time left over if the time between render frames was bigger than a tick
-  seconds_since_render:Seconds,
+  seconds_since_render: Seconds,
   //Time left over if the time between logic frames was bigger than a tick
-  seconds_since_update:Seconds,
-  tick_frequency:PerSecond, 
-  render_frequency:PerSecond,
-  timers: Vec<Rc<RefCell<BasicTimer>>>
+  seconds_since_update: Seconds,
+  tick_frequency: PerSecond,
+  render_frequency: PerSecond,
+  //Bit masks of a timer, used to find if a timer's index is free for use
+  timermap: Vec<bool>,
+  timers: Vec<Rc<RefCell<BasicTimer>>>,
 }
 
 impl ServerTime {
@@ -40,16 +42,17 @@ impl ServerTime {
     let counts_per_second = Self::get_counts_per_second();
 
     ServerTime {
-      start_count:start,
-      current_count:start,
-      previous_count:start,
-      game_duration:GameDuration::new(),
-      seconds_since_render:0.0,
-      seconds_since_update:0.0,
+      start_count: start,
+      current_count: start,
+      previous_count: start,
+      game_duration: GameDuration::new(),
+      seconds_since_render: 0.0,
+      seconds_since_update: 0.0,
       counts_per_second,
-      tick_frequency:1.0 / 60.0,
-      render_frequency:1.0 / 240.0,
-      timers:Vec::default()
+      tick_frequency: 1.0 / 60.0,
+      render_frequency: 1.0 / 240.0,
+      timermap: Vec::default(),
+      timers: Vec::default(),
     }
   }
 
@@ -62,7 +65,7 @@ impl ServerTime {
   }
 
   ///Sets the game's `ticks_per_second`. Default value is 60.
-  pub fn with_ticks_per_seconds(&mut self, ticks_per_second:Seconds) {
+  pub fn with_ticks_per_seconds(&mut self, ticks_per_second: Seconds) {
     self.tick_frequency = 1.0 / ticks_per_second
   }
 
@@ -138,7 +141,7 @@ impl ServerTime {
     &self.game_duration
   }
 
-  ///Use at the end of a loop. 
+  ///Use at the end of a loop.
   /// Decrements the unrendered time by the time render frequency.
   /// Decrements the displayed remaining time for any timers in the game.
   pub fn decrement_seconds_since_render(&mut self) {
@@ -148,7 +151,7 @@ impl ServerTime {
     }
   }
 
-  ///Use at the end of a loop. 
+  ///Use at the end of a loop.
   /// Decrements the game logic time by the time logic tick frequency.
   /// Decrements the real remaining time for any timers in the game.
   pub fn decrement_seconds_since_update(&mut self) {
@@ -162,15 +165,15 @@ impl ServerTime {
     interpolation_factor
   }
 
-  pub fn update_render_frequency(&mut self, hz:u32) {
+  pub fn update_render_frequency(&mut self, hz: u32) {
     self.render_frequency = 1.0 / (hz as f64)
   }
 
-  pub fn update_tick_frequency(&mut self, hz:u32) {
+  pub fn update_tick_frequency(&mut self, hz: u32) {
     self.tick_frequency = 1.0 / (hz as f64)
   }
 
-  pub fn get_tick_frequency(&self) -> Seconds{
+  pub fn get_tick_frequency(&self) -> Seconds {
     self.tick_frequency
   }
 }
@@ -178,18 +181,26 @@ impl ServerTime {
 //Implementation block for timers
 impl ServerTime {
   ///Adds a new timer to the [`ServerTime`]'s list of timers and returns an [`Rc`] to the timer alongside its index.
-  pub fn new_timer(&mut self, duration:Miliseconds) -> (Rc<RefCell<BasicTimer>>, usize){
+  pub fn new_timer(&mut self, duration: Miliseconds) -> (Rc<RefCell<BasicTimer>>, usize) {
     let timer = Rc::new(RefCell::new(BasicTimer::new(duration)));
-    self.timers.push(timer);
-    let index = self.timers.len()-1;
-    let timer = self.timers[index].clone();
-    (timer, index)
+    if let Some((index, _)) = self.timermap.iter().enumerate().find(|(_index, free)| **free == true) {
+      self.timers[index] = timer;
+      let timer = self.timers[index].clone();
+      (timer, index)
+    } else {
+      self.timers.push(timer);
+      let index = self.timers.len() - 1;
+      let timer = self.timers[index].clone();
+      (timer, index)
+    }
   }
 
-  pub fn remove_timer(&mut self, index:usize){}
+  pub fn remove_timer(&mut self, index: usize) {
+    self.timermap[index] = false;
+  }
 
   ///Decrements all of the game's [`BasicTimer`]s by the duration of one logic tick.
-  fn decrement_real_remaining(&self){
+  fn decrement_real_remaining(&self) {
     for timer in &self.timers {
       let mut borrowed_timer = timer.borrow_mut();
       borrowed_timer.decrement_real_remaining(self.tick_frequency);
@@ -201,7 +212,7 @@ impl ServerTime {
   }
 
   ///Decrements all of the game's [`BasicTimer`]s by the duration of one render tick.
-  fn decrement_display_remaining(&self){
+  fn decrement_display_remaining(&self) {
     for timer in &self.timers {
       let mut borrowed_timer = timer.borrow_mut();
       borrowed_timer.decrement_display_remaining(self.tick_frequency);
@@ -233,7 +244,6 @@ impl ServerTime {
     count
   }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -295,7 +305,7 @@ mod tests {
   fn counter_does_update() {
     let mut count;
 
-    let mut tick:u64 = 0;
+    let mut tick: u64 = 0;
 
     loop {
       if tick < 20 {

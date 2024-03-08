@@ -2,6 +2,24 @@ use serde::{Deserialize, Serialize};
 
 // Refactor:
 // -Probably need to remove the Killed and Colliding components
+// -Implement the Id trait Target and an Entity, Id type,
+// -Rework target to not contain an option just add and remove it as needed, QueryEntity too?
+
+pub trait BecsId {
+  fn id(&self) -> usize;
+}
+
+impl BecsId for Owner {
+  fn id(&self) -> usize {
+    self.0
+  }
+}
+
+impl BecsId for Target {
+  fn id(&self) -> usize {
+    self.0.unwrap()
+  }
+}
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 ///Component which identifies an entity  as an auto attack.

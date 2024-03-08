@@ -1,11 +1,12 @@
+use super::Script;
+use crate::event::{AbilityFour, AbilityOne, AbilityThree, AbilityTwo, AutoAttack};
 use std::{
   any::{Any, TypeId},
   collections::HashMap,
 };
 
-use crate::event::{AbilityFour, AbilityOne, AbilityThree, AbilityTwo, AutoAttack};
-
-use super::Script;
+// Refactor:
+// -This can't be indexed with type ids because they can't be easily serialized to lua
 
 pub struct AbilityMap {
   map: HashMap<TypeId, Script>,

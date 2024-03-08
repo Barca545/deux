@@ -1,6 +1,6 @@
 use engine::{
   ecs::{
-    systems::{combat, movement, process_inputs},
+    systems::{combat, execute_scripts, movement, process_inputs},
     World,
   },
   event::GameEventQueue,
@@ -9,6 +9,7 @@ use engine::{
 
 pub fn update(world: &mut World) {
   process_inputs(world);
+  execute_scripts(world);
   movement(world);
   combat(world);
 

@@ -5,7 +5,8 @@ use std::rc::Rc;
 // -Add movement script
 // -Add script that can return information to rust?
 //  On attack hit it runs the attack's script and that script returns the amount of damage the attack should deal if applicable?
-//  -A script's end can be a method on world that calls a script end event so scripts can self terminate early
+// -A script's end can be a method on world that calls a script end event so scripts can self terminate early
+// -Make the option in script wrap around the base script instead of having the base script hold the option
 
 // Spell Origination tracks parameters like a spell’s Cast ID, Cast Time, and Spell Slot for the entirety of its lifetime
 
@@ -13,39 +14,69 @@ use std::rc::Rc;
 //If I ever need a script that does not have an explicit holder like a projectile, etc just make a script holder
 
 pub struct Script {
-  start: BaseScript,
-  running: BaseScript,
-  onhit: BaseScript,
+  start: Option<BaseScript>,
+  running: Option<BaseScript>,
+  onhit: Option<BaseScript>,
+  stop: Option<BaseScript>,
 }
 
 impl Script {
-  pub fn new(start: Option<&str>, onhit: Option<&str>, running: Option<&str>) -> Script {
+  pub fn new(start: Option<&str>, onhit: Option<&str>, running: Option<&str>, stop: Option<&str>) -> Script {
     let start = BaseScript::new(start);
     let running = BaseScript::new(running);
     let onhit = BaseScript::new(onhit);
-    Script { start, onhit, running }
+    let stop = BaseScript::new(stop);
+    Script { start, onhit, running, stop }
   }
 
-  pub fn start(&self) -> Option<Rc<String>> {
-    self.start.0.clone()
+  pub fn start(&self) -> Option<BaseScript> {
+    self.start.clone()
   }
 
-  pub fn running(&self) -> Option<Rc<String>> {
-    self.running.0.clone()
+  pub fn running(&self) -> Option<BaseScript> {
+    self.running.clone()
   }
 
-  pub fn onhit(&self) -> Option<Rc<String>> {
-    self.onhit.0.clone()
+  pub fn onhit(&self) -> Option<BaseScript> {
+    self.onhit.clone()
+  }
+
+  pub fn stop(&self) -> Option<BaseScript> {
+    self.stop.clone()
   }
 }
 
 #[derive(Debug, Clone)]
-pub struct BaseScript(Option<Rc<String>>);
+pub struct BaseScript(pub Rc<String>);
 impl BaseScript {
-  pub fn new(script_slice: Option<&str>) -> Self {
+  ///Matches the string slice to return an `Option` wrapping a [`BaseScript`].
+  pub fn new(script_slice: Option<&str>) -> Option<Self> {
     match script_slice {
-      Some(string) => BaseScript(Some(Rc::new(String::from(string)))),
-      None => BaseScript(None),
+      Some(string) => Some(BaseScript(Rc::new(String::from(string)))),
+      None => None,
     }
+  }
+}
+
+//script entity can hold a "running script" and track information needed such as if a target has reached a knockback desination or a cc timer has run out or if a toggle has been toggled
+pub struct PersistentScript;
+pub struct RunningScript {
+  pub running: Option<BaseScript>,
+  pub stop: Option<BaseScript>,
+}
+
+impl RunningScript {
+  pub fn new(running: Option<BaseScript>, stop: Option<BaseScript>) -> Self {
+    // let running = Some(running.0);
+    // let stop = Some(stop.0);
+    RunningScript { running, stop }
+  }
+
+  pub fn running(&self) -> Option<BaseScript> {
+    self.running.clone()
+  }
+
+  pub fn stop(&self) -> Option<BaseScript> {
+    self.stop.clone()
   }
 }

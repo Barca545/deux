@@ -76,14 +76,15 @@ impl BasicTimer {
   pub fn new(duration: Miliseconds) -> Self {
     BasicTimer {
       duration,
-      real_remaining: 0.0,
-      display_remaining: 0.0,
+      real_remaining: duration,
+      display_remaining: duration,
     }
   }
 
   ///Decrements the [`Timer`]'s real remaining time by the time passed.
   pub fn decrement_real_remaining(&mut self, passed: Miliseconds) {
     self.real_remaining -= passed;
+    dbg!(self.real_remaining);
   }
 
   ///Decrements the [`Timer`]'s display remaining time by the time passed.

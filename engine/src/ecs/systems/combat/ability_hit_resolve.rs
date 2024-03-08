@@ -36,7 +36,7 @@ pub fn ability_hit_resolve(world: &mut World) {
         let ability = map.get(*ability_type);
         if let Some(onhit) = ability.onhit() {
           //Buffer the scripts to be evaluated
-          buffered_scripts.push((owner.0, *ability_id, onhit));
+          buffered_scripts.push((owner.0, *ability_id, onhit.0));
         }
       }
     });

@@ -1,11 +1,14 @@
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target, UnitSpeed},
+  component_lib::{AbilityMap, AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target, UnitSpeed},
   ecs::World,
+  event::AbilityThree,
   math::{MouseRay, Vec3},
-  utility::{create_ranged_auto_attack, has_resource, is_enemy, is_neutral, is_unoccupied, off_cooldown, target_is_alive},
+  utility::{
+    create_persistent_script, create_ranged_auto_attack, displacement, has_resource, is_enemy, is_neutral, is_unoccupied, off_cooldown, target_is_alive,
+  },
 };
 use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
 
@@ -17,7 +20,7 @@ use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
     //Get an entity's target
-    methods.add_method("getTarget", |_, world, entity: usize| {
+    methods.add_method("get_target", |_, world, entity: usize| {
       let target = world.get_component::<Target>(entity).unwrap();
       Ok(target.0)
     });
@@ -114,10 +117,35 @@ impl UserData for World {
       let mut speed = world.get_component_mut::<UnitSpeed>(owner).unwrap();
       speed.add_bonus(amount);
       Ok(())
-    })
+    });
+
+    //Spawn an entity to track how long a script should execute
+    methods.add_method_mut("spawn_persistent_script", |_, world, (owner, duration): (usize, f64)| {
+      let running;
+      let stop;
+      {
+        let map = world.get_component::<AbilityMap>(owner).unwrap();
+        let script = map.get(AbilityThree.type_id());
+        running = script.running();
+        stop = script.stop();
+      }
+      create_persistent_script(world, owner, running, stop, duration).unwrap();
+      Ok(())
+    });
+
+    methods.add_method("knockback", |_, world, (owner, target, speed, dist): (usize, usize, f32, f32)| {
+      displacement(world, owner, target, speed, dist);
+      Ok(())
+    });
+
+    methods.add_method("pull", |_, world, (owner, target, speed, dist): (usize, usize, f32, f32)| {
+      displacement(world, owner, target, -speed, -dist);
+      Ok(())
+    });
   }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct LuaEntity(usize);
 
 impl From<Owner> for LuaEntity {
