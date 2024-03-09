@@ -2,7 +2,9 @@ use std::any::{Any, TypeId};
 
 use crate::{
   arena::{Grid, Terrain},
-  component_lib::{AbilityMap, AttackDamage, Destination, Health, Owner, Path, Position, SpellResource, Target, UnitSpeed},
+  component_lib::{
+    AbilityMap, DamageType, Destination, Health, IncomingDamage, MagicDamage, Owner, Path, PhysicalDamage, Position, SpellResource, Target, UnitSpeed,
+  },
   ecs::World,
   event::AbilityThree,
   math::{MouseRay, Vec3},
@@ -20,28 +22,46 @@ use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
 impl UserData for World {
   fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
     //Get an entity's target
-    methods.add_method("get_target", |_, world, entity: usize| {
+    methods.add_method("getTarget", |_, world, entity: usize| {
       let target = world.get_component::<Target>(entity).unwrap();
-      Ok(target.0)
+      let target = LuaEntity::from(target.0.unwrap());
+      Ok(target)
     });
 
-    //Pre-cast checks. Read more in the utility functions' casting module.
-    methods.add_method("off_cooldown", |_, world, (entity, ability_name)| Ok(off_cooldown(world, entity, ability_name)));
-    methods.add_method("has_resource", |_, world, (entity, cost)| Ok(has_resource(world, entity, cost)));
-    methods.add_method("is_unoccupied", |_, world, entity| Ok(is_unoccupied(world, entity)));
-    methods.add_method("target_is_alive", |_, world, target| Ok(target_is_alive(world, target)));
-    methods.add_method("is_enemy", |_, world, (entity, target)| Ok(is_enemy(world, entity, target)));
-    methods.add_method("is_neutral", |_, world, target| Ok(is_neutral(world, target)));
-
-    //Update resources
-    methods.add_method("add_resource", |_, world, (entity, amount): (usize, i32)| {
-      let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
-      resource.remaining += amount;
+    //Add an instance of magic damage to an entitys Incoming damage tracker
+    methods.add_method("dealMagicDamage", |_, world, (owner, target, damage): (usize, usize, i32)| {
+      let mut incoming_damage = world.get_component_mut::<IncomingDamage>(target).unwrap();
+      let damage = DamageType::Magic { owner, damage };
+      incoming_damage.push(damage);
       Ok(())
     });
-    methods.add_method("remove_resource", |_, world, (entity, amount): (usize, i32)| {
+
+    //Add an instance of physical damage to an entitys Incoming damage tracker
+    methods.add_method("dealPhysicalDamage", |_, world, (owner, target, damage): (usize, usize, i32)| {
+      let mut incoming_damage = world.get_component_mut::<IncomingDamage>(target).unwrap();
+      let damage = DamageType::Physical { owner, damage };
+      incoming_damage.push(damage);
+      Ok(())
+    });
+
+    //Add an instance of true damage to an entitys Incoming damage tracker
+    methods.add_method("dealTrueDamage", |_, world, (owner, target, damage): (usize, usize, i32)| {
+      let mut incoming_damage = world.get_component_mut::<IncomingDamage>(target).unwrap();
+      let damage = DamageType::True { owner, damage };
+      incoming_damage.push(damage);
+      Ok(())
+    });
+
+    //Update resources
+    methods.add_method("addResource", |_, world, (entity, amount): (usize, i32)| {
       let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
-      resource.remaining -= amount;
+      resource.add_remaining(amount);
+      Ok(())
+    });
+
+    methods.add_method("removeResource", |_, world, (entity, amount): (usize, i32)| {
+      let mut resource = world.get_component_mut::<SpellResource>(entity).unwrap();
+      resource.sub_remaining(amount);
       Ok(())
     });
 
@@ -59,39 +79,44 @@ impl UserData for World {
     });
 
     //Increments the health an entity
-    methods.add_method("add_health", |_, world, (target, value): (usize, i32)| {
+    methods.add_method("addHealth", |_, world, (target, amount): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
-      health.remaining += value;
+      health.add_remaining(amount);
       Ok(())
     });
 
     //Decrements the health of an entity
-    methods.add_method("remove_health", |_, world, (target, value): (usize, i32)| {
+    methods.add_method("removeHealth", |_, world, (target, amount): (usize, i32)| {
       let mut health = world.get_component_mut::<Health>(target as usize).unwrap();
-      health.remaining -= value;
+      health.sub_remaining(amount);
       Ok(())
     });
 
-    //Returns the attack damage of the queried entity
-    methods.add_method("get_attack_damage", |_, world, entity_id: usize| {
-      let attack_damage = world.get_component::<AttackDamage>(entity_id).unwrap().total();
+    //Returns the physical damage of the queried entity
+    methods.add_method("getPhysicalDamage", |_, world, entity_id: usize| {
+      let attack_damage = world.get_component::<PhysicalDamage>(entity_id).unwrap().total();
+      Ok(attack_damage)
+    });
+
+    methods.add_method("getMagicDamage", |_, world, entity_id: usize| {
+      let attack_damage = world.get_component::<MagicDamage>(entity_id).unwrap().total();
       Ok(attack_damage)
     });
 
     //Retrieves an entity's Destination
-    methods.add_method("get_destination", |_, world, entity: usize| {
+    methods.add_method("getDestination", |_, world, entity: usize| {
       let destination = world.get_component::<Destination>(entity).unwrap();
       Ok([destination.0.x, destination.0.y, destination.0.z])
     });
 
     //Retrieves an entity's Position
-    methods.add_method("get_position", |_, world, entity: usize| {
+    methods.add_method("getPosition", |_, world, entity: usize| {
       let position = world.get_component::<Position>(entity).unwrap();
       Ok([position.0.x, position.0.y, position.0.z])
     });
 
     //Add a new node to an entity's Path component
-    methods.add_method("add_node_to_path", |_, world, (entity, node): (usize, [f32; 3])| {
+    methods.add_method("addNodetoPath", |_, world, (entity, node): (usize, [f32; 3])| {
       let mut path = world.get_component_mut::<Path>(entity).unwrap();
       let node = Destination::from(node);
       path.push(node);
@@ -120,7 +145,7 @@ impl UserData for World {
     });
 
     //Spawn an entity to track how long a script should execute
-    methods.add_method_mut("spawn_persistent_script", |_, world, (owner, duration): (usize, f64)| {
+    methods.add_method_mut("spawnPersistentScript", |_, world, (owner, duration): (usize, f64)| {
       let running;
       let stop;
       {
@@ -142,6 +167,14 @@ impl UserData for World {
       displacement(world, owner, target, -speed, -dist);
       Ok(())
     });
+
+    //Pre-cast checks. Read more in the utility functions' casting module.
+    methods.add_method("offCooldown", |_, world, (entity, ability_name)| Ok(off_cooldown(world, entity, ability_name)));
+    methods.add_method("hasResource", |_, world, (entity, cost)| Ok(has_resource(world, entity, cost)));
+    methods.add_method("isUnoccupied", |_, world, entity| Ok(is_unoccupied(world, entity)));
+    methods.add_method("targetIsalive", |_, world, target| Ok(target_is_alive(world, target)));
+    methods.add_method("isEnemy", |_, world, (entity, target)| Ok(is_enemy(world, entity, target)));
+    methods.add_method("isNeutral", |_, world, target| Ok(is_neutral(world, target)));
   }
 }
 

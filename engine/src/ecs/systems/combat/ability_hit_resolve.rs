@@ -1,11 +1,9 @@
 use crate::{
-  component_lib::{AbilityMap, Armor, Dead, Health, Target},
+  component_lib::AbilityMap,
   ecs::World,
   event::{GameEvent, GameEventQueue},
-  utility::{calc_post_mitigation_damage, eval_scripts},
+  utility::run_scripts,
 };
-
-use std::cmp::max;
 
 //Refactor
 // -Add death system. Death system should listen for a "killed" event and update KDA, Gold and EXP
@@ -17,6 +15,7 @@ use std::cmp::max;
 // -Need to measure which attack hit first
 // -Can't run the end script, what if it hits and then applies an ability?
 //  Also can't delete the entity for the same reason.
+// -I am not sure a hit should automatically trigger the entity's deletion.
 
 ///Processes all `AbilityHit` [`GameEvent`]s. If an entity is killed, creates an `EntityKilled` `GameEvent`.
 pub fn ability_hit_resolve(world: &mut World) {
@@ -41,36 +40,9 @@ pub fn ability_hit_resolve(world: &mut World) {
       }
     });
   }
-  //Evaluate the stop script to get the damage of the ability.
+  //Run the onhit field of the script and delete the ability
   for (owner, entity, script) in &buffered_scripts {
-    let entity = entity;
-    if let Some(damage) = eval_scripts::<i32>(world, entity, owner, script) {
-      //Get the target's information
-      let target = world.get_component::<Target>(*entity).unwrap().0.unwrap();
-      let remaining_health;
-      {
-        let resist = world.get_component::<Armor>(target).unwrap();
-        //Pass the damage and resist into the damage calculation
-        let damage = calc_post_mitigation_damage(damage, resist.total());
-        //Deal damage
-        let mut target_health = world.get_component_mut::<Health>(target).unwrap();
-        target_health.remaining = max(0, target_health.remaining - damage);
-        remaining_health = target_health.remaining;
-      }
-
-      //If the ability kills the target create a killed event
-      if remaining_health == 0 {
-        //Give the target the Dead marker
-        world.add_component(target, Dead).unwrap();
-        //Create a target killed event
-        let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-        events.push(GameEvent::EntityKilled {
-          entity: target,
-          killer: *entity,
-        })
-      }
-    }
-    //Delete the ability
+    run_scripts(world, owner, script);
     world.delete_entity(*entity).unwrap();
   }
 }

@@ -17,7 +17,7 @@ pub fn off_cooldown(world: &World, entity: usize, ability_name: String) -> bool 
 ///Returns true if an entity has enough [`SpellResource`] to complete an action.
 pub fn has_resource(world: &World, entity: usize, cost: i32) -> bool {
   let resource = world.get_component::<SpellResource>(entity).unwrap();
-  resource.remaining >= cost
+  resource.remaining() >= cost
 }
 
 ///Returns true if an entity's [`PlayerState`] is `Unoccupied`.

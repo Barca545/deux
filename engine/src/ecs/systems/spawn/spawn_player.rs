@@ -1,7 +1,8 @@
 use crate::{
   component_lib::{
-    AbilityMap, AttackDamage, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Health, Level, MissleSpeed, Path, Player,
-    PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedMesh, SpellResource, Target, Team, UnitSpeed, Velocity, KDA,
+    AbilityMap, AutoAttackMesh, Controllable, Cooldowns, Destination, Exp, GameplayRadius, Gold, Health, IncomingDamage, Level, MissleSpeed, Path,
+    PhysicalDamage, Player, PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedMesh, SpellResource, Target, Team, UnitSpeed, Velocity,
+    KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::{load_champion_json, load_object},
@@ -71,8 +72,9 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   }
 
   //Combat info
+  let incoming_damage = IncomingDamage::new();
   let auto_attack_missle_speed = MissleSpeed::new(champion_info.auto_attack_missle_speed);
-  let attack_damage = AttackDamage::new(champion_info.attack_damage);
+  let attack_damage = PhysicalDamage::new(champion_info.attack_damage);
   let basic_cooldown_duration = champion_info.auto_attack_cooldown;
   let auto_windup = 0.0;
   let ability_1_cooldown_duration = 0.0;
@@ -86,7 +88,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     Some(
       r#"
       world:accelerate(owner.id,3.0)
-      world:spawn_persistent_script(owner.id,5.0);
+      world:spawnPersistentScript(owner.id,5.0);
       "#,
       // local pos = mouse:ground_intersection()
       // world:blink(owner.id,pos)
@@ -104,11 +106,11 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let autoattack = Script::new(
     Some(
       r#"
-      local target = world:get_target(entity.id);
+      local target = world:getTarget(entity.id);
       local cost = 50;
-      if world:has_resource(owner.id, cost) and world:target_is_alive(target) and world:is_enemy(owner.id, target) then 
-        world:remove_resource(owner.id, cost);
-        world:spawnTargetedProjectile(owner.id, target);
+      if world:hasResource(owner.id, cost) and world:targetIsalive(target.id) and world:isEnemy(owner.id, target.id) then 
+        world:removeResource(owner.id, cost);
+        world:spawnTargetedProjectile(owner.id, target.id);
         return true
       else
         return false
@@ -117,10 +119,10 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     ),
     Some(
       r#"
-    local target = world:get_target(entity.id);
-    world:knockback(owner.id,target,0.1,1.0);
-    local damage = world:get_attack_damage(owner.id);
-    return damage
+      local target = world:getTarget(owner.id);
+      world:knockback(owner.id,target.id,0.1,1.0);
+      local damage = world:getPhysicalDamage(owner.id);
+      world:dealTrueDamage(owner.id,target.id,damage*100);
     "#,
     ),
     Some("running"),
@@ -174,6 +176,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     .with_component(cooldowns)?
     .with_component(attack_damage)?
     .with_component(ability_map)?
+    .with_component(incoming_damage)?
     //Render components
     .with_component(player_mesh)?
     .with_component(player_hitbox_mesh)?;

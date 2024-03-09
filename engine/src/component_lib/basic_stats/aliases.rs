@@ -14,7 +14,7 @@ pub type MagicResist = BasicStat<BaseMagicResist, i32>;
 
 //Offensive stats
 ///Component containing the attack damage of an entity.
-pub type AttackDamage = BasicStat<BaseAttackDamage, i32>;
+pub type PhysicalDamage = BasicStat<BasePhysicalDamage, i32>;
 ///Component containing the magic damage of an entity.
 pub type MagicDamage = BasicStat<BaseMagicDamage, i32>;
 ///Component containing the cooldown reduction of an entity.
@@ -41,7 +41,7 @@ pub struct BaseArmor;
 pub struct BaseMagicResist;
 
 #[derive(Debug, Clone, Copy)]
-pub struct BaseAttackDamage;
+pub struct BasePhysicalDamage;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BaseMagicDamage;

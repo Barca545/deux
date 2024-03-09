@@ -3,13 +3,22 @@
 // -Need separate equation for AP damage and AD damage
 
 use crate::{
-  component_lib::{AutoAttack, AutoAttackMesh, Cooldowns, Destination, MissleSpeed, Owner, Position, PreviousPosition, SkinnedMesh, Target, Team, Velocity},
+  component_lib::{
+    Armor, AutoAttack, AutoAttackMesh, Cooldowns, Destination, MagicResist, MissleSpeed, Owner, Position, PreviousPosition, SkinnedMesh, Target, Team, Velocity,
+  },
   ecs::{Bundle, World},
 };
 
-///Calculate damage mitigation from resistance
-pub fn calc_post_mitigation_damage(damage: i32, resist: i32) -> i32 {
-  let resist_factor = 100.0 / (100.0 + resist as f32);
+///Calculate physical damage mitigation from [`Armor`].
+pub fn calc_gross_physical_damage(damage: i32, armor: Armor) -> i32 {
+  let resist_factor = 100.0 / (100.0 + armor.total() as f32);
+  let post_resist_damage = damage as f32 * resist_factor;
+  post_resist_damage as i32
+}
+
+///Calculate magic damage mitigation from [`MagicResist`].
+pub fn calc_gross_magic_damage(damage: i32, magic_resist: MagicResist) -> i32 {
+  let resist_factor = 100.0 / (100.0 + magic_resist.total() as f32);
   let post_resist_damage = damage as f32 * resist_factor;
   post_resist_damage as i32
 }

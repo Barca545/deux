@@ -1,6 +1,10 @@
 use std::any::TypeId;
 
-use crate::{component_lib::Owner, math::MouseRay};
+use crate::{
+  component_lib::{Cooldown, Owner},
+  math::MouseRay,
+  time::Timer,
+};
 
 //Refactor:
 // -Events might need to hold timestamps
@@ -16,13 +20,13 @@ pub struct AbilityThree;
 pub struct AbilityFour;
 pub struct AutoAttack;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum GameEvent {
   //Combat events
   AbilityStart { owner: Owner, ability_type: TypeId, mouseray: MouseRay },
   //Ability id is the entity id of the ability
   AbilityHit { owner: Owner, ability_type: TypeId, ability_id: usize },
-  EntityKilled { entity: usize, killer: usize },
+  EntityKilled { target: usize, killer: usize },
 
   //Movement Events
   UpdateDestination { owner: Owner, mouseray: MouseRay },
@@ -38,15 +42,25 @@ pub enum GameEvent {
 }
 
 #[derive(Debug, Clone)]
+pub struct DelayedEvent {
+  timer: Cooldown,
+  event: GameEvent,
+}
+
+#[derive(Debug, Clone)]
 ///A stucture which tracks the game events. Does not track input or other changes.
 pub struct GameEventQueue {
   events: Vec<GameEvent>,
+  pending: Vec<DelayedEvent>,
 }
 
 impl GameEventQueue {
   ///Create a new [`GameEventQueue`].
   pub fn new() -> Self {
-    GameEventQueue { events: Vec::default() }
+    GameEventQueue {
+      events: Vec::default(),
+      pending: Vec::default(),
+    }
   }
 
   ///Add a [`GameEvent`] to the [`GameEventQueue`].
@@ -69,7 +83,7 @@ impl GameEventQueue {
     }
   }
 
-  ///Iterates over the [`GameEvent`]s stored in the [`GameEventQueue`] and applies a callback function which mutates the `GameEvent`.
+  ///Iterates over the [`GameEvent`]s stored in the [`GameEventQueue`] and applies a callback function which can mutate the `GameEvent` or `GameEventQueue itself`.
   pub fn process_events_mut<F>(&mut self, mut f: F)
   where
     F: FnMut(&mut GameEvent),
@@ -81,5 +95,21 @@ impl GameEventQueue {
 
   pub fn len(&self) -> usize {
     self.events.len()
+  }
+
+  ///Checks whether any [`DelayedEvent`]s' timers are completed. Moves completed events into the [`GameEventQueue`].
+  pub fn move_pending(&mut self) {
+    //Collect the finished events into a new vector
+    let completed = self
+      .pending
+      .iter()
+      .filter_map(|event| if event.timer.is_zero() { Some(event.event) } else { None })
+      .collect::<Vec<GameEvent>>();
+
+    //Add the completed events to the current events
+    self.events.extend(completed);
+
+    //Remove the finished event from the pending queue
+    self.pending.retain(|event| !event.timer.is_zero());
   }
 }

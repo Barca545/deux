@@ -17,4 +17,5 @@ pub fn update(world: &mut World) {
   frame_inputs.clear();
   let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
   events.clear();
+  events.move_pending();
 }

@@ -1,8 +1,9 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AttackDamage, AutoAttack, AutoAttackMesh, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination,
-    Exp, GameplayRadius, Gold, Health, Killed, Level, MissleSpeed, MovementState, Owner, Path, PathingRadius, PersistentScript, Player, PlayerState, Position,
-    PreviousPosition, RunningScript, SelectionRadius, SkinnedMesh, SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
+    AbilityMap, Armor, AutoAttack, AutoAttackMesh, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp,
+    GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path, PathingRadius,
+    PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius, SkinnedMesh, SpellResource, StaticMesh,
+    Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
   ecs::World,
   view::AABB3DDebugMesh,
@@ -10,11 +11,19 @@ use crate::{
 
 pub fn register_components(world: &mut World) {
   world
+    //Basic stats
+    .register_component::<Health>()
+    .register_component::<Armor>()
+    .register_component::<MagicResist>()
+    .register_component::<PhysicalDamage>()
+    .register_component::<MagicDamage>()
+    .register_component::<SpellResource>()
+    .register_component::<MissleSpeed>()
+    .register_component::<UnitSpeed>()
     //Movement components
     .register_component::<Position>()
     .register_component::<PreviousPosition>()
     .register_component::<Destination>()
-    .register_component::<UnitSpeed>()
     .register_component::<Velocity>()
     .register_component::<Path>()
     //Radii components
@@ -34,15 +43,9 @@ pub fn register_components(world: &mut World) {
     //Timer components
     .register_component::<Cooldowns>()
     .register_component::<Cooldown>()
-    //Casting components
-    .register_component::<SpellResource>()
     //Combat components
-    .register_component::<MissleSpeed>()
-    .register_component::<Armor>()
-    .register_component::<AttackDamage>()
-    .register_component::<AttackDamage>()
-    .register_component::<Health>()
     .register_component::<KDA>()
+    .register_component::<IncomingDamage>()
     //Script components
     .register_component::<AbilityMap>()
     .register_component::<PersistentScript>()

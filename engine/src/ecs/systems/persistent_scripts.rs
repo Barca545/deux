@@ -23,7 +23,7 @@ pub fn execute_scripts(world: &mut World) {
       let owner = entity.get_component::<Owner>().unwrap();
       let script = entity.get_component::<RunningScript>().unwrap();
       if let Some(script) = script.stop() {
-        timed_out_scripts.push((*owner, entity.id, script));
+        timed_out_scripts.push((owner.0, entity.id, script));
       }
     }
     //Otherwise buffer the script for execution
@@ -31,7 +31,7 @@ pub fn execute_scripts(world: &mut World) {
       let owner = entity.get_component::<Owner>().unwrap();
       let script = entity.get_component::<RunningScript>().unwrap();
       if let Some(script) = script.running() {
-        buffered_scripts.push((*owner, entity.id, script));
+        buffered_scripts.push((owner.0, entity.id, script));
       }
     }
   }

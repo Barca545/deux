@@ -5,4 +5,7 @@
 
 use crate::ecs::World;
 
-pub fn ability_cast(world: &World) {}
+pub fn ability_cast(world: &World) {
+  // have the start system just queue a delayed start event with the ability's cooldown
+  // move the logic from the start system into this system
+}

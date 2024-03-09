@@ -1,6 +1,7 @@
 use crate::{
   component_lib::{
-    Armor, Destination, GameplayRadius, Gold, Health, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity, KDA,
+    Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedMesh, Team, Velocity,
+    KDA,
   },
   ecs::World,
   filesystem::load_object,
@@ -28,6 +29,7 @@ pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
   //Combat info
   let dummy_team = Team::Red;
   let dummy_health = Health::new(500);
+  let incoming_damage = IncomingDamage::new();
   // let dummy_target = Target(None);
 
   world
@@ -47,6 +49,7 @@ pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
     .with_component(dummy_team)?
     .with_component(dummy_health)?
     .with_component(Gold::default())?
-    .with_component(KDA::default())?;
+    .with_component(KDA::default())?
+    .with_component(incoming_damage)?;
   Ok(())
 }

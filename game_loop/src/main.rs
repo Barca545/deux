@@ -117,7 +117,6 @@ fn main() -> Result<()> {
     //Can I clear the buffers before binding or do they need to be cleared after
     // binding? Binding currently happens in their own functions.
     if server_time.should_render() {
-      //to do this window needs to be a resource
       //have some flag so it only runs if it was resized
       let (width, height) = window.get_size();
       {

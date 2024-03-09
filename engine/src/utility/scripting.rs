@@ -1,4 +1,4 @@
-use crate::{component_lib::Owner, ecs::World, math::MouseRay, scripting::LuaEntity};
+use crate::{ecs::World, math::MouseRay, scripting::LuaEntity};
 use mlua::{FromLua, Lua};
 use std::rc::Rc;
 
@@ -7,8 +7,8 @@ use std::rc::Rc;
 // -Why does u8 not bring up a bunch of the errors T does?
 
 ///Run scripts with an [`Owner`].
-pub fn run_scripts(world: &mut World, owner: &Owner, script: &String) {
-  let owner_id = LuaEntity::from(owner.0);
+pub fn run_scripts(world: &mut World, owner: &usize, script: &String) {
+  let owner_id = LuaEntity::from(owner);
   let lua = world.get_resource::<Rc<Lua>>().unwrap().clone();
   lua
     .scope(|scope| {
@@ -55,7 +55,7 @@ pub fn eval_scripts_mouse<'lua, T: for<'scope> FromLua<'scope>>(world: &mut Worl
 
 ///Returns the result of running a [`Script`].
 pub fn eval_scripts<'lua, T: for<'scope> FromLua<'scope>>(world: &mut World, id: &usize, owner: &usize, script: &String) -> Option<T> {
-  //The id of the owner of the script
+  //The id of the owner of the sr
   let owner_id = LuaEntity::from(owner);
   //The id of the entity holding the script
   let entity_id = LuaEntity::from(id);
