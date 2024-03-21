@@ -3,15 +3,20 @@ use std::any::TypeId;
 use crate::{
   component_lib::{Cooldown, Owner},
   math::MouseRay,
-  time::Timer,
+  time::{ServerTime, Timer},
 };
 
 //Refactor:
 // -Events might need to hold timestamps
 // -Consider adding a separate queue for buffered events that tracks how many frames they should be retried for since some events I might not want to discard each frame.
 // -Move the ability IDs into a separate folder?
+// -Change how abilitites are indexed to not use type ids?
+//  Just use u32s instead and keep an index somewhere I can reference
 // -AutoAttackHit should become ability hit
 // -Could the start event just get passed a ground intersection and target from the intersection instead of holding the mouseray and calculating it?
+// -Maybe pending and casting should be two different queues.
+//  Pending holds incoming events that can't be processed.
+//  Casting holds the ability currently being channeled.
 
 //Game Ability types used to query an entity's AbilityMap
 pub struct AbilityOne;
@@ -23,6 +28,7 @@ pub struct AutoAttack;
 #[derive(Debug, Clone, Copy)]
 pub enum GameEvent {
   //Combat events
+  BufferAbility { owner: Owner, ability_type: TypeId, mouseray: MouseRay },
   AbilityStart { owner: Owner, ability_type: TypeId, mouseray: MouseRay },
   //Ability id is the entity id of the ability
   AbilityHit { owner: Owner, ability_type: TypeId, ability_id: usize },
@@ -63,11 +69,6 @@ impl GameEventQueue {
     }
   }
 
-  ///Add a [`GameEvent`] to the [`GameEventQueue`].
-  pub fn push(&mut self, event: GameEvent) {
-    self.events.push(event);
-  }
-
   ///Empties the [`GameEvent`].
   pub fn clear(&mut self) {
     self.events.clear()
@@ -95,6 +96,20 @@ impl GameEventQueue {
 
   pub fn len(&self) -> usize {
     self.events.len()
+  }
+
+  ///Add a [`GameEvent`] to the [`GameEventQueue`]'s `events` field.
+  pub fn push(&mut self, event: GameEvent) {
+    self.events.push(event);
+  }
+
+  ///Add a [`DelayedEvent`] to the [`GameEventQueue`]'s `pending` field.
+  pub fn push_pending(&mut self, timer: f64, server_time: &mut ServerTime, event: GameEvent) {
+    //this needs to create a new timer with the cd duration instead
+    //the move pending needs to make sure to delete the timer
+    let timer = Cooldown::new(server_time, timer);
+    let event = DelayedEvent { timer, event };
+    self.pending.push(event);
   }
 
   ///Checks whether any [`DelayedEvent`]s' timers are completed. Moves completed events into the [`GameEventQueue`].

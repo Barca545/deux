@@ -1,4 +1,4 @@
-use super::Script;
+use super::{Cooldown, Script};
 use crate::event::{AbilityFour, AbilityOne, AbilityThree, AbilityTwo, AutoAttack};
 use std::{
   any::{Any, TypeId},
@@ -7,6 +7,13 @@ use std::{
 
 // Refactor:
 // -This can't be indexed with type ids because they can't be easily serialized to lua
+// -Ability map should probably hold the cooldown.
+// -Don't call the Ability "Ability"
+
+pub struct Ability {
+  cooldown: Cooldown,
+  script: Script,
+}
 
 pub struct AbilityMap {
   map: HashMap<TypeId, Script>,

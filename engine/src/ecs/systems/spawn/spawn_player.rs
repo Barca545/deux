@@ -42,6 +42,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let kda = KDA::default();
   let exp = Exp::default();
   let level = Level::default();
+  let player_state = PlayerState::default();
 
   //Movement and collision info
   let position_vec = Vec3::new(0.0, 0.0, 0.0);
@@ -54,7 +55,6 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let gameplay_radius = GameplayRadius(1.0);
   let pathing_radius = champion_info.pathing_radius;
   let path = Path::new();
-  let status = PlayerState::default();
 
   //Render info
   let (sprite_vertices, sprite_indices) = load_object(name)?;
@@ -76,7 +76,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
   let auto_attack_missle_speed = MissleSpeed::new(champion_info.auto_attack_missle_speed);
   let attack_damage = PhysicalDamage::new(champion_info.attack_damage);
   let basic_cooldown_duration = champion_info.auto_attack_cooldown;
-  let auto_windup = 0.0;
+  let auto_windup = 1.0;
   let ability_1_cooldown_duration = 0.0;
   let ability_2_cooldown_duration = 0.0;
   let ability_3_cooldown_duration = 0.0;
@@ -157,7 +157,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     .with_component(kda)?
     .with_component(exp)?
     .with_component(level)?
-    .with_component(status)?
+    .with_component(player_state)?
     //Movement and collision components
     .with_component(position)?
     .with_component(previous_position)?

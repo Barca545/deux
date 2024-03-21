@@ -16,13 +16,17 @@ impl Cooldowns {
   ) -> Self {
     let mut cooldowns = HashMap::new();
     cooldowns.insert(String::from("auto attack"), Cooldown::new(server_time, auto));
-    cooldowns.insert(String::from("auto windup"), Cooldown::new(server_time, auto_windup));
+    cooldowns.insert(String::from("auto cast time"), Cooldown::new(server_time, auto_windup));
     cooldowns.insert(String::from("ability 1"), Cooldown::new(server_time, ability_1));
     cooldowns.insert(String::from("ability 2"), Cooldown::new(server_time, ability_2));
     cooldowns.insert(String::from("ability 3"), Cooldown::new(server_time, ability_3));
     cooldowns.insert(String::from("ability 4"), Cooldown::new(server_time, ability_4));
 
     Cooldowns(cooldowns)
+  }
+
+  pub fn get_cooldown(&self, cooldown_name: &str) -> Cooldown {
+    self.0.get(cooldown_name).unwrap().clone()
   }
 
   pub fn get_duration(&self, cooldown_name: &str) -> Miliseconds {

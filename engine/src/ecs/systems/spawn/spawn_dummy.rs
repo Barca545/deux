@@ -28,7 +28,7 @@ pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
   }
   //Combat info
   let dummy_team = Team::Red;
-  let dummy_health = Health::new(500);
+  let dummy_health = Health::new(50000000);
   let incoming_damage = IncomingDamage::new();
   // let dummy_target = Target(None);
 
