@@ -1,17 +1,20 @@
 use crate::{
-  component_lib::{Cooldowns, Dead, PlayerState, SpellResource, Team},
+  component_lib::{AbilityMap, Dead, PlayerState, SpellResource, Team},
   ecs::World,
+  time::Timer,
 };
 
 // Refactor:
 // -Figure out if it is possible to pass a QueryEntity between systems
 // -Rework Cooldowns to take TypeId or something
 // -These should create debug GameEvents like Oom{player, ...} if they fail
+// -Off cooldown might not need to be a utility function since the ability cast holds the cooldown so it's easier to check that way
 
-///Returns true if the requested cooldown is 0.0.
-pub fn off_cooldown(world: &World, entity: usize, ability_name: String) -> bool {
-  let cooldowns = world.get_component::<Cooldowns>(entity).unwrap();
-  cooldowns.is_zero(ability_name.as_str())
+///Returns true if the requested slot's `Cooldown` is 0.0.
+pub fn off_cooldown(world: &World, entity: usize, ability_slot: u32) -> bool {
+  let ability_map = world.get_component::<AbilityMap>(entity).unwrap();
+  let cooldown = ability_map.get_cooldown(ability_slot);
+  cooldown.is_zero()
 }
 
 ///Returns true if an entity has enough [`SpellResource`] to complete an action.

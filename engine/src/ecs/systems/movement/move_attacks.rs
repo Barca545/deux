@@ -1,9 +1,7 @@
-use std::any::Any;
-
 use crate::{
   component_lib::{AutoAttack, GameplayRadius, Owner, Position, PreviousPosition, Target, Velocity},
   ecs::World,
-  event::{AutoAttack as AutoAttackId, GameEvent, GameEventQueue},
+  event::{GameEvent, GameEventQueue},
   physics::circle_point_collision_test,
 };
 
@@ -44,7 +42,7 @@ pub fn move_attacks(world: &mut World) {
     if collision_check {
       let owner = entity.get_component::<Owner>().unwrap();
       let event = GameEvent::AbilityHit {
-        ability_type: AutoAttackId.type_id(),
+        ability_slot: 12,
         ability_id: entity.id,
         owner: *owner,
       };

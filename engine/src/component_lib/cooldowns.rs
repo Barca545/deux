@@ -6,6 +6,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 // -Remove the AutoAttackCooldown structure
 // -Make the names an enum?
 // -Rework Cooldowns to take TypeId or something
+// -I don't think Cooldowns needs to exist, I will have the AbilityMap hold the cooldown data
 
 pub struct Cooldowns(HashMap<String, Cooldown>);
 

@@ -1,12 +1,11 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 
 use crate::{
   arena::{Grid, Terrain},
   component_lib::{
-    AbilityMap, DamageType, Destination, Health, IncomingDamage, MagicDamage, Owner, Path, PhysicalDamage, Position, SpellResource, Target, UnitSpeed,
+    AbilityMap, BecsId, DamageType, Destination, Health, IncomingDamage, MagicDamage, Owner, Path, PhysicalDamage, Position, SpellResource, Target, UnitSpeed,
   },
   ecs::World,
-  event::AbilityThree,
   math::{MouseRay, Vec3},
   utility::{
     create_persistent_script, create_ranged_auto_attack, displacement, has_resource, is_enemy, is_neutral, is_unoccupied, off_cooldown, target_is_alive,
@@ -67,7 +66,7 @@ impl UserData for World {
 
     //Spawn a targeted projectile
     methods.add_method_mut("spawnTargetedProjectile", |_, world, (owner, target): (usize, usize)| {
-      let auto_attack = create_ranged_auto_attack(world, Owner(owner), Target(Some(target)));
+      let auto_attack = create_ranged_auto_attack(world, Owner::new(owner), Target(Some(target)));
       world.create_entity().with_components(auto_attack).unwrap();
       Ok(())
     });
@@ -145,14 +144,15 @@ impl UserData for World {
     });
 
     //Spawn an entity to track how long a script should execute
-    methods.add_method_mut("spawnPersistentScript", |_, world, (owner, duration): (usize, f64)| {
+    methods.add_method_mut("spawnPersistentScript", |_, world, (owner, duration, ability_slot): (usize, f64, u32)| {
       let running;
       let stop;
       {
         let map = world.get_component::<AbilityMap>(owner).unwrap();
-        let script = map.get(AbilityThree.type_id());
-        running = script.running();
-        stop = script.stop();
+        let ability = map.get(ability_slot);
+        let scripts = ability.scripts.clone();
+        running = scripts.running();
+        stop = scripts.stop();
       }
       create_persistent_script(world, owner, running, stop, duration).unwrap();
       Ok(())
@@ -183,7 +183,7 @@ pub struct LuaEntity(usize);
 
 impl From<Owner> for LuaEntity {
   fn from(value: Owner) -> Self {
-    LuaEntity(value.0)
+    LuaEntity(value.id())
   }
 }
 

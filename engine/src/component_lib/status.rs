@@ -12,7 +12,7 @@ pub enum PlayerState {
   #[default]
   Unoccupied,
   Moving(MovementState),
-  Casting,
+  Channeling,
 }
 
 #[derive(Debug, Clone, Copy)]

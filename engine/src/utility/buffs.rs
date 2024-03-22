@@ -18,7 +18,7 @@ pub fn create_persistent_script(world: &mut World, owner: usize, running: Option
 
   world
     .create_entity()
-    .with_component(Owner(owner))?
+    .with_component(Owner::new(owner))?
     .with_component(PersistentScript)?
     .with_component(RunningScript::new(running, stop))?
     .with_component(cooldown)?;

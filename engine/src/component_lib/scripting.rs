@@ -13,6 +13,7 @@ use std::rc::Rc;
 //^ I can replicate this functionality with an entity? the actual entity the script is refering to can just hold whatever data the script needs
 //If I ever need a script that does not have an explicit holder like a projectile, etc just make a script holder
 
+#[derive(Debug, Default, Clone)]
 pub struct Script {
   start: Option<BaseScript>,
   running: Option<BaseScript>,

@@ -1,9 +1,8 @@
-mod update;
-
 extern crate engine;
 extern crate gl;
 extern crate glfw;
 extern crate nalgebra_glm as glm;
+mod update;
 
 use engine::{
   config::asset_config,
@@ -16,12 +15,11 @@ use engine::{
   math::{Transforms, Vec3},
   time::ServerTime,
 };
+use eyre::Result;
 use gl::Gl;
 use glfw::{Action, Context, Key};
-
-use eyre::Result;
-
 use update::update;
+
 // Refactor:
 // -Switch to using FileType enum in the file system
 // -Make window a resource?

@@ -1,9 +1,9 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AutoAttack, AutoAttackMesh, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp,
-    GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path, PathingRadius,
-    PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius, SkinnedMesh, SpellResource, StaticMesh,
-    Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
+    AbilityMap, Armor, AutoAttack, AutoAttackMesh, CastQueue, Casting, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead,
+    Destination, Exp, GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path,
+    PathingRadius, PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius, SkinnedMesh,
+    SpellResource, StaticMesh, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
   ecs::World,
   view::AABB3DDebugMesh,
@@ -46,8 +46,11 @@ pub fn register_components(world: &mut World) {
     //Combat components
     .register_component::<KDA>()
     .register_component::<IncomingDamage>()
-    //Script components
+    //Casting
     .register_component::<AbilityMap>()
+    .register_component::<Casting>()
+    .register_component::<CastQueue>()
+    //Script components
     .register_component::<PersistentScript>()
     .register_component::<RunningScript>()
     //Level components

@@ -1,13 +1,13 @@
-// Refactor:
-// -Will eventually need to factor in pen.
-// -Need separate equation for AP damage and AD damage
-
 use crate::{
   component_lib::{
-    Armor, AutoAttack, AutoAttackMesh, Cooldowns, Destination, MagicResist, MissleSpeed, Owner, Position, PreviousPosition, SkinnedMesh, Target, Team, Velocity,
+    Armor, AutoAttack, AutoAttackMesh, BecsId, Destination, MagicResist, MissleSpeed, Owner, Position, PreviousPosition, SkinnedMesh, Target, Team, Velocity,
   },
   ecs::{Bundle, World},
 };
+
+// Refactor:
+// -Will eventually need to factor in pen.
+// -Need separate equation for AP damage and AD damage
 
 ///Calculate physical damage mitigation from [`Armor`].
 pub fn calc_gross_physical_damage(damage: i32, armor: Armor) -> i32 {
@@ -29,8 +29,7 @@ pub fn calc_gross_magic_damage(damage: i32, magic_resist: MagicResist) -> i32 {
 pub fn can_attack(world: &World, player: usize, target: usize) -> bool {
   let target_team = world.get_component::<Team>(target).unwrap();
   let player_team = world.get_component::<Team>(player).unwrap();
-  let player_attack_cooldown = world.get_component::<Cooldowns>(player).unwrap().get_real_remaing("auto attack");
-  *target_team != *player_team && player_attack_cooldown == 0.0
+  *target_team != *player_team
 }
 
 ///Returns a [`Bundle`] containing the data needed to spawn an auto attack entity.
@@ -38,7 +37,7 @@ pub fn create_ranged_auto_attack(world: &World, owner: Owner, target: Target) ->
   let bundle;
   {
     //Get the owner's position
-    let owner_position = world.get_component::<Position>(owner.0).unwrap();
+    let owner_position = world.get_component::<Position>(owner.id()).unwrap();
 
     //Create the projectile's position information
     let attack_position = Position(owner_position.0);
@@ -48,13 +47,13 @@ pub fn create_ranged_auto_attack(world: &World, owner: Owner, target: Target) ->
     let destination = Destination::from(*world.get_component::<Position>(target.0.unwrap()).unwrap());
 
     //Create the projectile speed
-    let speed = world.get_component::<MissleSpeed>(owner.0).unwrap();
+    let speed = world.get_component::<MissleSpeed>(owner.id()).unwrap();
 
     //Calculate velocity
     let velocity = Velocity::new(&attack_position, &destination, &speed.total());
 
     //Get the mesh info
-    let auto_attack_mesh = world.get_component::<AutoAttackMesh>(owner.0).unwrap();
+    let auto_attack_mesh = world.get_component::<AutoAttackMesh>(owner.id()).unwrap();
 
     bundle = (
       AutoAttack::default(),

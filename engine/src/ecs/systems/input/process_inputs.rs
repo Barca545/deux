@@ -1,13 +1,10 @@
-use std::any::Any;
-
 use crate::{
-  component_lib::{Controllable, Cooldowns, Owner, Player, SelectionRadius, Target},
+  component_lib::{Controllable, Owner, Player, SelectionRadius, Target},
   ecs::World,
-  event::{AbilityFour, AbilityOne, AbilityThree, AbilityTwo, AutoAttack, GameEvent, GameEventQueue},
+  event::{GameEvent, GameEventQueue},
   input::user_inputs::{FrameInputs, Keybind},
   math::MouseRay,
   physics::ray_aabb3d_collision_test,
-  time::ServerTime,
   utility::can_attack,
 };
 
@@ -18,7 +15,7 @@ use crate::{
 // -Need to switch the player state at some point so the pending stuff is actually a cast time and not a buffered ability.
 
 //Update target might be extraneous, what it can maybe do is update some AA target component
-pub fn update_target(world: &World, entity: usize, mouseray: MouseRay) {
+pub fn update_target(world: &World, entity: usize, mouse: MouseRay) {
   let mut target = world.get_component_mut::<Target>(entity).unwrap();
 
   //Query all targetable entities.
@@ -28,33 +25,26 @@ pub fn update_target(world: &World, entity: usize, mouseray: MouseRay) {
   for targetable_entity in targetable_entities {
     let hitbox = targetable_entity.get_component::<SelectionRadius>().unwrap();
     //Set a target and queue an auto attack if it is an enemy
-    if ray_aabb3d_collision_test(hitbox.0, mouseray.0) {
+    if ray_aabb3d_collision_test(hitbox.0, mouse.0) {
       *target = Target::new(targetable_entity.id);
       if can_attack(world, entity, targetable_entity.id) {
-        let owner = Owner(entity);
+        let owner = Owner::new(entity);
         let mut queue = world.get_resource_mut::<GameEventQueue>().unwrap();
-        //Get the cast time
-        let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-        let timer = 10.0;
         //Add the event to the events' pending field
-        queue.push_pending(
-          timer,
-          &mut server_time,
-          GameEvent::AbilityStart {
-            mouseray,
-            ability_type: AutoAttack.type_id(),
-            owner,
-          },
-        );
+        queue.push(GameEvent::AbilityStart {
+          owner,
+          ability_slot: 12,
+          mouse,
+        });
       }
       //Return early if a target is found
       return;
     }
   }
   *target = Target(None);
-  let owner = Owner(entity);
+  let owner = Owner::new(entity);
   let mut queue = world.get_resource_mut::<GameEventQueue>().unwrap();
-  queue.push(GameEvent::UpdateDestination { mouseray, owner });
+  queue.push(GameEvent::UpdateDestination { owner, mouse });
 }
 
 ///Converts [`FrameInputs`] into [`GameEvent`]s.
@@ -71,44 +61,38 @@ pub fn process_inputs(world: &World) {
     Keybind::MouseClick => update_target(world, player_id, input.mouse),
     Keybind::AbilityOne => {
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-      //Get the cast time
-      let cooldowns = entity.get_component::<Cooldowns>().unwrap();
-      let timer = cooldowns.get_cooldown("auto cast time");
-      //Add the event to the events' pending field
-      events.push(
-        // timer,
-        GameEvent::AbilityStart {
-          mouseray: input.mouse,
-          ability_type: AbilityOne.type_id(),
-          owner: Owner(player_id),
-        },
-      )
+      //Create the ability 1 start event
+      events.push(GameEvent::AbilityStart {
+        owner: Owner::new(player_id),
+        ability_slot: 1,
+        mouse: input.mouse,
+      })
     }
     Keybind::AbilityTwo => {
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
       //Create the ability 2 start event
       events.push(GameEvent::AbilityStart {
-        mouseray: input.mouse,
-        ability_type: AbilityTwo.type_id(),
-        owner: Owner(player_id),
+        owner: Owner::new(player_id),
+        ability_slot: 2,
+        mouse: input.mouse,
       })
     }
     Keybind::AbilityThree => {
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
       //Create the ability 3 start event
       events.push(GameEvent::AbilityStart {
-        mouseray: input.mouse,
-        ability_type: AbilityThree.type_id(),
-        owner: Owner(player_id),
+        owner: Owner::new(player_id),
+        ability_slot: 3,
+        mouse: input.mouse,
       })
     }
     Keybind::AbilityFour => {
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
       //Create the ability 4 start event
       events.push(GameEvent::AbilityStart {
-        mouseray: input.mouse,
-        ability_type: AbilityFour.type_id(),
-        owner: Owner(player_id),
+        owner: Owner::new(player_id),
+        ability_slot: 4,
+        mouse: input.mouse,
       })
     }
   });

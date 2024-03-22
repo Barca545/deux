@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::AbilityMap,
+  component_lib::{AbilityMap, BecsId},
   ecs::World,
   event::{GameEvent, GameEventQueue},
   utility::run_scripts,
@@ -25,17 +25,18 @@ pub fn ability_hit_resolve(world: &mut World) {
     let events = world.get_resource::<GameEventQueue>().unwrap();
     events.process_events(|event| {
       if let GameEvent::AbilityHit {
-        ability_type,
-        ability_id,
         owner,
+        ability_slot,
+        ability_id,
       } = event
       {
         //Get the ability script
-        let map = world.get_component::<AbilityMap>(owner.0).unwrap();
-        let ability = map.get(*ability_type);
-        if let Some(onhit) = ability.onhit() {
+        let map = world.get_component::<AbilityMap>(owner.id()).unwrap();
+        let ability = map.get(*ability_slot);
+        let scripts = ability.scripts.clone();
+        if let Some(onhit) = scripts.onhit() {
           //Buffer the scripts to be evaluated
-          buffered_scripts.push((owner.0, *ability_id, onhit.0));
+          buffered_scripts.push((owner.id(), *ability_id, onhit.0));
         }
       }
     });

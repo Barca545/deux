@@ -162,8 +162,8 @@ impl World {
   }
 
   ///Adds a component to the entity matching the provided ID.
-  pub fn add_component(&mut self, index: usize, data: impl Any) -> Result<()> {
-    self.entities.add_component_by_entity_id(index, data)
+  pub fn add_component(&mut self, entity: usize, data: impl Any) -> Result<()> {
+    self.entities.add_component_by_entity_id(entity, data)
   }
 
   ///Adds a bundle of components to an entity.

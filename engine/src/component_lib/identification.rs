@@ -45,7 +45,12 @@ impl Target {
 
 #[derive(Debug, Clone, Copy)]
 ///Component containing the id of an entity's owner.
-pub struct Owner(pub usize);
+pub struct Owner(usize);
+impl Owner {
+  pub fn new(id: usize) -> Self {
+    Owner(id)
+  }
+}
 
 #[derive(Debug, Clone, Copy)]
 ///Component containing the id of an entity the holder has killed.

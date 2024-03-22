@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-  component_lib::{Destination, Owner, Path, Position},
+  component_lib::{BecsId, Destination, Owner, Path, Position},
   ecs::World,
   event::{GameEvent, GameEventQueue},
 };
@@ -22,12 +22,12 @@ use mlua::Lua;
 pub fn update_destination(world: &World) {
   let events = world.get_resource::<GameEventQueue>().unwrap();
   events.process_events(|event| {
-    if let GameEvent::UpdateDestination { owner, mouseray } = event {
-      let mut destination = world.get_component_mut::<Destination>(owner.0).unwrap();
-      let position = world.get_component_mut::<Position>(owner.0).unwrap();
+    if let GameEvent::UpdateDestination { owner, mouse } = event {
+      let mut destination = world.get_component_mut::<Destination>(owner.id()).unwrap();
+      let position = world.get_component_mut::<Position>(owner.id()).unwrap();
 
       //Get the MouseClick and it's corresponding ray and convert them into a Destination
-      let new_destination = Destination::from(mouseray.ray_ground_intersection());
+      let new_destination = Destination::from(mouse.ray_ground_intersection());
 
       // If the distance between the current Position and the Destination is small run the pathing script
       if position.distance(&new_destination) < 100.0 {
@@ -35,10 +35,10 @@ pub fn update_destination(world: &World) {
       } else {
         run_scripts(world, *owner);
         // let mut path = entity.get_component_mut::<Path>().unwrap();
-        let mut path = world.get_component_mut::<Path>(owner.0).unwrap();
+        let mut path = world.get_component_mut::<Path>(owner.id()).unwrap();
         if let Some(first_node) = path.next() {
           // let mut destination = entity.get_component_mut::<Destination>().unwrap();
-          let mut destination = world.get_component_mut::<Destination>(owner.0).unwrap();
+          let mut destination = world.get_component_mut::<Destination>(owner.id()).unwrap();
           *destination = first_node;
         }
       }

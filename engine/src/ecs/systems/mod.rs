@@ -1,3 +1,4 @@
+mod casting;
 mod combat;
 mod input;
 mod mouse;
@@ -8,4 +9,4 @@ mod render;
 mod selection;
 mod spawn;
 
-pub use self::{combat::*, input::*, movement::*, persistent_scripts::*, render::*, spawn::*};
+pub use self::{casting::*, combat::*, input::*, movement::*, persistent_scripts::*, render::*, spawn::*};

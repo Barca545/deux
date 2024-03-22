@@ -135,17 +135,17 @@ impl Entities {
     Ok(())
   }
 
-  pub fn add_component_by_entity_id(&mut self, index: usize, data: impl Any) -> Result<()> {
+  pub fn add_component_by_entity_id(&mut self, entity: usize, data: impl Any) -> Result<()> {
     let typeid = data.type_id();
 
     if let Some(mask) = self.bitmasks.get(&typeid) {
-      self.map[index] |= *mask;
+      self.map[entity] |= *mask;
     } else {
       return Err(EcsErrors::ComponentNotRegistered.into());
     };
 
     let components = self.components.get_mut(&typeid).unwrap();
-    components[index] = Some(Rc::new(RefCell::new(Box::new(data))));
+    components[entity] = Some(Rc::new(RefCell::new(Box::new(data))));
 
     Ok(())
   }
