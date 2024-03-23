@@ -102,7 +102,6 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32) -> Result<()> {
     None,
     Some(
       r#"
-    print("stoping");
     world:accelerate(owner.id,-3.0);
     "#,
     ),

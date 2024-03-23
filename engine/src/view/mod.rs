@@ -3,7 +3,4 @@ mod mesh;
 pub mod render_gl;
 pub mod window;
 
-pub use self::mesh::{
-  AABB3DDebugMesh, 
-  Mesh,
-};
+pub use self::mesh::*;

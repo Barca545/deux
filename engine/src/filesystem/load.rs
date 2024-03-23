@@ -154,7 +154,11 @@ pub fn load_config() -> Result<Config> {
 
 ///Returns the path of the working directory as a string (the path "./").
 fn load_root_directory() -> Result<String> {
-  let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/deux/";
+  //For testing in the engine
+  let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/";
+
+  //For production
+  // let directory = current_dir()?.to_str().unwrap().to_owned() + "/";
   Ok(directory)
 }
 

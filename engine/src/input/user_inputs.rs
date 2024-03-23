@@ -50,6 +50,7 @@ impl Keybinds {
     let buttonstring = format!("{:?}", button);
     if let Some(keybind) = self.0.get(&buttonstring) {
       let (x, y) = window.get_cursor_pos();
+      dbg!((x, y));
       let screen_dimensions = world.get_resource::<ScreenDimensions>().unwrap();
       let transforms = world.get_resource::<Transforms>().unwrap();
       let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
