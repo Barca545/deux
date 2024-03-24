@@ -4,6 +4,7 @@ use gl::{Gl, DEPTH_TEST, KEEP, LESS, NOTEQUAL, REPLACE, STENCIL_TEST};
 use glfw::{
   fail_on_errors, Context, Glfw, OpenGlProfileHint, Window, WindowEvent,
   WindowHint::{ContextVersionMajor, ContextVersionMinor, OpenGlProfile},
+  WindowMode,
 };
 
 use crate::ecs::world_resources::ScreenDimensions;
@@ -19,7 +20,7 @@ pub fn create_window(screen_dimensions: &ScreenDimensions) -> (Glfw, Window, Rec
       screen_dimensions.width as u32,
       screen_dimensions.height as u32,
       "Project: Deux",
-      glfw::WindowMode::Windowed,
+      WindowMode::Windowed,
     )
     .expect("Failed to create GLFW window.");
   window.make_current();

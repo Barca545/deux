@@ -1,9 +1,3 @@
-use std::rc::Rc;
-use std::sync::mpsc::Receiver;
-
-use glfw::{Glfw, Window, WindowEvent};
-use mlua::Lua;
-
 use crate::{
   arena::Grid,
   ecs::{
@@ -16,6 +10,10 @@ use crate::{
   time::ServerTime,
   view::window::{create_gl, create_window},
 };
+use glfw::{Glfw, Window, WindowEvent};
+use mlua::Lua;
+use std::rc::Rc;
+use std::sync::mpsc::Receiver;
 
 pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
   let server_time = ServerTime::new();

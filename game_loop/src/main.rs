@@ -3,7 +3,6 @@ extern crate gl;
 extern crate glfw;
 extern crate nalgebra_glm as glm;
 mod update;
-
 use engine::{
   config::asset_config,
   ecs::{
@@ -30,12 +29,14 @@ use update::update;
 // -Add death system and update queries to ignore dead entities
 //  Issue is based on distance from screen, the entity closer to the user is selected first?
 // -Move the resize window code into its own function and only run it if one of the events was a window resize
+//  Window can be cloned and passed around
 
 // Refactor - Rendering:
 // -Experiment with putting Gl in an Rc
 // -Meshes need to be a resource
 // -Should be able to turn towards the direction of the mouse.
 //  This probably necesitates adding a "facing" component like LoL has
+// -World can be added as a resource. Maybe events can too?
 
 // Refactor - Grid
 // -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
@@ -43,7 +44,7 @@ use update::update;
 // -Grid should load in from a JSON once I build the grid in the level editor
 // -Grid might also need to be a resource. I'm unsure if other systems will need it
 // -Dimensions should load from a settings file
-// -Any way to make window a resource? Maybe I just pass it in directly to the system that handles inputs, or just pass a copy of the raw event pump and handle it there?
+// -Maybe I just pass it in directly to the system that handles inputs, or just pass a copy of the raw event pump and handle it there?
 
 // Refactor - Movement:
 // -Make the list of open/closed indexes a global in lua since it's constant throughout the game

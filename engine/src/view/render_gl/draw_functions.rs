@@ -1,12 +1,15 @@
 use crate::view::Mesh;
 use gl::{
   types::{GLsizei, GLvoid},
-  Gl, QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION, TRIANGLES, UNSIGNED_INT,
+  Gl, TRIANGLES, UNSIGNED_INT,
 };
 
 // Refactor:
 // -Should texture be bound before or after the VAO
+// -Need draw quad function for UI elements?
 
+///Draw the provided [`Mesh`].
+/// Uses `DrawElements` in `GL_TRIANGLES` mode.
 pub fn draw_elements(gl: &Gl, mesh: &Mesh) {
   let texture = &mesh.texture;
   let vao = &mesh.vao;

@@ -9,7 +9,7 @@ use crate::{
 use gl::Gl;
 
 //Git Message:
-
+// Added pixel neutral units and switched to vector graphics for textures.
 //
 // Refactored render system and pipeline
 
@@ -23,7 +23,9 @@ use gl::Gl;
 
 ///Indicates the widget's orientation with respect to an anchor in its parent.
 /// For objects with no parent, the `Top` and `Bottom` are with respect to the screen.
+#[derive(Debug, Clone, Copy, Default)]
 pub enum VerticalAnchor {
+  #[default]
   Center,
   Top,
   Bottom,
@@ -31,17 +33,20 @@ pub enum VerticalAnchor {
 
 ///Indicates the widget's orientation with respect to its parent.
 /// For objects with no parent, the `Left` and `Right` are with respect to the screen.
+#[derive(Debug, Clone, Copy, Default)]
 pub enum HorizontalAnchor {
+  #[default]
   Center,
   Left,
   Right,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Orientation {
-  horizontal_anchor: HorizontalAnchor,
-  horizontal_offset: f32,
-  vertical_anchor: VerticalAnchor,
-  vertical_offset: f32,
+  pub horizontal_anchor: HorizontalAnchor,
+  pub horizontal_offset: f32,
+  pub vertical_anchor: VerticalAnchor,
+  pub vertical_offset: f32,
 }
 
 impl Orientation {
