@@ -283,7 +283,7 @@ mod test {
     //Set up the programs
     let mut programs = Programs::new();
     //Create and register the widget program
-    let program = Program::new(&gl, "widget", "textured", FRAGMENT_SHADER).unwrap();
+    let program = Program::new(&gl, "widget", "textured", FRAGMENT_SHADER).unwrap().build().unwrap();
     programs.register_program(3, program);
 
     while !window.should_close() {

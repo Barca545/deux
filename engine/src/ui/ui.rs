@@ -4,7 +4,10 @@ use super::{
   widget::Widget,
 };
 use crate::{
-  math::Vec3,
+  math::{
+    math::{Point2, Point3},
+    Vec3,
+  },
   view::{render_gl::Vertex, Mesh},
 };
 use gl::Gl;
@@ -16,6 +19,10 @@ use glfw::RenderContext;
 // -Internal math should be in dp
 // -Pick a dp value
 // -In order to make it so that I don't have too many Responses for an element in a frame,
+// -I don't think UI actually needs another height and width the config info should be enough
+// -UI should have the option to be renderable in case I want to use it as a background
+// -In order to use the position to render it I need a uniform in the shader that takes in the position
+// -
 
 // render_context
 
@@ -29,8 +36,9 @@ pub struct UI {
 }
 
 impl UI {
-  pub fn new(id: usize, config: UIConfigInfo, ctx: RenderContext, width: f32, height: f32) -> Self {
-    let rect = Rect::new(config, width, height);
+  pub fn new(id: usize, config: UIConfigInfo, ctx: RenderContext) -> Self {
+    let dimensions = config.dimensions;
+    let rect = Rect::new(dimensions.width as f32, dimensions.height as f32);
     let children = Vec::new();
     UI {
       id,
@@ -84,13 +92,13 @@ impl UI {
 pub struct Dimensions {
   pub width: i32,
   pub height: i32,
-  pub aspect: i32,
+  pub aspect: f32,
 }
 
 impl Dimensions {
   ///Create new [`Dimensions`].
   pub fn new(width: i32, height: i32) -> Self {
-    let aspect = width / height;
+    let aspect = width as f32 / height as f32;
     Dimensions { height, width, aspect }
   }
 
@@ -104,45 +112,111 @@ impl Dimensions {
       self.height = height;
     }
 
-    self.aspect = self.width / self.height;
+    self.aspect = self.width as f32 / self.height as f32;
   }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct UIConfigInfo {
-  //Pixels per units
-  dpi: i32,
+  pub(super) screen_dimensions: Dimensions,
   pub(super) dimensions: Dimensions,
-  orientation: Orientation,
+  ///Position of the element's center
+  pub(super) position: Vec3,
 }
 
 impl UIConfigInfo {
-  pub fn new() -> UIConfigInfoBuilder {
-    let dpi = 120;
+  //Pixels per units
+  const DPI: i32 = 160;
+
+  pub fn new(screen_dimensions: Dimensions) -> UIConfigInfoBuilder {
     let dimensions = Dimensions::new(1280, 720);
     let orientation = Orientation::default();
-    UIConfigInfoBuilder { dpi, dimensions, orientation }
+    UIConfigInfoBuilder {
+      screen_dimensions,
+      dimensions,
+      orientation,
+    }
+  }
+
+  pub fn ndc_position(&self) -> Vec3 {
+    let x = 2.0 * self.position.x / self.screen_dimensions.width as f32 - 1.0;
+    let y = 1.0 - (2.0 * self.position.y as f32) / self.screen_dimensions.height as f32;
+    let z = 0.0;
+
+    Vec3::new(x, y, z)
+  }
+
+  ///Returns the element's bounding [`Rect`].
+  /// During calculation, scales the `height` by the Window's aspect ratio to compensate for viewport distortion.
+  pub fn rect(&self) -> Rect {
+    let width = self.dimensions.width as f32 / Self::DPI as f32;
+    let height = self.dimensions.height as f32 * self.screen_dimensions.aspect / Self::DPI as f32;
+    Rect::new(width, height)
   }
 }
 
 pub struct UIConfigInfoBuilder {
-  dpi: i32,
+  screen_dimensions: Dimensions,
   dimensions: Dimensions,
   orientation: Orientation,
 }
 
 impl UIConfigInfoBuilder {
   pub fn build(&self) -> UIConfigInfo {
-    let dpi: i32 = self.dpi;
+    //these dimensions need to be the parent dimensions
     let dimensions = self.dimensions;
+    let screen_dimensions = self.screen_dimensions;
     let orientation = self.orientation;
-    UIConfigInfo { dpi, dimensions, orientation }
+
+    //Calculate the position
+
+    let mut position = Vec3::default();
+    let horizontal_offset = orientation.horizontal_offset;
+    let vertical_offset = orientation.vertical_offset;
+
+    //Calculate the left and right values of the rectangle's corners in normalized device coordinates (range [-1,1]) using the vertical orientation
+    match orientation.horizontal_anchor {
+      HorizontalAnchor::Center => {
+        position.x = (screen_dimensions.width as f32 / 2.0) + horizontal_offset;
+      }
+      HorizontalAnchor::Left => {
+        position.x = horizontal_offset;
+      }
+      HorizontalAnchor::Right => {
+        position.x = screen_dimensions.width as f32 + horizontal_offset;
+      }
+    }
+
+    //Calculate the position of the widget in normalized device coordinates (range [-1,1])
+    match orientation.vertical_anchor {
+      VerticalAnchor::Center => {
+        position.y = (screen_dimensions.height as f32 / 2.0) + vertical_offset;
+      }
+      VerticalAnchor::Top => {
+        position.y = vertical_offset;
+      }
+      VerticalAnchor::Bottom => {
+        position.y = screen_dimensions.height as f32 + vertical_offset;
+      }
+    }
+
+    UIConfigInfo {
+      screen_dimensions,
+      dimensions,
+      position,
+    }
   }
 
   //functions to update the config info
-  // pub fn horizontal_anchor(&mut self, anchor: HorizontalAnchor) -> &mut Self {}
+  pub fn horizontal_anchor(&mut self, anchor: HorizontalAnchor) -> &mut Self {
+    self.orientation.horizontal_anchor = anchor;
+    self
+  }
   // pub fn horizontal_offset(&mut self, offset: f32) {}
-  // pub fn vertical_anchor(&mut self, anchor: VerticalAnchor) -> &mut Self {}
+  pub fn vertical_anchor(&mut self, anchor: VerticalAnchor) -> &mut Self {
+    self.orientation.vertical_anchor = anchor;
+    self
+  }
   // pub fn vertical_offset(&mut self, offset: f32) -> &mut Self {}
   pub fn width(&mut self, width: f32) -> &mut Self {
     self.dimensions.resize(Some(width as i32), None);
@@ -160,101 +234,36 @@ pub struct Format {
 }
 
 pub struct Rect {
-  top: f32,
-  bottom: f32,
-  left: f32,
-  right: f32,
+  // pub top: f32,
+  // pub bottom: f32,
+  // pub left: f32,
+  // pub right: f32,
+  min: Point2,
+  max: Point2,
 }
 
 impl Rect {
-  // pub fn new(top: f32, bottom: f32, left: f32, right: f32) -> Self {}
-  pub fn new(config: UIConfigInfo, width: f32, height: f32) -> Self {
-    let orientation = config.orientation;
-    let dimensions = config.dimensions;
-
-    let mut position = Vec3::default();
-    let horizontal_offset = orientation.horizontal_offset;
-    let vertical_offset = orientation.vertical_offset;
-
-    //Calculate the left and right values of the rectangle's corners in normalized device coordinates (range [-1,1]) using the vertical orientation
-    match orientation.horizontal_anchor {
-      HorizontalAnchor::Center => {
-        position.x = (dimensions.width as f32 / 2.0) + horizontal_offset;
-      }
-      HorizontalAnchor::Left => {
-        position.x = horizontal_offset;
-      }
-      HorizontalAnchor::Right => {
-        position.x = dimensions.width as f32 + horizontal_offset;
-      }
-    }
-
-    //Calculate the position of the widget in normalized device coordinates (range [-1,1])
-    match orientation.vertical_anchor {
-      VerticalAnchor::Center => {
-        position.y = (dimensions.height as f32 / 2.0) + vertical_offset;
-      }
-      VerticalAnchor::Top => {
-        position.y = vertical_offset;
-      }
-      VerticalAnchor::Bottom => {
-        position.y = dimensions.height as f32 + vertical_offset;
-      }
-    }
-
+  ///Create a new [`Rect`].
+  pub fn new(width: f32, height: f32) -> Self {
     //Calculate the x and y maxima
-    let mut left = position.x - (width / 2.0);
-    let mut right = position.x + (width / 2.0);
-    let mut top = position.y - (height / 2.0);
-    let mut bottom = position.y + (height / 2.0);
+    // let left = position.x - (width / 2.0);
+    // let right = position.x + (width / 2.0);
+    // let top = position.y - (height / 2.0);
+    // let bottom = position.y + (height / 2.0);
 
-    //Ensure shape is within dimensions bounds
+    // let left = -(width / 2.0);
+    // let right = (width / 2.0);
+    // let top = -(height / 2.0);
+    // let bottom = (height / 2.0);
 
-    //Center the widget horizontally if it is wider than its parent
-    if width > dimensions.width as f32 {
-      let x = dimensions.width as f32 / 2.0;
-      left = x - (width / 2.0);
-      right = x + (width / 2.0);
-    }
-    //Shift the widget right if it would exceed the left bound of its parent
-    else if left < 0.0 {
-      let horizontal_correction = 0.0 - left;
-      left += horizontal_correction;
-      right += horizontal_correction;
-    }
-    //Shift the widget right if it would exceed the right bound of its parent
-    else if right > dimensions.width as f32 {
-      let horizontal_correction = dimensions.width as f32 - right;
-      left += horizontal_correction;
-      right += horizontal_correction;
-    }
+    let x = width / 2.0;
+    let y = height / 2.0;
 
-    //Center the widget vertically if it is taller than its parent
-    if height > dimensions.height as f32 {
-      let y = dimensions.height as f32 / 2.0;
-      top = y - (height / 2.0);
-      bottom = y + (height / 2.0);
-    }
-    //Shift the widget up if it would exceed the top of its parent
-    else if top < 0.0 {
-      let vertical_correction = 0.0 - top;
-      top += vertical_correction;
-      bottom += vertical_correction;
-    }
-    //Shift the widget up if it would exceed the bottom of its parent
-    else if bottom > dimensions.height as f32 {
-      let vertical_correction = dimensions.height as f32 - bottom;
-      top += vertical_correction;
-      bottom += vertical_correction;
-    }
+    let min = Point2::new(-x, y);
+    let max = Point2::new(x, -y);
 
-    //Convert the maxima to ndc
-    left = 2.0 * left / dimensions.width as f32 - 1.0;
-    right = 2.0 * right / dimensions.width as f32 - 1.0;
-    top = 1.0 - (2.0 * top as f32) / dimensions.height as f32;
-    bottom = 1.0 - (2.0 * bottom as f32) / dimensions.height as f32;
-
-    Rect { top, bottom, left, right }
+    // Rect { top, bottom, left, right }
+    Rect { min, max }
   }
 }
 
@@ -276,17 +285,24 @@ impl<'a> From<WidgetRenderInfo<'a>> for Mesh {
     //Define the gl, maxima, and texture name
     let gl = value.gl;
     let texture_name = value.texture_name;
-    let right = value.rect.right;
-    let left = value.rect.left;
-    let top = value.rect.top;
-    let bottom = value.rect.bottom;
-    let z = -1.0;
+    // let right = value.rect.right;
+    // let left = value.rect.left;
+    // let top = value.rect.top;
+    // let bottom = value.rect.bottom;
+    let min = value.rect.min;
+    let max = value.rect.max;
+    let z = 0.0;
 
     //Create the widget's vertices
-    let v1 = Vertex::new([right, top, z], [1.0, 1.0]); //Top Right
-    let v2 = Vertex::new([right, bottom, z], [1.0, 0.0]); // Bottom Right
-    let v3 = Vertex::new([left, bottom, z], [0.0, 0.0]); // Bottom Left
-    let v4 = Vertex::new([left, top, z], [0.0, 1.0]); // Top Left
+    let v1 = Vertex::new([max.x, max.y, z], [1.0, 1.0]); //Top Right
+    let v2 = Vertex::new([max.x, min.y, z], [1.0, 0.0]); // Bottom Right
+    let v4 = Vertex::new([min.x, max.y, z], [0.0, 1.0]); // Top Left
+    let v3 = Vertex::new([min.x, min.y, z], [0.0, 0.0]); // Bottom Left
+
+    // let v1 = Vertex::new([right, top, z], [1.0, 1.0]); //Top Right
+    // let v2 = Vertex::new([right, bottom, z], [1.0, 0.0]); // Bottom Right
+    // let v4 = Vertex::new([left, top, z], [0.0, 1.0]); // Top Left
+    // let v3 = Vertex::new([left, bottom, z], [0.0, 0.0]); // Bottom Left
 
     //Add the vertices to a vertices vector
     let mut vertices = Vec::new();

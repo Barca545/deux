@@ -1,23 +1,23 @@
-extern crate engine;
-extern crate gl;
-extern crate glfw;
-extern crate nalgebra_glm as glm;
-mod update;
-use engine::{
-  config::asset_config,
-  ecs::{
-    systems::{register_components, register_resources, render, spawn_dummy, spawn_enviroment, spawn_player},
-    world_resources::ScreenDimensions,
-    World,
-  },
-  input::user_inputs::{FrameInputs, Keybinds},
-  math::{Transforms, Vec3},
-  time::ServerTime,
-};
-use eyre::Result;
-use gl::Gl;
-use glfw::{Action, Context, Key};
-use update::update;
+// extern crate engine;
+// extern crate gl;
+// extern crate glfw;
+// extern crate nalgebra_glm as glm;
+// mod update;
+// use engine::{
+//   config::asset_config,
+//   ecs::{
+//     systems::{register_components, register_resources, render, spawn_dummy, spawn_enviroment, spawn_player},
+//     world_resources::ScreenDimensions,
+//     World,
+//   },
+//   input::user_inputs::{FrameInputs, Keybinds},
+//   math::{Transforms, Vec3},
+//   time::ServerTime,
+// };
+// use eyre::Result;
+// use gl::Gl;
+// use glfw::{Action, Context, Key};
+// use update::update;
 
 // Refactor:
 // -Switch to using FileType enum in the file system
@@ -51,95 +51,175 @@ use update::update;
 // -Function to check the cell a given position is inside
 // -Run an a* pathing script
 
-fn main() -> Result<()> {
-  //Configure the location of the asset folders
+// fn main() -> Result<()> {
+//   //Configure the location of the asset folders
+//   asset_config();
+
+//   let mut world = World::new();
+
+//   //Register the resources and create the window
+//   let (mut glfw, mut window, events) = register_resources(&mut world);
+
+//   //Register the components the game uses with the world
+//   register_components(&mut world);
+
+//   //Spawn the ground
+//   spawn_enviroment(&mut world, "ground").unwrap();
+
+//   //Spawn the players and dummies
+//   spawn_player(&mut world, "warrior", 1)?;
+
+//   spawn_dummy(&mut world, Vec3::new(3.0, 0.0, -3.0)).unwrap();
+//   spawn_dummy(&mut world, Vec3::new(5.0, 0.0, 0.0)).unwrap();
+
+//   //Main loop
+//   while !window.should_close() {
+//     //For some reason if this is not here I get a black screen
+//     {
+//       let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+//       server_time.tick();
+//     }
+
+//     glfw.poll_events();
+//     for (_, event) in glfw::flush_messages(&events) {
+//       match event {
+//         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
+//         glfw::WindowEvent::Key(key, _, Action::Press, _) => {
+//           let keybinds = world.get_resource::<Keybinds>().unwrap();
+//           if let Ok(input) = keybinds.key_input(&world, &window, key) {
+//             let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+//             inputs.push(input)
+//           }
+//         }
+//         glfw::WindowEvent::MouseButton(button, Action::Press, _) => {
+//           let keybinds = world.get_resource::<Keybinds>().unwrap();
+//           if let Ok(input) = keybinds.mouse_input(&world, &window, button) {
+//             let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+//             inputs.push(input)
+//           }
+//         }
+//         _ => {}
+//       }
+//     }
+
+//     let server_time = world.get_resource::<ServerTime>().unwrap().clone();
+
+//     //Update
+//     if server_time.should_update() == true {
+//       update(&mut world);
+//       //I think this is where I update the delta timer
+//       let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+//       server_time.decrement_seconds_since_update()
+//     }
+
+//     //Render
+//     //Can I clear the buffers before binding or do they need to be cleared after
+//     // binding? Binding currently happens in their own functions.
+//     if server_time.should_render() {
+//       //have some flag so it only runs if it was resized
+//       let (width, height) = window.get_size();
+//       {
+//         let mut dimensions = world.get_resource_mut::<ScreenDimensions>().unwrap();
+//         *dimensions = ScreenDimensions::new(width, height);
+//       }
+
+//       {
+//         let dimensions = world.get_resource::<ScreenDimensions>().unwrap().clone();
+
+//         let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
+//         *transforms = Transforms::new(&dimensions.aspect);
+
+//         let gl = world.get_resource::<Gl>().unwrap();
+//         unsafe { gl.Viewport(0, 0, width, height) }
+//       }
+
+//       //can maybe make the render function handle the swapbuffers
+//       render(&world);
+
+//       window.swap_buffers();
+//       let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+//       server_time.decrement_seconds_since_render()
+//     }
+//   }
+//   Ok(())
+// }
+
+use engine::{
+  config::asset_config,
+  ecs::{systems::register_resources, World},
+  math::Mat4,
+  ui::{Button, Dimensions, HorizontalAnchor, UIConfigInfo, VerticalAnchor, UI},
+  view::render_gl::{Program, Programs},
+};
+use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, FRAGMENT_SHADER, STENCIL_BUFFER_BIT};
+use glfw::{Action, Context, Key};
+use nalgebra_glm::{identity, translate};
+
+fn main() {
   asset_config();
-
   let mut world = World::new();
-
-  //Register the resources and create the window
   let (mut glfw, mut window, events) = register_resources(&mut world);
 
-  //Register the components the game uses with the world
-  register_components(&mut world);
+  //Create a UI
+  let ctx = window.render_context();
+  let sceen_dimensions = Dimensions::new(1280, 720);
+  let config = UIConfigInfo::new(sceen_dimensions).build();
+  let ui = UI::new(1, config, ctx);
 
-  //Spawn the ground
-  spawn_enviroment(&mut world, "ground").unwrap();
+  //Create a button
+  let gl = world.get_resource::<Gl>().unwrap();
+  let btn_config = UIConfigInfo::new(sceen_dimensions)
+    .width(20.0)
+    .height(10.0)
+    .horizontal_anchor(HorizontalAnchor::Left)
+    .vertical_anchor(VerticalAnchor::Center)
+    .build();
+  let button = Button::new("Button Name", btn_config).parent(&ui).mesh_info(&gl, "ground").build().unwrap();
 
-  //Spawn the players and dummies
-  spawn_player(&mut world, "warrior", 1)?;
+  //Set up the programs
+  let mut programs = Programs::new();
 
-  spawn_dummy(&mut world, Vec3::new(3.0, 0.0, -3.0)).unwrap();
-  spawn_dummy(&mut world, Vec3::new(5.0, 0.0, 0.0)).unwrap();
+  //Create and register the widget program
+  let program = Program::new(&gl, "widget", "textured", FRAGMENT_SHADER)
+    .unwrap()
+    .with_model(&gl)
+    .unwrap()
+    .build()
+    .unwrap();
+  programs.register_program(3, program);
 
-  //Main loop
   while !window.should_close() {
-    //For some reason if this is not here I get a black screen
-    {
-      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-      server_time.tick();
-    }
-
     glfw.poll_events();
     for (_, event) in glfw::flush_messages(&events) {
       match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-        glfw::WindowEvent::Key(key, _, Action::Press, _) => {
-          let keybinds = world.get_resource::<Keybinds>().unwrap();
-          if let Ok(input) = keybinds.key_input(&world, &window, key) {
-            let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-            inputs.push(input)
-          }
-        }
-        glfw::WindowEvent::MouseButton(button, Action::Press, _) => {
-          let keybinds = world.get_resource::<Keybinds>().unwrap();
-          if let Ok(input) = keybinds.mouse_input(&world, &window, button) {
-            let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-            inputs.push(input)
-          }
+        glfw::WindowEvent::MouseButton(..) => {
+          dbg!(window.get_cursor_pos());
         }
         _ => {}
       }
     }
 
-    let server_time = world.get_resource::<ServerTime>().unwrap().clone();
-
-    //Update
-    if server_time.should_update() == true {
-      update(&mut world);
-      //I think this is where I update the delta timer
-      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-      server_time.decrement_seconds_since_update()
-    }
-
     //Render
-    //Can I clear the buffers before binding or do they need to be cleared after
-    // binding? Binding currently happens in their own functions.
-    if server_time.should_render() {
-      //have some flag so it only runs if it was resized
-      let (width, height) = window.get_size();
-      {
-        let mut dimensions = world.get_resource_mut::<ScreenDimensions>().unwrap();
-        *dimensions = ScreenDimensions::new(width, height);
-      }
+    programs.use_program(3, &world);
+    let btn_position = button.config.ndc_position();
 
-      {
-        let dimensions = world.get_resource::<ScreenDimensions>().unwrap().clone();
+    //Set the model transform's value
+    let model: Mat4 = identity::<f32, 4>();
+    let model_transform: Mat4 = translate(&model, &btn_position);
+    program.set_model_matrix(&gl, &model_transform);
 
-        let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
-        *transforms = Transforms::new(&dimensions.aspect);
+    //Set projection Transform
+    // let transforms = world.get_resource::<Transforms>().unwrap();
+    // let projection_transform = transforms.projection_transform.as_matrix();
+    // let t = Vec4::new(0.5, 0.5, 0.0, 1.0);
+    // dbg!(projection_transform * t);
+    // program.set_projection_matrix(&gl, &projection_transform);
+    // programs.set_vp_uniforms(3, &world);
 
-        let gl = world.get_resource::<Gl>().unwrap();
-        unsafe { gl.Viewport(0, 0, width, height) }
-      }
-
-      //can maybe make the render function handle the swapbuffers
-      render(&world);
-
-      window.swap_buffers();
-      let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-      server_time.decrement_seconds_since_render()
-    }
+    unsafe { gl.ClearColor(0.1, 0.1, 0.1, 1.0) };
+    unsafe { gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT) }
+    button.draw(&gl);
+    window.swap_buffers();
   }
-  Ok(())
 }

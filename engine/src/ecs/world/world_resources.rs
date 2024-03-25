@@ -34,12 +34,20 @@ pub struct ShaderPrograms {
 
 impl ShaderPrograms {
   pub fn new(gl: &Gl) -> Result<Self> {
-    let mut normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
-    let mut highlight = Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER).unwrap();
-
-    normal.with_model(&gl)?.with_view(&gl)?.with_projection(&gl)?;
-
-    highlight.with_model(&gl)?.with_view(&gl)?.with_projection(&gl)?;
+    let mut normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER)
+      .unwrap()
+      .with_model(&gl)?
+      .with_view(&gl)?
+      .with_projection(&gl)?
+      .build()
+      .unwrap();
+    let mut highlight = Program::new(&gl, "textured", "highlight", FRAGMENT_SHADER)
+      .unwrap()
+      .with_model(&gl)?
+      .with_view(&gl)?
+      .with_projection(&gl)?
+      .build()
+      .unwrap();
 
     Ok(Self { normal, highlight })
   }
@@ -80,7 +88,7 @@ pub struct DbgShaderProgram {
 
 impl DbgShaderProgram {
   pub fn new(gl: &Gl) -> Self {
-    let program = Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap();
+    let program = Program::new(&gl, "debug", "debug", FRAGMENT_SHADER).unwrap().build().unwrap();
 
     DbgShaderProgram { program }
   }

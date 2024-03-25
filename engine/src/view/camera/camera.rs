@@ -4,28 +4,28 @@ use glm::vec3;
 
 #[derive(Debug)]
 pub struct Camera {
-  pub position:Vec3,
-  pub target:Vec3,
-  pub up:Vec3,
-  front:Vec3
+  pub position: Vec3,
+  pub target: Vec3,
+  pub up: Vec3,
+  front: Vec3,
 }
 
 impl Camera {
   pub fn new() -> Self {
-    let world_up:Vec3 = vec3(0.0, 1.0, 0.0);
+    let world_up: Vec3 = vec3(0.0, 1.0, 0.0);
 
     let x = 0.0;
     let z = -10.0;
     let y = -z * radians(55.0).tan();
 
-    let front:Vec3 = vec3(-x, -y, -z);
+    let front: Vec3 = vec3(-x, -y, -z);
 
-    let position:Vec3 = vec3(x, y, z);
+    let position: Vec3 = vec3(x, y, z);
 
     // let up:Vec3 = vec3(0.0,1.0,0.0);
-    let right:Vec3 = front.cross(&world_up).normalize();
-    let up:Vec3 = right.cross(&front).normalize();
-    let target:Vec3 = position + front;
+    let right: Vec3 = front.cross(&world_up).normalize();
+    let up: Vec3 = right.cross(&front).normalize();
+    let target: Vec3 = position + front;
 
     Camera { position, target, up, front }
   }

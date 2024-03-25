@@ -1,7 +1,6 @@
 mod casting;
 mod combat;
 mod input;
-mod mouse;
 mod movement;
 mod persistent_scripts;
 mod playerstate;

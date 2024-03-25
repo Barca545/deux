@@ -1,16 +1,21 @@
-use gl::{Gl, TRIANGLES, UNSIGNED_INT, types::{GLsizei, GLvoid}};
 use crate::view::mesh::Mesh;
+use gl::{
+  types::{GLsizei, GLvoid},
+  Gl, TRIANGLES, UNSIGNED_INT,
+};
+// Refactor:
+// -Switch to using the draw elements function
 
 //test by just doing the current render then start making it draw_elements
-pub(crate) fn render_mesh(gl:&Gl, mesh:&Mesh){
+pub(crate) fn render_mesh(gl: &Gl, mesh: &Mesh) {
   let texture = &mesh.texture;
   let vao = &mesh.vao;
   let indices = &mesh.indices;
-  
+
   //do I bind texture before or after vao
   texture.bind(gl);
   vao.bind(gl);
-  
+
   //make a file just holding the draw mode functions
 
   // //bind the model transform
@@ -21,9 +26,8 @@ pub(crate) fn render_mesh(gl:&Gl, mesh:&Mesh){
       indices.len() as GLsizei,
       UNSIGNED_INT,
       // null() as *const GLvoid
-      indices.as_ptr() as *const GLvoid
-      // 0 as *const GLvoid
+      indices.as_ptr() as *const GLvoid, // 0 as *const GLvoid
     );
   }
   vao.unbind(gl);
-} 
+}

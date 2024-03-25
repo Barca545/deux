@@ -148,6 +148,8 @@ pub fn load_config() -> Result<Config> {
   let root_directory = load_root_directory()?;
   let config_path = &(root_directory + "config");
 
+  let config_path = "C:/Users/jamar/Documents/Hobbies/Coding/deux/config";
+
   let config = Config::builder().add_source(ConfigFile::with_name(config_path)).build().unwrap();
   Ok(config)
 }
@@ -155,10 +157,10 @@ pub fn load_config() -> Result<Config> {
 ///Returns the path of the working directory as a string (the path "./").
 fn load_root_directory() -> Result<String> {
   //For testing in the engine
-  let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/";
+  // let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/";
 
   //For production
-  // let directory = current_dir()?.to_str().unwrap().to_owned() + "/";
+  let directory = current_dir()?.to_str().unwrap().to_owned() + "/";
   Ok(directory)
 }
 
