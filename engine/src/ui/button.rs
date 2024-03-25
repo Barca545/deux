@@ -1,8 +1,7 @@
-use super::ui::{UIConfigInfo, UI};
+use super::{render_info::WidgetRenderInfo, ui::UI, ui_config::UIConfigInfo};
 use crate::{
   errors::UIErrors,
-  math::{calculate_model_transform, Mat4, Vec3},
-  ui::ui::{Rect, WidgetRenderInfo},
+  math::Rect,
   view::{render_gl::draw_elements, Mesh},
 };
 use eyre::Result;
@@ -71,7 +70,8 @@ impl<'b> ButtonBuilder<'b> {
 
     match self.parent {
       Some(parent) => {
-        let mut rect = self.config.rect();
+        // let mut rect = self.rect();
+        let rect = Rect::new(100.0, 100.0);
 
         // self.fit_in_parent(&mut rect, parent.config);
         // self.to_ndc(&mut rect, parent.config);

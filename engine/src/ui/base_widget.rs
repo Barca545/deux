@@ -13,13 +13,14 @@ use gl::Gl;
 //
 // Refactored render system and pipeline
 
-//  Refactor:
-//  -BaseWidget needs a new name
-//  -Update the documentation for the Orientation struct to mention offset is measured in percent.
-//  -Add functionality for calculating top and bottom anchors
-//  -width and height need to be scaled by something so they keep their proportion to their parent when the parent is rescaled
-//  -Base widget needs to be calculated with respect to its parent not the screen (unless its parent is the screen)
-//  -Need to write a new shader for the UI
+// Refactor:
+// -BaseWidget needs a new name
+// -Update the documentation for the Orientation struct to mention offset is measured in percent.
+// -Add functionality for calculating top and bottom anchors
+// -width and height need to be scaled by something so they keep their proportion to their parent when the parent is rescaled
+// -Base widget needs to be calculated with respect to its parent not the screen (unless its parent is the screen)
+// -Need to write a new shader for the UI
+// -Center might be unnecessary since the elements should be centered by default
 
 ///Indicates the widget's orientation with respect to an anchor in its parent.
 /// For objects with no parent, the `Top` and `Bottom` are with respect to the screen.

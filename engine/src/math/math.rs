@@ -14,6 +14,25 @@ pub type Mat4 = TMat4<f32>;
 pub type Point3 = Point<f32, 3>;
 pub type Point2 = Point<f32, 2>;
 
+#[derive(Debug, Clone, Copy)]
+pub struct Rect {
+  pub min: Point2,
+  pub max: Point2,
+}
+
+impl Rect {
+  ///Create a new [`Rect`].
+  pub fn new(width: f32, height: f32) -> Self {
+    //Calculate the x and y maxima
+    let x = width / 2.0;
+    let y = height / 2.0;
+
+    let min = Point2::new(-x, -y);
+    let max = Point2::new(x, y);
+    Rect { min, max }
+  }
+}
+
 // #[derive(Debug, Clone, Copy)]
 //make wrappers around the vec structures so I can add deserialize to them
 
