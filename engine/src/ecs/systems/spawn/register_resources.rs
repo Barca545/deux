@@ -1,12 +1,12 @@
 use crate::{
   arena::Grid,
   ecs::{
-    world_resources::{DbgShaderProgram, DebugElements, ScreenDimensions, Selected, ShaderPrograms},
+    world_resources::{DebugElements, Selected},
     World,
   },
   event::GameEventQueue,
   input::user_inputs::{FrameInputs, Keybinds},
-  math::{MouseRay, Transforms},
+  math::{Dimensions, MouseRay, Transforms},
   time::ServerTime,
   view::window::{create_gl, create_window},
 };
@@ -15,10 +15,17 @@ use mlua::Lua;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
+// Refactor:
+// -Honestly, this needs to be renamed and heavily refactored.
+// -Need a settings file.
+//  Dimension settings should load in from settings file.
+//  Keybinds should load in from settings file.
+// -Screen dimensions etc should not have to be in register resources, if anything they should be arguments
+
 pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
-  let server_time = ServerTime::new();
-  //make a settings file and load in from there
-  let screen_dimensions = ScreenDimensions::new(1280, 720);
+  let screen_dimensions = Dimensions::new(1280, 720);
+  let (glfw, mut window, events) = create_window(&screen_dimensions);
+  let gl = create_gl(&mut window);
 
   // let grid = load_grid("5v5", "json").unwrap();
   let grid = Grid::new(100, 100, 1.0).unwrap();
@@ -27,12 +34,6 @@ pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, Wi
   lua.globals().set("grid", grid).unwrap();
 
   let keybinds = Keybinds::default();
-  let (glfw, mut window, events) = create_window(&screen_dimensions);
-  let gl = create_gl(&mut window);
-
-  //Create the shader programs
-  let programs = ShaderPrograms::new(&gl).unwrap();
-  let dbg_program = DbgShaderProgram::new(&gl);
 
   world
     .add_resource(screen_dimensions)
@@ -40,8 +41,7 @@ pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, Wi
     .add_resource(Selected::NONE)
     .add_resource(MouseRay::default())
     .add_resource(FrameInputs::new())
-    //add physics acceleration structure resource
-    .add_resource(server_time)
+    .add_resource(ServerTime::new())
     .add_resource(DebugElements::new(false, false))
     .add_resource(GameEventQueue::new())
     //Initialize Lua
@@ -49,10 +49,7 @@ pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, Wi
     //Add Keybinds
     .add_resource(keybinds)
     //Add Gl
-    .add_resource(gl)
-    //add the shader programs as a resource
-    .add_resource(programs)
-    .add_resource(dbg_program);
+    .add_resource(gl);
 
   (glfw, window, events)
 }

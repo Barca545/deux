@@ -2,9 +2,9 @@ use glfw::{get_key_name, Key, MouseButton, Window};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  ecs::{world_resources::ScreenDimensions, World},
+  ecs::World,
   errors::InputErrors,
-  math::{MouseRay, Transforms},
+  math::{Dimensions, MouseRay, Transforms},
 };
 use eyre::Result;
 use std::{collections::HashMap, fmt::Debug};
@@ -33,7 +33,7 @@ impl Keybinds {
     if let Some(keystring) = key.get_name() {
       if let Some(keybind) = self.0.get(&keystring) {
         let (x, y) = window.get_cursor_pos();
-        let screen_dimensions = world.get_resource::<ScreenDimensions>().unwrap();
+        let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
         let transforms = world.get_resource::<Transforms>().unwrap();
         let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
         Ok(Input { mouse, keybind: *keybind })
@@ -51,7 +51,7 @@ impl Keybinds {
     if let Some(keybind) = self.0.get(&buttonstring) {
       let (x, y) = window.get_cursor_pos();
       dbg!((x, y));
-      let screen_dimensions = world.get_resource::<ScreenDimensions>().unwrap();
+      let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
       let transforms = world.get_resource::<Transforms>().unwrap();
       let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
       Ok(Input { mouse, keybind: *keybind })
@@ -133,9 +133,9 @@ impl FrameInputs {
 #[cfg(test)]
 mod test {
   use crate::{
-    ecs::{world_resources::ScreenDimensions, World},
+    ecs::World,
     input::user_inputs::Keybind,
-    math::Transforms,
+    math::{Dimensions, Transforms},
   };
   use eyre::Result;
   use glfw::Key;
@@ -146,7 +146,7 @@ mod test {
   fn get_user_input_from_keybinds() -> Result<()> {
     let keybinds = Keybinds::default();
     let mut world = World::new();
-    let screen_dimensions = ScreenDimensions::new(1280, 720);
+    let screen_dimensions = Dimensions::new(1280, 720);
     let transforms = Transforms::new(&screen_dimensions.aspect);
     world.add_resource(screen_dimensions).add_resource(transforms);
     let q = keybinds.get_input(Key::Q, 16)?;

@@ -1,20 +1,19 @@
-use std::ptr;
-
 use gl::{
   types::{GLenum, GLint, GLuint},
-  Gl, NEAREST, RGB_INTEGER, TEXTURE_2D, TEXTURE_MAG_FILTER, TEXTURE_MIN_FILTER
+  Gl, NEAREST, RGB_INTEGER, TEXTURE_2D, TEXTURE_MAG_FILTER, TEXTURE_MIN_FILTER,
 };
+use std::ptr;
 
-use crate::ecs::world_resources::ScreenDimensions;
+use crate::math::Dimensions;
 
 //might be a better name for this
 pub struct TextureAttachment {
-  gl:Gl,
-  texture_obj:GLuint
+  gl: Gl,
+  texture_obj: GLuint,
 }
 
 impl TextureAttachment {
-  pub fn new(gl:&Gl) -> Self {
+  pub fn new(gl: &Gl) -> Self {
     let gl = gl.clone();
     let mut texture_obj = 0;
 
@@ -29,7 +28,7 @@ impl TextureAttachment {
     self.texture_obj
   }
 
-  pub fn generate_texture_attachment(&self, screen_dimensions:&ScreenDimensions, internal_format:GLenum, format:GLenum, texture_type:GLenum) {
+  pub fn generate_texture_attachment(&self, screen_dimensions: &Dimensions, internal_format: GLenum, format: GLenum, texture_type: GLenum) {
     unsafe {
       self.gl.BindTexture(TEXTURE_2D, self.texture_obj);
       self.gl.TexImage2D(
@@ -41,7 +40,7 @@ impl TextureAttachment {
         0,
         format,
         texture_type,
-        ptr::null()
+        ptr::null(),
       );
 
       if format == RGB_INTEGER {

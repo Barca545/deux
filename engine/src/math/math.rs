@@ -11,8 +11,8 @@ pub type Vec2 = TVec2<f32>;
 pub type Vec3 = TVec3<f32>;
 pub type Vec4 = TVec4<f32>;
 pub type Mat4 = TMat4<f32>;
-pub type Point3 = Point<f32, 3>;
-pub type Point2 = Point<f32, 2>;
+pub type Point3 = Vec3;
+pub type Point2 = Vec2;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rect {
@@ -132,7 +132,7 @@ pub fn max<N: PartialOrd>(a: N, b: N) -> N {
 }
 
 ///Maps an `(x,y)` pixel value to a value in normalized device coordinates, range[-1,1].
-pub fn pixel_to_ndc(x: f32, y: f32, width: i32, height: i32) -> (f32, f32) {
+pub fn to_ndc(x: f32, y: f32, width: i32, height: i32) -> (f32, f32) {
   let x = 2.0 * x as f32 / width as f32 - 1.0;
   let y = 1.0 - (2.0 * y as f32) / height as f32;
   (x, y)

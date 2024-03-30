@@ -1,11 +1,8 @@
 use glm::{inverse, vec4};
 
-use crate::{
-  ecs::world_resources::ScreenDimensions,
-  math::{
-    math::{Mat4, Vec4},
-    MouseRay, Transforms,
-  },
+use crate::math::{
+  math::{Mat4, Vec4},
+  Dimensions, MouseRay, Transforms,
 };
 
 // Refactor:
@@ -21,7 +18,7 @@ impl MousePicker {
   }
 
   ///Updates the `MousePicker`'s stored `MouseRay`.
-  pub fn update_ray(&mut self, x: f64, y: f64, screen_dimensions: &ScreenDimensions, transforms: &Transforms) {
+  pub fn update_ray(&mut self, x: f64, y: f64, screen_dimensions: &Dimensions, transforms: &Transforms) {
     let inverse_projection: Mat4 = transforms.projection_transform.inverse();
     let inverse_view: Mat4 = inverse(&transforms.view_transform);
 

@@ -1,6 +1,6 @@
 use crate::{
   math::Rect,
-  view::{render_gl::Vertex, Mesh},
+  view::{render_gl::Vertex, Material, Mesh, RenderPass, RenderStage, RenderStageName},
 };
 use gl::Gl;
 
@@ -44,6 +44,23 @@ impl<'a> From<WidgetRenderInfo<'a>> for Mesh {
 
     //Create the widget's mesh
     let gl = gl.clone();
-    Mesh::new(&gl, vertices, indices, texture_name)
+
+    //Initatite the Material
+    let pass = RenderPass::new(&gl)
+      .with_vert("UIElementVertexShader")
+      .unwrap()
+      .with_frag("UIElementFragShader")
+      .unwrap()
+      .build()
+      .unwrap();
+
+    let mut stage = RenderStage::new(RenderStageName::UI);
+    stage.add_pass(pass);
+
+    let mut material = Material::new();
+    material.add_sampler(&gl, texture_name).unwrap().add_stage(stage);
+
+    //Create the mesh
+    Mesh::new(&gl, vertices, indices).with_material(material).build().unwrap()
   }
 }

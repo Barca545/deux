@@ -1,4 +1,5 @@
+mod programs;
 mod shader;
 mod shader_program;
 
-pub use self::shader_program::Program;
+pub use self::{programs::Programs, shader::Shader, shader_program::ShaderProgram};

@@ -53,8 +53,8 @@ pub fn load_scripts(name: &str) -> Result<AbilityMap> {
   todo!()
 }
 
-pub fn load_shader(name: &str, extension: &str) -> Result<CString> {
-  let path = var("shader_folder")? + "/" + name + "." + extension;
+pub fn load_shader(path: &str) -> Result<CString> {
+  let path = var("shader_folder")? + "/" + path;
   let shader = load_cstring(&path)?;
   Ok(shader)
 }
@@ -217,7 +217,7 @@ mod test {
     let shader_path = config.get::<String>("shader_path")?;
     set_var("shader_path", shader_path);
 
-    let shader = load_shader("textured", "vert")?;
+    let shader = load_shader("textured.vert")?;
     dbg!(shader);
     Ok(())
   }

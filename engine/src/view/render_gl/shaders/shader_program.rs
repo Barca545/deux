@@ -2,42 +2,48 @@ use super::shader::Shader;
 use crate::{errors::ShaderErrors, filesystem::create_whitespace_cstring, math::math::Mat4};
 use eyre::Result;
 use gl::{
-  types::{GLchar, GLenum, GLint, GLuint},
-  Gl, VERTEX_SHADER,
+  types::{GLchar, GLint, GLuint},
+  Gl, INFO_LOG_LENGTH, LINK_STATUS,
 };
-use std::{ffi::CString, ptr::null_mut};
+use std::{collections::HashMap, ffi::CString, ptr::null_mut};
 
 // Refactor:
-// -Make a program builder
+// -Add actual error handling if the program doesn't have the expected fields.
 
-//For both the Program and the shader, find a way to print the errors
-#[derive(Debug, Clone, Copy)]
-pub struct Program {
+//For both the ShaderProgram and the shader, find a way to print the errors
+#[derive(Debug, Default, Clone)]
+pub struct ShaderProgram {
   pub id: GLuint,
-  pub model_uniform_location: Option<i32>,
-  pub view_uniform_location: Option<i32>,
-  pub projection_uniform_location: Option<i32>,
+  pub uniforms: HashMap<String, GLint>,
 }
 
-impl Program {
-  pub fn new(gl: &Gl, vert_name: &str, shader_2_name: &str, shader_2_kind: GLenum) -> Result<ProgramBuilder, String> {
-    let vert_shader = Shader::new(gl, vert_name, VERTEX_SHADER).unwrap();
-    let shader_2 = Shader::new(gl, shader_2_name, shader_2_kind).unwrap();
+impl ShaderProgram {
+  ///Create a new [`ShaderProgram`].
+  pub fn new(gl: &Gl, shaders: Vec<Shader>) -> Result<ShaderProgramBuilder> {
     let id;
     let mut compile_status: GLint = 1;
 
     unsafe {
+      //Generate the ShaderProgram's id
       id = gl.CreateProgram();
-      gl.AttachShader(id, vert_shader.id);
-      gl.AttachShader(id, shader_2.id);
+
+      //Attach the shaders
+      for shader in &shaders {
+        gl.AttachShader(id, shader.id);
+      }
+
+      //Compile the ShaderProgram
       gl.LinkProgram(id);
-      gl.GetProgramiv(id, gl::LINK_STATUS, &mut compile_status);
+
+      //Check whether the shader program compiled
+      gl.GetProgramiv(id, LINK_STATUS, &mut compile_status);
     }
 
+    //Return an error if the program did not compile
     if compile_status == 0 {
       let mut len: GLint = 0;
       unsafe {
-        gl.GetProgramiv(id, gl::INFO_LOG_LENGTH, &mut len);
+        gl.GetProgramiv(id, INFO_LOG_LENGTH, &mut len);
       }
 
       let error = create_whitespace_cstring(len as usize);
@@ -45,20 +51,21 @@ impl Program {
       unsafe {
         gl.GetProgramInfoLog(id, len, null_mut(), error.as_ptr() as *mut GLchar);
       }
-      return Err(error.to_string_lossy().into_owned());
+      return Err(
+        ShaderErrors::ShaderDidNotCompile {
+          error: error.to_string_lossy().into_owned(),
+        }
+        .into(),
+      );
     }
 
-    unsafe {
-      gl.DeleteShader(vert_shader.id);
-      gl.DeleteShader(shader_2.id);
+    for shader in &shaders {
+      unsafe {
+        gl.DeleteShader(shader.id);
+      }
     }
 
-    Ok(ProgramBuilder {
-      id,
-      model_uniform_location: None,
-      view_uniform_location: None,
-      projection_uniform_location: None,
-    })
+    Ok(ShaderProgramBuilder::new(gl, id))
   }
 
   //not working because use program does not actually use program, this is getting the location
@@ -67,62 +74,83 @@ impl Program {
   }
 
   pub fn set_model_matrix(&self, gl: &Gl, uniform_value: &Mat4) {
-    Self::set_uniform_matrix4fv(gl, self.model_uniform_location.unwrap(), uniform_value);
+    let location = self.uniforms.get("model").unwrap();
+    Self::set_uniform_matrix4fv(gl, *location, uniform_value);
   }
 
   pub fn set_view_matrix(&self, gl: &Gl, uniform_value: &Mat4) {
-    Self::set_uniform_matrix4fv(gl, self.view_uniform_location.unwrap(), uniform_value);
+    let location = self.uniforms.get("view").unwrap();
+    Self::set_uniform_matrix4fv(gl, *location, uniform_value);
   }
 
   pub fn set_projection_matrix(&self, gl: &Gl, uniform_value: &Mat4) {
-    Self::set_uniform_matrix4fv(gl, self.projection_uniform_location.unwrap(), uniform_value);
+    let location = self.uniforms.get("projection").unwrap();
+    Self::set_uniform_matrix4fv(gl, *location, uniform_value);
   }
 
-  fn set_uniform_matrix4fv(gl: &Gl, uniform_location: i32, uniform_value: &Mat4) {
+  pub fn set_uniform_matrix4fv(gl: &Gl, location: i32, uniform_value: &Mat4) {
     unsafe {
-      gl.UniformMatrix4fv(uniform_location, 1, gl::FALSE, uniform_value.as_ptr() as *const f32);
+      gl.UniformMatrix4fv(location, 1, gl::FALSE, uniform_value.as_ptr() as *const f32);
     }
   }
 }
 
-pub struct ProgramBuilder {
-  id: GLuint,
-  model_uniform_location: Option<i32>,
-  view_uniform_location: Option<i32>,
-  projection_uniform_location: Option<i32>,
+impl PartialEq for ShaderProgram {
+  fn eq(&self, other: &Self) -> bool {
+    self.id == other.id
+  }
 }
 
-impl ProgramBuilder {
-  pub fn build(&self) -> Result<Program, String> {
-    Ok(Program {
+pub struct ShaderProgramBuilder<'b> {
+  gl: &'b Gl,
+  id: GLuint,
+  uniforms: HashMap<String, GLint>,
+}
+
+impl<'b> ShaderProgramBuilder<'b> {
+  pub fn new(gl: &'b Gl, id: GLuint) -> Self {
+    let mut builder = Self {
+      gl,
+      id,
+      uniforms: HashMap::new(),
+    };
+
+    //Attempt to register common uniforms
+    builder.with_uniform("model");
+    builder.with_uniform("view");
+    builder.with_uniform("projection");
+    builder
+  }
+
+  ///Build a new [`ShaderProgram`] with the provided parameters.
+  pub fn build(&self) -> Result<ShaderProgram> {
+    Ok(ShaderProgram {
       id: self.id,
-      model_uniform_location: self.model_uniform_location,
-      view_uniform_location: self.view_uniform_location,
-      projection_uniform_location: self.projection_uniform_location,
+      uniforms: self.uniforms.clone(),
     })
   }
-  ///Register a `model` uniform for the [`Program`].
-  pub fn with_model(&mut self, gl: &Gl) -> Result<&mut Self> {
-    self.model_uniform_location = Some(self.get_uniform_location(gl, "model")?);
-    Ok(self)
+
+  ///Register a uniform location with the [`ShaderProgram`].
+  /// If the uniform does not exist, no uniform is added and an error is printed.
+  pub fn with_uniform(&mut self, uniform: &str) -> &mut Self {
+    let uniform_location = self.get_uniform_location(uniform);
+    match uniform_location {
+      Ok(location) => {
+        let uniform_name = uniform.to_owned();
+        self.uniforms.insert(uniform_name, location);
+        self
+      }
+      Err(err) => {
+        print!("{}", err);
+        self
+      }
+    }
   }
 
-  ///Register a `view` uniform for the [`Program`].
-  pub fn with_view(&mut self, gl: &Gl) -> Result<&mut Self> {
-    self.view_uniform_location = Some(self.get_uniform_location(gl, "view")?);
-    Ok(self)
-  }
-
-  ///Register a `projection` uniform for the [`Program`].
-  pub fn with_projection(&mut self, gl: &Gl) -> Result<&mut Self> {
-    self.projection_uniform_location = Some(self.get_uniform_location(gl, "projection")?);
-    Ok(self)
-  }
-
-  fn get_uniform_location(&self, gl: &Gl, name: &str) -> Result<i32> {
+  fn get_uniform_location(&self, name: &str) -> Result<i32> {
     let cname = CString::new(name).expect("expected uniform name to have no nul bytes");
 
-    let location = unsafe { gl.GetUniformLocation(self.id, cname.as_bytes_with_nul().as_ptr() as *const i8) };
+    let location = unsafe { self.gl.GetUniformLocation(self.id, cname.as_bytes_with_nul().as_ptr() as *const i8) };
 
     if location == -1 {
       return Err(ShaderErrors::UniformLocationNotFound.into());

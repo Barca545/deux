@@ -1,8 +1,7 @@
 use crate::{
-  ecs::{
-    world_resources::{DebugElements, ShaderPrograms},
-    World
-  }, time::ServerTime, view::render_gl::render_pass
+  ecs::{query, world_resources::DebugElements, World},
+  time::ServerTime,
+  view::{render_gl::draw_indexed_primative, Mesh, RenderPass, RenderStageName},
 };
 use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, STENCIL_BUFFER_BIT};
 
@@ -12,53 +11,62 @@ use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, S
 // interpolation factor do the interpolation factor * position as a system in
 // beginning of the render loop and pass it down
 
-//I'll need to update the debug functionality
+// Refactor:
+// -I'll need to update the debug functionality
 
-pub fn render(world:&World) {
-  let gl = world.get_resource::<Gl>().unwrap();
-  let interpolation_factor = world.get_resource::<ServerTime>().unwrap().get_interpolation_factor();
-  let programs = world.get_resource::<ShaderPrograms>().unwrap();
-  let debug_elements = world.get_resource::<DebugElements>().unwrap();
+// fn render(world: &World) {
+//   //Get gl and mesh from world
+//   let gl = world.get_resource::<Gl>().unwrap();
 
-  unsafe {
-    gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT)
-  }
+//   unsafe { gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT) }
 
-  //Set uniforms
-  //do I need to do this every render loop or can I do it once?
-  programs.set_highlight_uniforms(world);
-  programs.set_normal_uniforms(world);
+//   //need to set the uniforms somehow but the draw stage function is a bad place
+// }
 
-  unsafe { gl.StencilMask(0x00) };
-  programs.normal.use_program(&gl);
-  render_pass::static_geometry(&world);
+// pub fn render(world: &World) {
+//   let gl = world.get_resource::<Gl>().unwrap();
+//   let interpolation_factor = world.get_resource::<ServerTime>().unwrap().get_interpolation_factor();
+//   let debug_elements = world.get_resource::<DebugElements>().unwrap();
 
-  //First Render Pass
-  unsafe {
-    gl.StencilFunc(ALWAYS, 1, 0xFF);
-    gl.StencilMask(0xFF);
-  }
-  render_pass::skinned_meshes(&world, interpolation_factor);
+//   unsafe { gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT) }
 
-  unsafe {
-    gl.StencilFunc(NOTEQUAL, 1, 0xFF);
-    gl.StencilMask(0x00);
-    gl.Disable(DEPTH_TEST);
-  }
+//   Add some check so it only switches program binds if the material has changed
 
-  if debug_elements.aabb == true {
-    render_pass::debug(&world, interpolation_factor);
-  }
+//   Set uniforms
+//   do I need to do this every render loop or can I do it once?
+//   programs.set_highlight_uniforms(world);
+//   programs.set_normal_uniforms(world);
 
-  programs.highlight.use_program(&gl);
-  render_pass::special_outlines(&world, interpolation_factor);
+//   unsafe { gl.StencilMask(0x00) };
+//   programs.normal.use_program(&gl);
+//   render_pass::static_geometry(&world);
 
-  unsafe {
-    gl.StencilMask(0xFF);
-    gl.StencilFunc(ALWAYS, 1, 0xFF);
-    gl.Enable(DEPTH_TEST);
-  }
-}
+//   //First Render Pass
+//   unsafe {
+//     gl.StencilFunc(ALWAYS, 1, 0xFF);
+//     gl.StencilMask(0xFF);
+//   }
+//   render_pass::skinned_meshes(&world, interpolation_factor);
+
+//   unsafe {
+//     gl.StencilFunc(NOTEQUAL, 1, 0xFF);
+//     gl.StencilMask(0x00);
+//     gl.Disable(DEPTH_TEST);
+//   }
+
+//   if debug_elements.aabb == true {
+//     render_pass::debug(&world, interpolation_factor);
+//   }
+
+//   programs.highlight.use_program(&gl);
+//   render_pass::special_outlines(&world, interpolation_factor);
+
+//   unsafe {
+//     gl.StencilMask(0xFF);
+//     gl.StencilFunc(ALWAYS, 1, 0xFF);
+//     gl.Enable(DEPTH_TEST);
+//   }
+// }
 
 // pub fn render_fog(){}
 // pub fn render_shadows(){}

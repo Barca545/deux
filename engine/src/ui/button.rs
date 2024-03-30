@@ -2,7 +2,7 @@ use super::{render_info::WidgetRenderInfo, ui::UI, ui_config::UIConfigInfo};
 use crate::{
   errors::UIErrors,
   math::Rect,
-  view::{render_gl::draw_elements, Mesh},
+  view::{render_gl::draw_indexed_primative, Mesh},
 };
 use eyre::Result;
 use gl::Gl;
@@ -24,7 +24,7 @@ impl Button {
 
   pub fn draw(&self, gl: &Gl) {
     let mesh = &self.mesh;
-    draw_elements(gl, mesh)
+    draw_indexed_primative(gl, mesh)
   }
 }
 

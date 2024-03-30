@@ -116,27 +116,27 @@
 //     //Can I clear the buffers before binding or do they need to be cleared after
 //     // binding? Binding currently happens in their own functions.
 //     if server_time.should_render() {
-//       //have some flag so it only runs if it was resized
-//       let (width, height) = window.get_size();
-//       {
-//         let mut dimensions = world.get_resource_mut::<ScreenDimensions>().unwrap();
-//         *dimensions = ScreenDimensions::new(width, height);
-//       }
+// //have some flag so it only runs if it was resized
+// let (width, height) = window.get_size();
+// {
+//   let mut dimensions = world.get_resource_mut::<ScreenDimensions>().unwrap();
+//   *dimensions = ScreenDimensions::new(width, height);
+// }
 
-//       {
-//         let dimensions = world.get_resource::<ScreenDimensions>().unwrap().clone();
+// {
+//   let dimensions = world.get_resource::<ScreenDimensions>().unwrap().clone();
 
-//         let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
-//         *transforms = Transforms::new(&dimensions.aspect);
+//   let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
+//   *transforms = Transforms::new(&dimensions.aspect);
 
-//         let gl = world.get_resource::<Gl>().unwrap();
-//         unsafe { gl.Viewport(0, 0, width, height) }
-//       }
+//   let gl = world.get_resource::<Gl>().unwrap();
+//   unsafe { gl.Viewport(0, 0, width, height) }
+// }
 
-//       //can maybe make the render function handle the swapbuffers
-//       render(&world);
+// //can maybe make the render function handle the swapbuffers
+// render(&world);
 
-//       window.swap_buffers();
+// window.swap_buffers();
 //       let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
 //       server_time.decrement_seconds_since_render()
 //     }
@@ -147,50 +147,80 @@
 use engine::{
   config::asset_config,
   ecs::{systems::register_resources, World},
-  math::Mat4,
-  ui::{Button, Dimensions, HorizontalAnchor, UIConfigInfo, VerticalAnchor, UI},
-  view::render_gl::{Program, Programs},
+  filesystem::load_object,
+  math::{Dimensions, Mat4},
+  ui::{Button, HorizontalAlign, UIConfigInfo, VerticalAlign, UI},
+  view::{
+    render_gl::{Programs, ShaderProgram},
+    Material, Mesh, RenderPass, RenderStage, RenderStageName, Sampler,
+  },
 };
-use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, FRAGMENT_SHADER, STENCIL_BUFFER_BIT};
+use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, FRAGMENT_SHADER, STENCIL_BUFFER_BIT};
 use glfw::{Action, Context, Key};
 use nalgebra_glm::{identity, translate};
+
+// Refactor:
+// -Not sure I need the programs struct now that I have migrated to materials
 
 fn main() {
   asset_config();
   let mut world = World::new();
   let (mut glfw, mut window, events) = register_resources(&mut world);
 
-  //Set up the programs
-  let mut programs = Programs::new();
-
-  //Create and register the widget program
   let gl = world.get_resource::<Gl>().unwrap();
-  let program = Program::new(&gl, "widget", "textured", FRAGMENT_SHADER)
+
+  let pass = RenderPass::new(&gl)
+    .with_vert("CharacterVertexShader")
     .unwrap()
-    .with_model(&gl)
+    .with_frag("CharacterFragShader")
     .unwrap()
+    .enable(&[DEPTH_TEST])
     .build()
     .unwrap();
-  programs.register_program(3, program);
 
-  //Create a UI
-  let ctx = window.render_context();
-  let sceen_dimensions = Dimensions::new(1280, 720);
-  let config = UIConfigInfo::new().parent_dimensions(sceen_dimensions).build().unwrap();
-  let ui = UI::new(config, ctx);
+  let mut stage = RenderStage::new(RenderStageName::SkinnedMesh);
+  stage.add_pass(pass);
 
-  // //Create a button
+  let sampler = Sampler::new(&gl, "warrior").unwrap();
+
+  let mut material = Material::new();
+  material.add_stage(stage);
+
+  let (vertices, indices) = load_object("warrior").unwrap();
+
+  let mut mesh = Mesh::new(&gl, vertices, indices).with_material(material).build().unwrap();
+
+  //Set up the programs
+  // let mut programs = Programs::new();
+
+  // //Create and register the widget program
   // let gl = world.get_resource::<Gl>().unwrap();
-  // let btn_config = UIConfigInfo::new(sceen_dimensions)
-  //   .width(20.0)
-  //   .height(10.0)
-  //   .horizontal_anchor(HorizontalAnchor::Left)
-  //   .vertical_anchor(VerticalAnchor::Center)
-  //   .build();
-  // let button = Button::new("Button Name", btn_config).parent(&ui).mesh_info(&gl, "ground").build().unwrap();
+  // let program = ShaderProgram::new(&gl, "widget", "textured", FRAGMENT_SHADER)
+  //   .unwrap()
+  //   .with_model(&gl)
+  //   .unwrap()
+  //   .build()
+  //   .unwrap();
+  // programs.register_program(3, program);
 
-  // while !window.should_close() {
-  //   glfw.poll_events();
+  // //Create a UI
+  // let ctx = window.render_context();
+  // let sceen_dimensions = Dimensions::new(1280, 720);
+  // let config = UIConfigInfo::new().parent_dimensions(sceen_dimensions).build().unwrap();
+  // let ui = UI::new(config, ctx);
+
+  // // //Create a button
+  // // let gl = world.get_resource::<Gl>().unwrap();
+  // // let btn_config = UIConfigInfo::new(sceen_dimensions)
+  // //   .width(20.0)
+  // //   .height(10.0)
+  // //   .horizontal_align(HorizontalAlign::Left)
+  // //   .vertical_align(VerticalAlign::Center)
+  // //   .build();
+  // // let button = Button::new("Button Name", btn_config).parent(&ui).mesh_info(&gl, "ground").build().unwrap();
+
+  // // while !window.should_close() {
+  // //   glfw.poll_events();
   //   for (_, event) in glfw::flush_messages(&events) {
   //     match event {
   //       glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
@@ -202,7 +232,7 @@ fn main() {
   //   }
 
   //   //Render
-  //   programs.use_program(3, &world);
+  // programs.use_program(3, &world);
   //   let btn_position = button.config.ndc_position();
 
   //   //Set the model transform's value

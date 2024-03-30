@@ -1,15 +1,13 @@
-use std::sync::mpsc::Receiver;
-
+use crate::math::Dimensions;
 use gl::{Gl, DEPTH_TEST, KEEP, LESS, NOTEQUAL, REPLACE, STENCIL_TEST};
 use glfw::{
   fail_on_errors, Context, Glfw, OpenGlProfileHint, Window, WindowEvent,
   WindowHint::{ContextVersionMajor, ContextVersionMinor, OpenGlProfile},
   WindowMode,
 };
+use std::sync::mpsc::Receiver;
 
-use crate::ecs::world_resources::ScreenDimensions;
-
-pub fn create_window(screen_dimensions: &ScreenDimensions) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
+pub fn create_window(screen_dimensions: &Dimensions) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
   let mut glfw = glfw::init(fail_on_errors!()).unwrap();
   glfw.window_hint(ContextVersionMajor(3));
   glfw.window_hint(ContextVersionMinor(3));
