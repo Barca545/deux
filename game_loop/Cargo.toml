@@ -16,6 +16,10 @@ nalgebra-glm = {workspace=true}
 serde = {workspace=true}
 serde_json = {workspace=true}
 mlua = {workspace=true}
+winit = {workspace=true}
+
+pollster = "0.3"
+
 
 [build-dependencies]
 cmake = "0.1"

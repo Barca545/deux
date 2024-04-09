@@ -8,7 +8,6 @@ use crate::{
   input::user_inputs::{FrameInputs, Keybinds},
   math::{Dimensions, MouseRay, Transforms},
   time::ServerTime,
-  view::window::{create_gl, create_window},
 };
 use glfw::{Glfw, Window, WindowEvent};
 use mlua::Lua;
@@ -22,10 +21,10 @@ use std::sync::mpsc::Receiver;
 //  Keybinds should load in from settings file.
 // -Screen dimensions etc should not have to be in register resources, if anything they should be arguments
 
-pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
+pub fn register_resources(world: &mut World) {
   let screen_dimensions = Dimensions::new(1280, 720);
-  let (glfw, mut window, events) = create_window(&screen_dimensions);
-  let gl = create_gl(&mut window);
+  // let (glfw, mut window, events) = create_window(&screen_dimensions);
+  // let gl = create_gl(&mut window);
 
   // let grid = load_grid("5v5", "json").unwrap();
   let grid = Grid::new(100, 100, 1.0).unwrap();
@@ -47,9 +46,9 @@ pub fn register_resources(world: &mut World) -> (Glfw, Window, Receiver<(f64, Wi
     //Initialize Lua
     .add_resource(lua)
     //Add Keybinds
-    .add_resource(keybinds)
-    //Add Gl
-    .add_resource(gl);
+    .add_resource(keybinds);
+  //Add Gl
+  // .add_resource(gl);
 
-  (glfw, window, events)
+  // (glfw, window, events)
 }

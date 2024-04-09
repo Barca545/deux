@@ -144,6 +144,8 @@
 //   Ok(())
 // }
 
+use std::sync::Arc;
+
 use engine::{
   config::asset_config,
   ecs::{systems::register_resources, World},
@@ -152,43 +154,78 @@ use engine::{
   ui::{Button, HorizontalAlign, UIConfigInfo, VerticalAlign, UI},
   view::{
     render_gl::{Programs, ShaderProgram},
-    Material, Mesh, RenderPass, RenderStage, RenderStageName, Sampler,
+    Material, Mesh, RenderPass, RenderStage, RenderStageName, Renderer, Sampler,
   },
+  windowing::create_window,
 };
 use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, FRAGMENT_SHADER, STENCIL_BUFFER_BIT};
 use glfw::{Action, Context, Key};
 use nalgebra_glm::{identity, translate};
+use winit::{
+  event::{Event, KeyEvent, WindowEvent},
+  event_loop::ControlFlow,
+  keyboard::{KeyCode, PhysicalKey},
+};
 
 // Refactor:
 // -Not sure I need the programs struct now that I have migrated to materials
+pub async fn run() {
+  let (mut window, events) = create_window();
+  let renderer = Renderer::new(Arc::new(window)).await;
+
+  events
+    .run(move |event, target| match event {
+      Event::WindowEvent { event, .. } => match event {
+        WindowEvent::KeyboardInput {
+          event: KeyEvent {
+            physical_key: PhysicalKey::Code(KeyCode::Escape),
+            ..
+          },
+          ..
+        } => target.exit(),
+        WindowEvent::RedrawRequested => {
+          renderer.render().unwrap();
+        }
+        WindowEvent::CloseRequested => target.exit(),
+        _ => {}
+      },
+      Event::AboutToWait => {
+        //AFAICT this is the update loop
+        renderer.window().request_redraw();
+      }
+      _ => {}
+    })
+    .unwrap();
+}
 
 fn main() {
-  asset_config();
-  let mut world = World::new();
-  let (mut glfw, mut window, events) = register_resources(&mut world);
+  pollster::block_on(run());
+  // asset_config();
+  // let mut world = World::new();
+  // let (mut glfw, mut window, events) = register_resources(&mut world);
 
-  let gl = world.get_resource::<Gl>().unwrap();
+  // let gl = world.get_resource::<Gl>().unwrap();
 
-  let pass = RenderPass::new(&gl)
-    .with_vert("CharacterVertexShader")
-    .unwrap()
-    .with_frag("CharacterFragShader")
-    .unwrap()
-    .enable(&[DEPTH_TEST])
-    .build()
-    .unwrap();
+  // let pass = RenderPass::new(&gl)
+  //   .with_vert("CharacterVertexShader")
+  //   .unwrap()
+  //   .with_frag("CharacterFragShader")
+  //   .unwrap()
+  //   .enable(&[DEPTH_TEST])
+  //   .build()
+  //   .unwrap();
 
-  let mut stage = RenderStage::new(RenderStageName::SkinnedMesh);
-  stage.add_pass(pass);
+  // let mut stage = RenderStage::new(RenderStageName::SkinnedMesh);
+  // stage.add_pass(pass);
 
-  let sampler = Sampler::new(&gl, "warrior").unwrap();
+  // let sampler = Sampler::new(&gl, "warrior").unwrap();
 
-  let mut material = Material::new();
-  material.add_stage(stage);
+  // let mut material = Material::new();
+  // material.add_stage(stage);
 
-  let (vertices, indices) = load_object("warrior").unwrap();
+  // let (vertices, indices) = load_object("warrior").unwrap();
 
-  let mut mesh = Mesh::new(&gl, vertices, indices).with_material(material).build().unwrap();
+  // let mut mesh = Mesh::new(&gl, vertices, indices).with_material(material).build().unwrap();
 
   //Set up the programs
   // let mut programs = Programs::new();

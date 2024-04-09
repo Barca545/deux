@@ -1,4 +1,3 @@
-extern crate glfw;
 extern crate nalgebra;
 extern crate nalgebra_glm as glm;
 
@@ -17,3 +16,4 @@ pub mod time;
 pub mod ui;
 pub mod utility;
 pub mod view;
+pub mod windowing;
