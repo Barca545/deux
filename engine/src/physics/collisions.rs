@@ -106,7 +106,7 @@ mod test {
     let y = 720.0 / 2.0;
 
     let screen_dimensions = Dimensions::new(720, 1280);
-    let transforms = Transforms::new(&screen_dimensions.aspect);
+    let transforms = Transforms::new(screen_dimensions.aspect);
 
     let ray = MouseRay::new(x, y, &screen_dimensions, &transforms).0;
 

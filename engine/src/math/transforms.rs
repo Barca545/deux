@@ -1,8 +1,5 @@
-use glm::{identity, look_at, scale, translate};
-use nalgebra::Perspective3;
-
-use super::math::{radians, Mat4, Vec3};
-use crate::view::camera::Camera;
+use super::math::{Mat4, Perspective, Vec3};
+use glm::{identity, scale, translate};
 
 //  Refactor:
 // -Model transform should be a component?
@@ -10,37 +7,38 @@ use crate::view::camera::Camera;
 // -Restructure the transforms and the camera struct to match the GITGD ECS repositoy from his C++ OpenGL series.
 // -Move the glm functions into the math mod
 
+const Z_NEAR: f32 = 0.1;
+const Z_FAR: f32 = 100.0;
+const DEFAULT_FOV: f32 = 45.0;
+
+#[rustfmt::skip]
+const OPENGL_TO_WGPU_MATRIX:Mat4 = Mat4::new(   
+  1.0, 0.0, 0.0, 0.0,
+  0.0, 1.0, 0.0, 0.0,
+  0.0, 0.0, 0.5, 0.5,
+  0.0, 0.0, 0.0, 1.0,
+);
+
 pub struct Transforms {
-  pub projection_transform: Perspective3<f32>,
-  pub view_transform: Mat4,
-  //fov and camera will be used when I make a camera system
-  // fov:f32,
+  aspect: f32,
+  fov: f32,
+  znear: f32,
+  zfar: f32,
   // camera:Camera
 }
 
 impl Transforms {
-  pub fn new(aspect: &f32) -> Self {
-    let fov = radians(45.0);
-    let camera = Camera::new();
-    let view_transform: Mat4 = Self::calculate_view_transform(&camera);
-    let projection_transform = Self::calculate_projection_transform(fov, aspect);
-
+  pub fn new(aspect: f32) -> Self {
     Transforms {
-      projection_transform,
-      view_transform,
-      // fov,
-      // camera
+      aspect,
+      fov: DEFAULT_FOV,
+      znear: Z_NEAR,
+      zfar: Z_FAR,
     }
   }
 
-  fn calculate_view_transform(camera: &Camera) -> Mat4 {
-    let view = look_at(&camera.position, &camera.target, &camera.up);
-    view
-  }
-
-  fn calculate_projection_transform(fov: f32, aspect: &f32) -> Perspective3<f32> {
-    let projection = Perspective3::new(*aspect, fov, 0.1, 100.0);
-    projection
+  pub fn proj_mat(&self) -> Mat4 {
+    OPENGL_TO_WGPU_MATRIX * Perspective::new(self.aspect, self.fov, self.znear, self.zfar).as_matrix()
   }
 }
 

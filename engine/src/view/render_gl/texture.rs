@@ -1,68 +1,83 @@
-use crate::filesystem::load_texture_image;
-
-use eyre::Result;
-use gl::{
-  types::{GLint, GLsizei, GLvoid},
-  Gl, LINEAR, LINEAR_MIPMAP_LINEAR, REPEAT, RGBA, RGBA8, TEXTURE_2D, TEXTURE_MAG_FILTER, TEXTURE_MIN_FILTER, TEXTURE_WRAP_S, TEXTURE_WRAP_T,
-  UNSIGNED_BYTE
+use image::{DynamicImage, GenericImageView};
+use wgpu::{
+  AddressMode, Device, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, Origin3d, Queue, Sampler, SamplerDescriptor, Texture as WgpuTexture,
+  TextureAspect, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-#[derive(Default, Debug, Clone, Copy)]
+// Refactor:
+// -Bind group layout might be generic and should maybe get passed into the creation instead of generated inside
+// -Modify texture loading
+
 pub struct Texture {
-  pub id:u32
+  pub label: &'static str,
+  pub texture: WgpuTexture,
+  pub view: TextureView,
+  pub sampler: Sampler,
 }
 
 impl Texture {
-  //eventually will need to change when I settle on a texture filetype
-  pub fn new(gl:&Gl, name:&str) -> Result<Self> {
-    let image = load_texture_image(&name, "jpg")?;
-    let image_pixels = image.to_rgba8().into_raw();
+  pub fn new(device: &Device, queue: &Queue, label: &'static str) -> Self {
+    //Load the image
+    let bytes = include_bytes!("C:\\Users\\jamar\\Documents\\Hobbies\\Coding\\deux\\assets\\textures\\ground.jpg");
+    let img = image::load_from_memory(bytes).unwrap();
 
-    let mut id = 0;
+    Self::from_image(device, queue, img, label)
+  }
 
-    unsafe {
-      //make the texture
-      gl.GenTextures(1, &mut id);
-      gl.BindTexture(TEXTURE_2D, id);
+  fn from_image(device: &Device, queue: &Queue, img: DynamicImage, label: &'static str) -> Self {
+    // Create rgba8 image and dimension info
+    let rgba = img.to_rgba8();
+    let dimensions = img.dimensions();
 
-      //load data
-      gl.TexImage2D(
-        TEXTURE_2D,
-        0,
-        RGBA8 as GLint,
-        image.width() as GLsizei,
-        image.height() as GLsizei,
-        0,
-        RGBA,
-        UNSIGNED_BYTE,
-        &image_pixels[0] as *const u8 as *const GLvoid
-      );
-
-      //create mipmaps
-      gl.GenerateMipmap(TEXTURE_2D);
-
-      //Configure sampler
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_S, REPEAT as GLint);
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_WRAP_T, REPEAT as GLint);
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR_MIPMAP_LINEAR as GLint);
-      gl.TexParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, LINEAR as GLint);
+    let size = Extent3d {
+      width: dimensions.0,
+      height: dimensions.1,
+      depth_or_array_layers: 1,
     };
 
-    Ok(Texture { id })
-  }
+    let texture = device.create_texture(&TextureDescriptor {
+      label: Some("diffuse texture"),
+      size,
+      mip_level_count: 1,
+      sample_count: 1,
+      dimension: TextureDimension::D2,
+      format: TextureFormat::Rgba8UnormSrgb,
+      // TEXTURE_BINDING enables the texture for shaders
+      // COPY_DST enables copying data to the texture
+      usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+      view_formats: &[],
+    });
 
-  //I think the reason I can only use 1 texture is because thre
-  pub fn bind(&self, gl:&Gl) {
-    unsafe { gl.BindTexture(TEXTURE_2D, self.id) }
-  }
+    //Copy the image data into the texture
+    queue.write_texture(
+      // Tells wgpu where to copy the texture
+      ImageCopyTexture {
+        texture: &texture,
+        mip_level: 0,
+        origin: Origin3d::ZERO,
+        aspect: TextureAspect::All,
+      },
+      &rgba,
+      ImageDataLayout {
+        offset: 0,
+        bytes_per_row: Some(4 * dimensions.0),
+        rows_per_image: Some(dimensions.1),
+      },
+      size,
+    );
 
-  pub fn unbind(&self, gl:&Gl) {
-    unsafe { gl.BindTexture(TEXTURE_2D, 0) }
+    //Create the texture view and sampler
+    let view = texture.create_view(&TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&SamplerDescriptor {
+      address_mode_u: AddressMode::ClampToEdge,
+      address_mode_v: AddressMode::ClampToEdge,
+      address_mode_w: AddressMode::ClampToEdge,
+      mag_filter: FilterMode::Linear,
+      min_filter: FilterMode::Nearest,
+      mipmap_filter: FilterMode::Nearest,
+      ..Default::default()
+    });
+
+    Texture { label, texture, view, sampler }
   }
 }
-
-// impl Drop for Texture{
-//   fn drop(&mut self){
-//     unsafe{self.gl.DeleteTextures(1,&mut self.id)}
-//   }
-// }

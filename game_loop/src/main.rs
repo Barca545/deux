@@ -144,38 +144,23 @@
 //   Ok(())
 // }
 
+use engine::{view::Renderer, windowing::create_window};
 use std::sync::Arc;
-
-use engine::{
-  config::asset_config,
-  ecs::{systems::register_resources, World},
-  filesystem::load_object,
-  math::{Dimensions, Mat4},
-  ui::{Button, HorizontalAlign, UIConfigInfo, VerticalAlign, UI},
-  view::{
-    render_gl::{Programs, ShaderProgram},
-    Material, Mesh, RenderPass, RenderStage, RenderStageName, Renderer, Sampler,
-  },
-  windowing::create_window,
-};
-use gl::{Gl, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, FRAGMENT_SHADER, STENCIL_BUFFER_BIT};
-use glfw::{Action, Context, Key};
-use nalgebra_glm::{identity, translate};
 use winit::{
   event::{Event, KeyEvent, WindowEvent},
-  event_loop::ControlFlow,
   keyboard::{KeyCode, PhysicalKey},
 };
 
 // Refactor:
 // -Not sure I need the programs struct now that I have migrated to materials
+// #[rustfmt::skip]
 pub async fn run() {
   let (mut window, events) = create_window();
-  let renderer = Renderer::new(Arc::new(window)).await;
+  let mut renderer = Renderer::new(Arc::new(window)).await;
 
   events
     .run(move |event, target| match event {
-      Event::WindowEvent { event, .. } => match event {
+      Event::WindowEvent { event, window_id, .. } => match event {
         WindowEvent::KeyboardInput {
           event: KeyEvent {
             physical_key: PhysicalKey::Code(KeyCode::Escape),
@@ -184,7 +169,10 @@ pub async fn run() {
           ..
         } => target.exit(),
         WindowEvent::RedrawRequested => {
-          renderer.render().unwrap();
+          if window_id == renderer.window().id() {
+            renderer.update();
+            renderer.render().unwrap();
+          }
         }
         WindowEvent::CloseRequested => target.exit(),
         _ => {}

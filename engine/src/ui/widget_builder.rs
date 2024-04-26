@@ -46,21 +46,21 @@ impl<'b> WidgetBuilder<'b> {
   //actually if I register it with the parent in the build method...
   pub fn build(&mut self) -> Result<()> {
     let config = self.config.parent(self.parent).build()?;
+    todo!()
+    // match self.widget_type {
+    //   WidgetType::DisplayBox => {
+    //     //Create the fields of Display
+    //     let rect = &config.ndc_rect(self.screen_dimensions.unwrap());
+    //     let info = WidgetRenderInfo::new(self.gl.unwrap(), self.texture_name.unwrap(), rect);
+    //     let mesh = Mesh::from(info);
+    //     let children = Vec::new();
 
-    match self.widget_type {
-      WidgetType::DisplayBox => {
-        //Create the fields of Display
-        let rect = &config.ndc_rect(self.screen_dimensions.unwrap());
-        let info = WidgetRenderInfo::new(self.gl.unwrap(), self.texture_name.unwrap(), rect);
-        let mesh = Mesh::from(info);
-        let children = Vec::new();
-
-        //Register display with its parent
-        let display = DisplayBox { config, children, mesh };
-        self.parent.register(Box::new(display))
-      }
-    }
-    Ok(())
+    //     //Register display with its parent
+    //     let display = DisplayBox { config, children, mesh };
+    //     self.parent.register(Box::new(display))
+    //   }
+    // }
+    // Ok(())
   }
 
   pub fn horizontal_align(&mut self, align: HorizontalAlign) -> &mut Self {

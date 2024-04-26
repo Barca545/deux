@@ -1,5 +1,7 @@
 use glm::{self, inverse, vec3, vec4};
 
+use crate::view::camera::Camera;
+
 use super::math::{Mat4, Vec3, Vec4};
 use super::{Dimensions, Transforms};
 
@@ -72,9 +74,9 @@ impl RayCast {
 pub struct MouseRay(pub RayCast);
 
 impl MouseRay {
-  pub fn new(x: f64, y: f64, screen_dimensions: &Dimensions, transforms: &Transforms) -> Self {
-    let inverse_projection: Mat4 = transforms.projection_transform.inverse();
-    let inverse_view: Mat4 = inverse(&transforms.view_transform);
+  pub fn new(x: f64, y: f64, screen_dimensions: &Dimensions, transforms: &Transforms, camera: &Camera) -> Self {
+    let inverse_projection: Mat4 = transforms.proj_mat().try_inverse().unwrap();
+    let inverse_view: Mat4 = inverse(&camera.view_mat());
 
     let ndc_x = 2.0 * x as f32 / screen_dimensions.width as f32 - 1.0; //range [-1,1]
     let ndc_y = 1.0 - (2.0 * y as f32) / screen_dimensions.height as f32; //range [-1,1]
@@ -111,7 +113,10 @@ impl MouseRay {
 #[cfg(test)]
 mod test {
   use super::MouseRay;
-  use crate::math::{Dimensions, Transforms};
+  use crate::{
+    math::{Dimensions, Transforms},
+    view::camera::Camera,
+  };
   use glm::{vec3, Vec3};
   #[test]
   fn ray_plane_intersection() {
@@ -135,9 +140,11 @@ mod test {
     let y = 720.0 / 2.0;
 
     let screen_dimensions = Dimensions::new(720, 1280);
-    let transforms = Transforms::new(&screen_dimensions.aspect);
+    let transforms = Transforms::new(screen_dimensions.aspect);
 
-    let mut mouse_ray = MouseRay::new(x, y, &screen_dimensions, &transforms).0;
+    let camera = Camera::default();
+
+    let mut mouse_ray = MouseRay::new(x, y, &screen_dimensions, &transforms, &camera).0;
     mouse_ray.direction = vec3(0.0, -1.0, 0.0);
 
     dbg!(mouse_ray.origin);

@@ -1,7 +1,7 @@
 use super::gl_data::F32Tuple3;
-use cgmath::{Matrix4, Vector3, Vector4};
-use glm::{TMat4, TVec2, TVec3, TVec4};
-use nalgebra::Point;
+use cgmath::Vector3;
+use glm::{look_at as glm_look_at, TMat4, TVec2, TVec3, TVec4};
+use nalgebra::Perspective3;
 use std::{cmp::PartialOrd, f32::consts::PI};
 
 //When multiplying matrices the right-most matrix is first multiplied with the
@@ -13,6 +13,7 @@ pub type Vec4 = TVec4<f32>;
 pub type Mat4 = TMat4<f32>;
 pub type Point3 = Vec3;
 pub type Point2 = Vec2;
+pub type Perspective = Perspective3<f32>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rect {
@@ -88,34 +89,50 @@ pub fn normalize(vec: Vector3<f32>) -> Vector3<f32> {
   Vector3 { x, y, z }
 }
 
-pub fn look_at(right: Vector3<f32>, up: Vector3<f32>, direction: Vector3<f32>, position: Vector3<f32>) -> Matrix4<f32> {
-  Matrix4 {
-    x: Vector4 {
-      x: right.x,
-      y: right.y,
-      z: right.z,
-      w: position.x,
-    },
-    y: Vector4 {
-      x: up.x,
-      y: up.y,
-      z: up.z,
-      w: position.y,
-    },
-    z: Vector4 {
-      x: direction.x,
-      y: direction.y,
-      z: direction.z,
-      w: position.z,
-    },
-    w: Vector4 {
-      x: 0.0,
-      y: 0.0,
-      z: 0.0,
-      w: 1.0,
-    },
-  }
+/// Build a look at view matrix based on the right handedness.
+///
+/// # Parameters:
+///
+/// * `eye` − Position of the camera.
+/// * `center` − Position where the camera is looking at.
+/// * `u` − Normalized up vector, how the camera is oriented. Typically `(0, 1, 0)`.
+///
+/// # See also:
+///
+/// * [`look_at_lh`](fn.look_at_lh.html)
+/// * [`look_at_rh`](fn.look_at_rh.html)
+pub fn look_at(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
+  glm_look_at(&eye, &center, &up)
 }
+
+// pub fn look_at(right: Vector3<f32>, up: Vector3<f32>, direction: Vector3<f32>, position: Vector3<f32>) -> Matrix4<f32> {
+//   Matrix4 {
+//     x: Vector4 {
+//       x: right.x,
+//       y: right.y,
+//       z: right.z,
+//       w: position.x,
+//     },
+//     y: Vector4 {
+//       x: up.x,
+//       y: up.y,
+//       z: up.z,
+//       w: position.y,
+//     },
+//     z: Vector4 {
+//       x: direction.x,
+//       y: direction.y,
+//       z: direction.z,
+//       w: position.z,
+//     },
+//     w: Vector4 {
+//       x: 0.0,
+//       y: 0.0,
+//       z: 0.0,
+//       w: 1.0,
+//     },
+//   }
+// }
 
 pub fn radians(degrees: f32) -> f32 {
   degrees * PI / 180.0

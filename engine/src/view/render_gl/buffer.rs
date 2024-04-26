@@ -1,144 +1,52 @@
-use gl;
-use gl::{
-  types::{GLenum, GLsizeiptr, GLuint, GLvoid},
-  Gl, ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER,
-};
-use std::{marker::PhantomData, mem::size_of};
-
-//const generics to rework this?
-//https://blog.rust-lang.org/2021/02/26/const-generics-mvp-beta.html
+use super::Vertex;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::{Buffer, BufferSlice, BufferUsages, Device};
 
 // Refactor:
-// -Add back the gl struct, I think I need the drop and since Gl is just an Rc it's not expensive
-//  Only issue is Gl can't implement Copy because Rcs are not copy.
-// *maybe* I can just use a pointer in the Gl struct instead of an Rc since I never mut gl?
+// -Revisit the labels
 
-pub trait BufferType {
-  const BUFFER_TYPE: GLuint;
+pub struct VertexBuffer {
+  buffer: Buffer,
+  pub len: u32,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Array;
-impl BufferType for Array {
-  const BUFFER_TYPE: GLuint = ARRAY_BUFFER;
-}
-#[derive(Debug, Clone, Copy)]
-pub struct ElementArray;
-impl BufferType for ElementArray {
-  const BUFFER_TYPE: GLuint = ELEMENT_ARRAY_BUFFER;
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Buffer<B> {
-  // gl:Gl,
-  pub buffer_obj: GLuint,
-  _marker: PhantomData<B>,
-}
-
-impl<B> Buffer<B>
-where
-  B: BufferType,
-{
-  pub fn new(gl: &Gl) -> Buffer<B> {
-    let mut buffer_obj: GLuint = 0;
-    unsafe { gl.GenBuffers(1, &mut buffer_obj) }
-
-    Buffer {
-      // gl:gl.clone(),
-      buffer_obj, //can be a vbo or ebo
-      _marker: PhantomData,
+impl VertexBuffer {
+  pub fn new(device: &Device, vertices: Vec<impl Vertex>) -> Self {
+    let buffer = device.create_buffer_init(&BufferInitDescriptor {
+      label: Some("vertex buffer"),
+      contents: bytemuck::cast_slice(&vertices),
+      usage: BufferUsages::VERTEX,
+    });
+    VertexBuffer {
+      buffer,
+      len: vertices.len() as u32,
     }
   }
 
-  pub fn bind(&self, gl: &Gl) {
-    unsafe { gl.BindBuffer(B::BUFFER_TYPE, self.buffer_obj) }
-    // unsafe {self.gl.BindBuffer(B::BUFFER_TYPE, self.buffer_obj)}
-  }
-
-  pub fn unbind(&self, gl: &Gl) {
-    // unsafe {self.gl.BindBuffer(B::BUFFER_TYPE, 0)}
-    unsafe { gl.BindBuffer(B::BUFFER_TYPE, 0) }
-  }
-
-  pub fn buffer_data<T>(&self, gl: &Gl, data: &[T], usage: GLenum) {
-    unsafe {
-      gl.BufferData(
-        B::BUFFER_TYPE,
-        (data.len() * size_of::<T>()) as GLsizeiptr,
-        data.as_ptr() as *const GLvoid,
-        usage,
-      )
-    }
-
-    // unsafe {
-    //   self.gl.BufferData(
-    //     B::BUFFER_TYPE,
-    //     (data.len() * size_of::<T>()) as GLsizeiptr,
-    //     data.as_ptr() as *const GLvoid,
-    //     usage
-    //   )
-    // }
+  pub fn slice(&self) -> BufferSlice {
+    self.buffer.slice(..)
   }
 }
 
-// impl<B> Drop for Buffer<B> {
-//   fn drop(&mut self) {
-//     unsafe { self.gl.DeleteBuffers(1, &mut self.buffer_obj) }
-//   }
-// }
-
-pub type ArrayBuffer = Buffer<Array>;
-pub type ElementArrayBuffer = Buffer<ElementArray>;
-
-/*
-Yep, because of this additional gl field,
-this wrapper steps a bit outside of zero-cost claim.
-It may also be a problem if we tried to create millions of small array buffers
-(which may also be another, bigger problem).
-Simplest way I can think of to remedy this would be to avoid all the lies
-and make another struct named ArrayBuffers, plural,
-which would always generate multiple buffers,
-but store one reference to Gl for all of them, and match OpenGL API 1:1:
-
-can use a hashmap like with the loader to make this work
-*/
-
-// pub struct ArrayBuffers {
-//     gl: gl::Gl,
-//     I think
-//     vbo: Vec<gl::types::GLuint>,
-// }
-#[derive(Debug, Clone)]
-pub struct VertexArray {
-  // gl:Gl,
-  vao: GLuint,
+pub struct IndexBuffer {
+  buffer: Buffer,
+  pub len: u32,
 }
 
-impl VertexArray {
-  pub fn new(gl: &Gl) -> VertexArray {
-    let mut vao: GLuint = 0;
-    unsafe { gl.GenVertexArrays(1, &mut vao) }
-    VertexArray {
-      // gl:gl.clone(),
-      vao,
+impl IndexBuffer {
+  pub fn new(device: &Device, vertices: Vec<u16>) -> Self {
+    let buffer = device.create_buffer_init(&BufferInitDescriptor {
+      label: Some("index buffer"),
+      contents: bytemuck::cast_slice(&vertices),
+      usage: BufferUsages::INDEX,
+    });
+    IndexBuffer {
+      buffer,
+      len: vertices.len() as u32,
     }
   }
 
-  pub fn bind(&self, gl: &Gl) {
-    unsafe { gl.BindVertexArray(self.vao) }
-    // unsafe {self.gl.BindVertexArray(self.vao)}
-  }
-
-  pub fn unbind(&self, gl: &Gl) {
-    unsafe { gl.BindVertexArray(0) }
-    // unsafe {self.gl.BindVertexArray(0)}
+  pub fn slice(&self) -> BufferSlice {
+    self.buffer.slice(..)
   }
 }
-
-// impl Drop for VertexArray {
-//   fn drop(&mut self) {
-//     unsafe {
-//       self.gl.DeleteVertexArrays(1, &mut self.vao);
-//     }
-//   }
-// }

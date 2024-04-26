@@ -1,6 +1,17 @@
 extern crate nalgebra_glm as glm;
-use crate::math::math::{radians, Vec3};
-use glm::vec3;
+use crate::math::math::{look_at, radians, Mat4, Vec3};
+
+// Refactor:
+// - Confirm if the OPENGL_TO_WGPU_MATRIX is needed
+// - Move the transforms into a shared mod
+
+//Make a camera uniform like the WPGU tutorial
+
+// fn vp_uniform(&self) -> [[f32; 4]; 4] {
+//   let vp = self.camera.view_mat()
+// }
+
+const VIEW_ANGLE: f32 = 55.0;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -12,15 +23,15 @@ pub struct Camera {
 
 impl Camera {
   pub fn new() -> Self {
-    let world_up: Vec3 = vec3(0.0, 1.0, 0.0);
+    let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
 
     let x = 0.0;
     let z = -10.0;
-    let y = -z * radians(55.0).tan();
+    let y = -z * radians(VIEW_ANGLE).tan();
 
-    let front: Vec3 = vec3(-x, -y, -z);
+    let front: Vec3 = Vec3::new(-x, -y, -z);
 
-    let position: Vec3 = vec3(x, y, z);
+    let position: Vec3 = Vec3::new(x, y, z);
 
     // let up:Vec3 = vec3(0.0,1.0,0.0);
     let right: Vec3 = front.cross(&world_up).normalize();
@@ -32,6 +43,10 @@ impl Camera {
 
   pub fn front(&self) -> Vec3 {
     self.front
+  }
+
+  pub fn view_mat(&self) -> Mat4 {
+    look_at(self.position, self.target, self.up)
   }
 }
 

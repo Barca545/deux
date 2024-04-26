@@ -1,7 +1,7 @@
 use crate::{
   ecs::{query, world_resources::DebugElements, World},
   time::ServerTime,
-  view::{render_gl::draw_indexed_primative, Mesh, RenderPass, RenderStageName},
+  view::{render_gl::draw_indexed_primative, Mesh},
 };
 use gl::{Gl, ALWAYS, COLOR_BUFFER_BIT, DEPTH_BUFFER_BIT, DEPTH_TEST, NOTEQUAL, STENCIL_BUFFER_BIT};
 

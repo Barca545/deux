@@ -1,5 +1,5 @@
 use super::champion::Champion;
-use crate::{arena::Grid, component_lib::AbilityMap, errors::FilesystemErrors, view::render_gl::Vertex};
+use crate::{arena::Grid, component_lib::AbilityMap, errors::FilesystemErrors, view::render_gl::ModelVertex};
 use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
@@ -21,6 +21,8 @@ use std::{
 // -Move the path generation into its own function find/replace lowercase path
 // -Make load image not panic
 // -Loading in the grid might require flipping since I use Y as up but blender uses Z as up
+// -Replace the load image with the stuff in renderer
+// -Replace load shader with the stuff in renderer
 
 ///Loads a Texture's pixels.
 pub fn load_texture_image(name: &str, extension: &str) -> Result<DynamicImage> {
@@ -41,7 +43,7 @@ pub fn load_champion_json(name: &str) -> Result<Champion> {
   let path = var("champion_folder")? + "/" + name + "." + "json";
   let champion_string = fs::read_to_string(path)?;
 
-  let champion: Champion = serde_json::from_str(&champion_string)?;
+  let champion = serde_json::from_str::<Champion>(&champion_string)?;
   Ok(champion)
 }
 
@@ -60,7 +62,7 @@ pub fn load_shader(path: &str) -> Result<CString> {
 }
 
 ///Loads an object's vertices and indices from a file name.
-pub fn load_object(name: &str) -> Result<(Vec<Vertex>, Vec<u32>)> {
+pub fn load_object(name: &str) -> Result<(Vec<ModelVertex>, Vec<u32>)> {
   let path = var("model_folder")? + "/" + name + "." + "obj";
   let path = Path::new(&path);
 
@@ -103,7 +105,7 @@ pub fn load_object(name: &str) -> Result<(Vec<Vertex>, Vec<u32>)> {
 
       let texture = [mesh.texcoords[texture_offset], mesh.texcoords[texture_offset + 1]];
 
-      let vertex = Vertex::new(position, texture);
+      let vertex = ModelVertex::new(position, texture);
 
       if let Some(index) = unique_vertices.get(&vertex) {
         indices.push(*index as u32)
@@ -170,7 +172,7 @@ mod test {
   use crate::{
     errors::FilesystemErrors,
     filesystem::load::{load_config, load_root_directory},
-    view::render_gl::Vertex,
+    view::render_gl::{ModelVertex, Vertex},
   };
   use eyre::Result;
   use image::io::Reader;
@@ -265,7 +267,7 @@ mod test {
       ];
       let texture = [mesh.positions[texture_offset], mesh.positions[texture_offset + 1]];
 
-      let vertex = Vertex::new(position, texture);
+      let vertex = ModelVertex::new(position, texture);
       vertices.push(vertex)
     }
     Ok(())
