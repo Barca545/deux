@@ -7,7 +7,7 @@ use crate::{
   filesystem::{load_champion_json, load_object},
   math::Vec3,
   time::ServerTime,
-  view::AABB3DDebugMesh,
+  // view::AABB3DDebugMesh,
 };
 use eyre::Result;
 use gl::Gl;

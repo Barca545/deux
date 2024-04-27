@@ -1,17 +1,16 @@
 extern crate nalgebra_glm as glm;
-use crate::math::math::{look_at, radians, Mat4, Vec3};
+use crate::math::{
+  math::{look_at, radians, Mat4, Vec3},
+  Transforms,
+};
 
 // Refactor:
 // - Confirm if the OPENGL_TO_WGPU_MATRIX is needed
 // - Move the transforms into a shared mod
-
-//Make a camera uniform like the WPGU tutorial
-
-// fn vp_uniform(&self) -> [[f32; 4]; 4] {
-//   let vp = self.camera.view_mat()
-// }
+// - Up doesn't change so I can just use (0.0, 1.0, 0.0)
 
 const VIEW_ANGLE: f32 = 55.0;
+const DEFAULT_Z_DIST: f32 = -10.0;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -19,26 +18,37 @@ pub struct Camera {
   pub target: Vec3,
   pub up: Vec3,
   front: Vec3,
+  pv_mat: Option<[[f32; 4]; 4]>,
 }
 
 impl Camera {
+  ///Create a new [`Camera`].
   pub fn new() -> Self {
-    let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
+    // let x = 0.0;
+    // let z = DEFAULT_Z_DIST;
+    // let y = -z * radians(VIEW_ANGLE).tan();
 
-    let x = 0.0;
-    let z = -10.0;
-    let y = -z * radians(VIEW_ANGLE).tan();
+    // let position: Vec3 = Vec3::new(x, y, z);
 
-    let front: Vec3 = Vec3::new(-x, -y, -z);
+    //Delete
+    let position: Vec3 = Vec3::new(0.0, 1.0, 2.0);
+    let target: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+    let up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
+    let front: Vec3 = Vec3::new(0.0, 1.0, 0.0);
 
-    let position: Vec3 = Vec3::new(x, y, z);
+    // let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
+    // let front: Vec3 = Vec3::new(-x, -y, -z);
+    // let right: Vec3 = front.cross(&world_up).normalize();
+    // let up: Vec3 = right.cross(&front).normalize();
+    // let target: Vec3 = position + front;
 
-    // let up:Vec3 = vec3(0.0,1.0,0.0);
-    let right: Vec3 = front.cross(&world_up).normalize();
-    let up: Vec3 = right.cross(&front).normalize();
-    let target: Vec3 = position + front;
-
-    Camera { position, target, up, front }
+    Camera {
+      position,
+      target,
+      up,
+      front,
+      pv_mat: None,
+    }
   }
 
   pub fn front(&self) -> Vec3 {
@@ -47,6 +57,15 @@ impl Camera {
 
   pub fn view_mat(&self) -> Mat4 {
     look_at(self.position, self.target, self.up)
+  }
+  ///Updates the [`Camera`]'s `projection * view` matrix.
+  pub fn update_pv(&mut self, transforms: &Transforms) {
+    self.pv_mat = Some((transforms.proj_mat() * self.view_mat()).into())
+  }
+
+  ///Returns the [`Camera`]'s `projection * view` matrix.
+  pub fn pv_mat(&self) -> [[f32; 4]; 4] {
+    self.pv_mat.unwrap()
   }
 }
 

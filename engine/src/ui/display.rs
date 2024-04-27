@@ -2,10 +2,7 @@ use super::{
   widget_builder::{WidgetBuilder, WidgetType},
   Container, Response, UIConfigInfo, Widget,
 };
-use crate::{
-  math::{Dimensions, Rect},
-  view::Mesh,
-};
+use crate::math::{Dimensions, Rect};
 use gl::Gl;
 
 // Refactor:
@@ -17,7 +14,7 @@ pub struct DisplayBox {
   // ///Pointer to the parent [`Container`].
   // pub(super) parent: Rc<dyn Container>,
   pub(super) children: Vec<Box<dyn Widget>>,
-  pub(super) mesh: Mesh,
+  // pub(super) mesh: Mesh,
 }
 
 impl DisplayBox {

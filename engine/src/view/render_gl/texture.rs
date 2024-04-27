@@ -9,7 +9,7 @@ use wgpu::{
 // -Modify texture loading
 
 pub struct Texture {
-  pub label: &'static str,
+  pub label: String,
   pub texture: WgpuTexture,
   pub view: TextureView,
   pub sampler: Sampler,
@@ -24,7 +24,7 @@ impl Texture {
     Self::from_image(device, queue, img, label)
   }
 
-  fn from_image(device: &Device, queue: &Queue, img: DynamicImage, label: &'static str) -> Self {
+  pub fn from_image(device: &Device, queue: &Queue, img: DynamicImage, label: &str) -> Self {
     // Create rgba8 image and dimension info
     let rgba = img.to_rgba8();
     let dimensions = img.dimensions();
@@ -78,6 +78,11 @@ impl Texture {
       ..Default::default()
     });
 
-    Texture { label, texture, view, sampler }
+    Texture {
+      label: String::from(label),
+      texture,
+      view,
+      sampler,
+    }
   }
 }

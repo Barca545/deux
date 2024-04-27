@@ -2,7 +2,7 @@ use super::{Container, HorizontalAlign, UIConfigInfo, UIConfigInfoBuilder, Verti
 use crate::{
   math::Dimensions,
   ui::{render_info::WidgetRenderInfo, DisplayBox},
-  view::Mesh,
+  // view::Mesh,
 };
 use eyre::Result;
 use gl::Gl;

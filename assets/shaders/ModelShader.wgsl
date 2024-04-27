@@ -1,3 +1,12 @@
+//Create the camera uniform
+struct CameraUniform{
+  mpv: mat4x4<f32>
+}; 
+
+//Specify the camera's bindgroup and binding
+@group(1) @binding(0)
+var<uniform> camera: CameraUniform;
+
 struct VertexInput{
   @location(0) position: vec3<f32>,
   @location(1) tex_coords: vec2<f32>
@@ -14,13 +23,15 @@ fn vs_main(
 ) -> VertexOutput {
   var out: VertexOutput;
   out.tex_coords = model.tex_coords;
-  out.clip_position = vec4<f32>(model.position, 1.0);
+  out.clip_position = camera.mpv * vec4<f32>(model.position, 1.0);
   return out;
 }
 
+//Specify the texture's bindgroup and binding
 @group(0) @binding(0)
 var t_diffuse: texture_2d<f32>;
 
+//Specify the samplper's bindgroup and binding
 @group(0) @binding(1)
 var s_diffuse: sampler;
 

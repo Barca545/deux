@@ -5,7 +5,7 @@ use crate::{
   ecs::World,
   filesystem::load_object,
   math::Vec3,
-  view::AABB3DDebugMesh,
+  // view::AABB3DDebugMesh,
 };
 use eyre::Result;
 use gl::Gl;

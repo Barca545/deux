@@ -4,17 +4,19 @@ use super::{
     buffer::{IndexBuffer, VertexBuffer},
     ModelVertex, Texture,
   },
+  InstanceRaw,
 };
 use crate::{math::Transforms, view::render_gl::Vertex};
 use eyre::Result;
 use std::{iter::once, sync::Arc};
 use wgpu::{
-  BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Color,
-  ColorTargetState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState, FrontFace, IndexFormat, Instance,
-  InstanceDescriptor, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor, PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
-  RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, SamplerBindingType, ShaderModuleDescriptor,
-  ShaderSource, ShaderStages, StoreOp, Surface, SurfaceConfiguration, TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension,
-  VertexState,
+  util::{BufferInitDescriptor, DeviceExt},
+  BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer,
+  BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState,
+  FrontFace, IndexFormat, Instance, InstanceDescriptor, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor, PolygonMode, PowerPreference,
+  PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
+  SamplerBindingType, ShaderModuleDescriptor, ShaderSource, ShaderStages, StoreOp, Surface, SurfaceConfiguration, TextureSampleType, TextureUsages,
+  TextureViewDescriptor, TextureViewDimension, VertexState,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -26,7 +28,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 // -Move creating the pipeline[s] out of the new method
 // -Move the buffers onto a mesh?
 // -For pipeline should use the desc of the vert type, not the Self::method format
-// -Camera and transforms can't be on this struct?
+// -Camera and transforms can't be on this struct
 
 pub struct Renderer {
   //reference to the window
@@ -43,6 +45,7 @@ pub struct Renderer {
   diffuse_bind_group: BindGroup,
   camera: Camera,
   transforms: Transforms,
+  camera_bind_group: BindGroup,
 }
 
 impl Renderer {
@@ -94,7 +97,7 @@ impl Renderer {
     //Create the texture
     let texture = Texture::new(&device, &queue, "ground");
 
-    //Bind the texture
+    //Create the texture bind group layout
     let texture_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
       label: Some((texture.label.to_owned() + "layout").as_str()),
       entries: &[
@@ -117,8 +120,9 @@ impl Renderer {
       ],
     });
 
+    //Create the texture and sampler bindgroup
     let diffuse_bind_group = device.create_bind_group(&BindGroupDescriptor {
-      label: Some(texture.label),
+      label: Some(texture.label.as_str()),
       layout: &texture_bind_group_layout,
       entries: &[
         BindGroupEntry {
@@ -132,10 +136,47 @@ impl Renderer {
       ],
     });
 
+    //Create the camera and transforms
+    let mut camera = Camera::default();
+    let transforms = Transforms::new((config.width / config.height) as f32);
+    camera.update_pv(&transforms);
+
+    //Create the camera buffer
+    let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
+      label: Some("camera buffer"),
+      contents: bytemuck::cast_slice(&[camera.pv_mat()]),
+      usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    });
+
+    //Create the camera bindgroup layout
+    let camera_bindgroup_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+      label: Some("camera_bind_group_layout"),
+      entries: &[BindGroupLayoutEntry {
+        binding: 0,
+        visibility: ShaderStages::VERTEX,
+        ty: BindingType::Buffer {
+          ty: BufferBindingType::Uniform,
+          has_dynamic_offset: false,
+          min_binding_size: None,
+        },
+        count: None,
+      }],
+    });
+
+    //Create the camera bindgroup
+    let camera_bind_group = device.create_bind_group(&BindGroupDescriptor {
+      label: Some("camera bind group"),
+      layout: &camera_bindgroup_layout,
+      entries: &[BindGroupEntry {
+        binding: 0,
+        resource: camera_buffer.as_entire_binding(),
+      }],
+    });
+
     //Create the render pipeline layout
     let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
       label: Some("render pipeline layout"),
-      bind_group_layouts: &[&texture_bind_group_layout],
+      bind_group_layouts: &[&texture_bind_group_layout, &camera_bindgroup_layout],
       push_constant_ranges: &[],
     });
 
@@ -152,7 +193,7 @@ impl Renderer {
       vertex: VertexState {
         module: &shader,
         entry_point: "vs_main",
-        buffers: &[ModelVertex::desc()],
+        buffers: &[ModelVertex::desc(), InstanceRaw::desc()],
       },
       fragment: Some(FragmentState {
         module: &shader,
@@ -200,10 +241,6 @@ impl Renderer {
     let vertex_buffer = VertexBuffer::new(&device, vertices);
     let index_buffer = IndexBuffer::new(&device, indices);
 
-    //Create the camera and transforms
-    let camera = Camera::default();
-    let transforms = Transforms::new((config.width / config.height) as f32);
-
     Renderer {
       surface,
       device,
@@ -216,6 +253,7 @@ impl Renderer {
       index_buffer,
       diffuse_bind_group,
       camera,
+      camera_bind_group,
       transforms,
     }
   }
@@ -282,9 +320,12 @@ impl Renderer {
     //Create a render pass
     {
       let mut render_pass = encoder.begin_render_pass(&descriptor);
-      //Set the pipeline and bindgroup
+      //Set the pipeline
       render_pass.set_pipeline(&self.pipeline);
+
+      //Set the texture and camera bindgroups
       render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+      render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
       //Bind the buffers and draw
       render_pass.set_vertex_buffer(0, self.vertex_buffer.slice());

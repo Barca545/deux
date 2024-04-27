@@ -36,7 +36,7 @@ pub fn register_resources(world: &mut World) {
 
   world
     .add_resource(screen_dimensions)
-    .add_resource(Transforms::new(&screen_dimensions.aspect))
+    // .add_resource(Transforms::new(&screen_dimensions.aspect))
     .add_resource(Selected::NONE)
     .add_resource(MouseRay::default())
     .add_resource(FrameInputs::new())

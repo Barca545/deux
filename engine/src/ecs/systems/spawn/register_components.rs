@@ -6,7 +6,7 @@ use crate::{
     Velocity, VisionRadius, KDA,
   },
   ecs::World,
-  view::AABB3DDebugMesh,
+  // view::AABB3DDebugMesh,
 };
 
 pub fn register_components(world: &mut World) {
@@ -62,10 +62,10 @@ pub fn register_components(world: &mut World) {
     .register_component::<PlayerState>()
     .register_component::<MovementState>()
     .register_component::<CrowdControlState>()
-    .register_component::<CrowdControlList>()
-    //Render components
-    // .register_component::<SkinnedMesh>()
-    // .register_component::<StaticMesh>()
-    // .register_component::<AutoAttackMesh>()
-    .register_component::<AABB3DDebugMesh>();
+    .register_component::<CrowdControlList>();
+  //Render components
+  // .register_component::<SkinnedMesh>()
+  // .register_component::<StaticMesh>()
+  // .register_component::<AutoAttackMesh>()
+  // .register_component::<AABB3DDebugMesh>();
 }

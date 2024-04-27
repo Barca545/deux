@@ -1,9 +1,9 @@
-use crate::view::Mesh;
+// use crate::view::Mesh;
 use glfw::RenderContext;
 
 pub struct Response {
   id: usize,
-  mesh: Mesh,
+  // mesh: Mesh,
   state: WidgetState,
   ctx: RenderContext,
 }

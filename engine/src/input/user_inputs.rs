@@ -30,34 +30,36 @@ pub struct Keybinds(HashMap<String, Keybind>);
 impl Keybinds {
   ///Create an [`Input`] from a [`Key`].
   pub fn key_input(&self, world: &World, window: &Window, key: Key) -> Result<Input> {
-    if let Some(keystring) = key.get_name() {
-      if let Some(keybind) = self.0.get(&keystring) {
-        let (x, y) = window.get_cursor_pos();
-        let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
-        let transforms = world.get_resource::<Transforms>().unwrap();
-        let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
-        Ok(Input { mouse, keybind: *keybind })
-      } else {
-        return Err(InputErrors::KeyNotRegistered { key }.into());
-      }
-    } else {
-      return Err(InputErrors::KeyNameNotFound { key }.into());
-    }
+    todo!()
+    // if let Some(keystring) = key.get_name() {
+    //   if let Some(keybind) = self.0.get(&keystring) {
+    //     let (x, y) = window.get_cursor_pos();
+    //     let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
+    //     let transforms = world.get_resource::<Transforms>().unwrap();
+    //     let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
+    //     Ok(Input { mouse, keybind: *keybind })
+    //   } else {
+    //     return Err(InputErrors::KeyNotRegistered { key }.into());
+    //   }
+    // } else {
+    //   return Err(InputErrors::KeyNameNotFound { key }.into());
+    // }
   }
 
   ///Create an [`Input`] from a [`Key`].
   pub fn mouse_input(&self, world: &World, window: &Window, button: MouseButton) -> Result<Input> {
-    let buttonstring = format!("{:?}", button);
-    if let Some(keybind) = self.0.get(&buttonstring) {
-      let (x, y) = window.get_cursor_pos();
-      dbg!((x, y));
-      let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
-      let transforms = world.get_resource::<Transforms>().unwrap();
-      let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
-      Ok(Input { mouse, keybind: *keybind })
-    } else {
-      return Err(InputErrors::ButtonNotRegistered { button }.into());
-    }
+    todo!()
+    // let buttonstring = format!("{:?}", button);
+    // if let Some(keybind) = self.0.get(&buttonstring) {
+    //   let (x, y) = window.get_cursor_pos();
+    //   dbg!((x, y));
+    //   let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
+    //   let transforms = world.get_resource::<Transforms>().unwrap();
+    //   let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
+    //   Ok(Input { mouse, keybind: *keybind })
+    // } else {
+    //   return Err(InputErrors::ButtonNotRegistered { button }.into());
+    // }
   }
 
   ///Returns a [`Key`]'s corresponding [`Keybind`].
@@ -144,14 +146,15 @@ mod test {
 
   #[test]
   fn get_user_input_from_keybinds() -> Result<()> {
-    let keybinds = Keybinds::default();
-    let mut world = World::new();
-    let screen_dimensions = Dimensions::new(1280, 720);
-    let transforms = Transforms::new(&screen_dimensions.aspect);
-    world.add_resource(screen_dimensions).add_resource(transforms);
-    let q = keybinds.get_input(Key::Q, 16)?;
+    todo!()
+    // let keybinds = Keybinds::default();
+    // let mut world = World::new();
+    // let screen_dimensions = Dimensions::new(1280, 720);
+    // let transforms = Transforms::new(&screen_dimensions.aspect);
+    // world.add_resource(screen_dimensions).add_resource(transforms);
+    // let q = keybinds.get_input(Key::Q, 16)?;
 
-    assert_eq!(q, Keybind::AbilityOne);
-    Ok(())
+    // assert_eq!(q, Keybind::AbilityOne);
+    // Ok(())
   }
 }

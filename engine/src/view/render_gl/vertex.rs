@@ -7,10 +7,10 @@ use wgpu::{vertex_attr_array, BufferAddress, VertexAttribute, VertexBufferLayout
 // -Use #[repr(C, packed)] instead of just #[repr(C)]?
 
 ///Vertex Attributes for a [`ModelVertex`].
-const MODELATTRIBS: [VertexAttribute; 2] = vertex_attr_array![0 => Float32x3, 1 => Float32x2];
+const MODEL_ATTRIBS: [VertexAttribute; 2] = vertex_attr_array![0 => Float32x3, 1 => Float32x2];
 
 ///Vertex Attributes for a [`DebugVertex`].
-const DEBUGATTRIBS: [VertexAttribute; 2] = vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+const DEBUG_ATTRIBS: [VertexAttribute; 2] = vertex_attr_array![0 => Float32x3, 1 => Float32x3];
 
 pub trait Vertex: Copy + Clone + Hash + Pod + Zeroable {
   fn desc() -> VertexBufferLayout<'static>;
@@ -47,7 +47,7 @@ impl Vertex for ModelVertex {
     VertexBufferLayout {
       array_stride: mem::size_of::<Self>() as BufferAddress,
       step_mode: VertexStepMode::Vertex,
-      attributes: &MODELATTRIBS,
+      attributes: &MODEL_ATTRIBS,
     }
   }
 }
@@ -100,7 +100,7 @@ impl Vertex for DebugVertex {
     VertexBufferLayout {
       array_stride: mem::size_of::<Self>() as BufferAddress,
       step_mode: VertexStepMode::Vertex,
-      attributes: &DEBUGATTRIBS,
+      attributes: &DEBUG_ATTRIBS,
     }
   }
 }

@@ -26,18 +26,19 @@ impl Programs {
 
   ///Sets value of the view and projection uniforms.
   pub fn set_vp_uniforms(&self, id: usize, world: &World) {
-    let transforms = world.get_resource::<Transforms>().unwrap();
-    let gl = world.get_resource::<Gl>().unwrap();
+    todo!()
+    // let transforms = world.get_resource::<Transforms>().unwrap();
+    // let gl = world.get_resource::<Gl>().unwrap();
 
-    //Get the program
-    let program = &self.map[id];
-    program.use_program(&gl);
+    // //Get the program
+    // let program = &self.map[id];
+    // program.use_program(&gl);
 
-    //Set the view uniform
-    program.set_view_matrix(&gl, &transforms.view_transform);
+    // //Set the view uniform
+    // program.set_view_matrix(&gl, &transforms.view_transform);
 
-    //Set the projection uniform
-    program.set_projection_matrix(&gl, transforms.projection_transform.as_matrix());
+    // //Set the projection uniform
+    // program.set_projection_matrix(&gl, transforms.projection_transform.as_matrix());
   }
 
   // ///Sets the value of the model uniform.

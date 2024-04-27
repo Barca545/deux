@@ -1,5 +1,13 @@
 use super::champion::Champion;
-use crate::{arena::Grid, component_lib::AbilityMap, errors::FilesystemErrors, view::render_gl::ModelVertex};
+use crate::{
+  arena::Grid,
+  component_lib::AbilityMap,
+  errors::FilesystemErrors,
+  view::{
+    render_gl::{ModelVertex, Texture},
+    Material, Model,
+  },
+};
 use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
@@ -11,6 +19,7 @@ use std::{
   io::Read,
   path::Path,
 };
+use wgpu::{BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Device, Queue};
 
 //Refactor
 // -Use a config file to load each PC will need a unique one so do gitignore
@@ -24,11 +33,93 @@ use std::{
 // -Replace the load image with the stuff in renderer
 // -Replace load shader with the stuff in renderer
 
-///Loads a Texture's pixels.
-pub fn load_texture_image(name: &str, extension: &str) -> Result<DynamicImage> {
-  let path = var("texture_folder")? + "/" + name + "." + extension;
-  let texture = load_image(&path)?;
-  Ok(texture)
+///Load a [`Model`].
+pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroupLayout) -> Result<Model> {
+  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/models/{name}.obj");
+  let path = Path::new(&path);
+
+  let load_options = &tobj::LoadOptions {
+    single_index: true,
+    triangulate: true,
+    ..Default::default()
+  };
+
+  let (models, obj_materials) = tobj::load_obj(path, load_options)?;
+
+  let mut vertices = Vec::new();
+  let mut indices = Vec::new();
+  let mut lowest_y = 0.0;
+  let mut unique_vertices = HashMap::new();
+
+  //Create the materials
+  let mut materials = Vec::new();
+  for m in obj_materials? {
+    let diffuse_texture = load_texture(&m.diffuse_texture.unwrap(), device, queue)?;
+    //Create the texture and sampler bindgroup
+    let bind_group = device.create_bind_group(&BindGroupDescriptor {
+      label: Some(diffuse_texture.label.as_str()),
+      layout,
+      entries: &[
+        BindGroupEntry {
+          binding: 0,
+          resource: BindingResource::TextureView(&diffuse_texture.view),
+        },
+        BindGroupEntry {
+          binding: 1,
+          resource: BindingResource::Sampler(&diffuse_texture.sampler),
+        },
+      ],
+    });
+
+    //Create and add the material
+    let material = Material::new(name, diffuse_texture, bind_group);
+    materials.push(material);
+  }
+
+  //////////begin implementing here
+
+  for model in &models {
+    let mesh = &model.mesh;
+
+    for index in &mesh.indices {
+      let position_offset = (index * 3) as usize;
+      let texture_offset = (index * 2) as usize;
+
+      let position = [
+        mesh.positions[position_offset],
+        mesh.positions[position_offset + 1],
+        mesh.positions[position_offset + 2],
+      ];
+      if position[1] < lowest_y {
+        lowest_y = position[1];
+      }
+
+      let texture = [mesh.texcoords[texture_offset], mesh.texcoords[texture_offset + 1]];
+
+      let vertex = ModelVertex::new(position, texture);
+
+      if let Some(index) = unique_vertices.get(&vertex) {
+        indices.push(*index as u32)
+      } else {
+        let index = vertices.len();
+        unique_vertices.insert(vertex, index);
+        vertices.push(vertex);
+        indices.push(index as u32);
+      }
+    }
+  }
+
+  for vertex in vertices.iter_mut() {
+    vertex.pos[1] += lowest_y.abs();
+  }
+  todo!()
+}
+
+///Load a [`Texture`].
+pub fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Texture> {
+  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}.jpg");
+  let img = load_image(&path)?;
+  Ok(Texture::from_image(device, queue, img, name))
 }
 
 fn load_image(path: &str) -> Result<DynamicImage> {

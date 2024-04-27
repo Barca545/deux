@@ -108,9 +108,9 @@ mod test {
     let screen_dimensions = Dimensions::new(720, 1280);
     let transforms = Transforms::new(screen_dimensions.aspect);
 
-    let ray = MouseRay::new(x, y, &screen_dimensions, &transforms).0;
+    // let ray = MouseRay::new(x, y, &screen_dimensions, &transforms).0;
 
-    let hit_check = ray_aabb3d_collision_test(aabb, ray);
-    dbg!(hit_check);
+    // let hit_check = ray_aabb3d_collision_test(aabb, ray);
+    todo!()
   }
 }
