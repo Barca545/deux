@@ -1,6 +1,8 @@
+use std::ops::RangeBounds;
+
 use super::Vertex;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{Buffer, BufferSlice, BufferUsages, Device};
+use wgpu::{Buffer, BufferAddress, BufferSlice, BufferUsages, Device};
 
 // Refactor:
 // -Revisit the labels
@@ -11,10 +13,10 @@ pub struct VertexBuffer {
 }
 
 impl VertexBuffer {
-  pub fn new(device: &Device, vertices: Vec<impl Vertex>) -> Self {
+  pub fn new(device: &Device, vertices: &Vec<impl Vertex>) -> Self {
     let buffer = device.create_buffer_init(&BufferInitDescriptor {
       label: Some("vertex buffer"),
-      contents: bytemuck::cast_slice(&vertices),
+      contents: bytemuck::cast_slice(vertices),
       usage: BufferUsages::VERTEX,
     });
     VertexBuffer {
@@ -23,8 +25,12 @@ impl VertexBuffer {
     }
   }
 
-  pub fn slice(&self) -> BufferSlice {
-    self.buffer.slice(..)
+  ///Use only a portion of this Buffer for a given operation. Choosing a range with no end will use the rest of the buffer. Using a totally unbounded range will use the entire buffer.
+  pub fn slice<S>(&self, bounds: S) -> BufferSlice
+  where
+    S: RangeBounds<BufferAddress>,
+  {
+    self.buffer.slice(bounds)
   }
 }
 
@@ -34,19 +40,23 @@ pub struct IndexBuffer {
 }
 
 impl IndexBuffer {
-  pub fn new(device: &Device, vertices: Vec<u16>) -> Self {
+  pub fn new(device: &Device, indices: &Vec<u32>) -> Self {
     let buffer = device.create_buffer_init(&BufferInitDescriptor {
       label: Some("index buffer"),
-      contents: bytemuck::cast_slice(&vertices),
+      contents: bytemuck::cast_slice(indices),
       usage: BufferUsages::INDEX,
     });
     IndexBuffer {
       buffer,
-      len: vertices.len() as u32,
+      len: indices.len() as u32,
     }
   }
 
-  pub fn slice(&self) -> BufferSlice {
-    self.buffer.slice(..)
+  ///Use only a portion of this Buffer for a given operation. Choosing a range with no end will use the rest of the buffer. Using a totally unbounded range will use the entire buffer.
+  pub fn slice<S>(&self, bounds: S) -> BufferSlice
+  where
+    S: RangeBounds<BufferAddress>,
+  {
+    self.buffer.slice(bounds)
   }
 }

@@ -1,4 +1,4 @@
 mod material;
-mod mesh;
+mod model;
 
-pub use self::{material::*, mesh::*};
+pub use self::{material::*, model::*};

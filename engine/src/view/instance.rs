@@ -1,6 +1,6 @@
 use crate::math::{Mat4, Vec3};
 use bytemuck::{Pod, Zeroable};
-use std::mem;
+use std::{mem, ops::Range};
 use wgpu::{vertex_attr_array, BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
 //Get rid of the model transform from the Transforms section
@@ -34,5 +34,16 @@ impl InstanceRaw {
       step_mode: VertexStepMode::Instance,
       attributes: &INST_ATTRIBS,
     }
+  }
+}
+
+pub trait Instances {
+  fn range(&self) -> Range<u32>;
+}
+
+impl Instances for Vec<InstanceRaw> {
+  ///Returns a [`Range`] over the length of the instances.
+  fn range(&self) -> Range<u32> {
+    0..self.len() as u32
   }
 }

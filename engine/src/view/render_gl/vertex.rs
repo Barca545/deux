@@ -5,6 +5,7 @@ use wgpu::{vertex_attr_array, BufferAddress, VertexAttribute, VertexBufferLayout
 
 // Refactor:
 // -Use #[repr(C, packed)] instead of just #[repr(C)]?
+// -Add normal coords to the ModelVertex
 
 ///Vertex Attributes for a [`ModelVertex`].
 const MODEL_ATTRIBS: [VertexAttribute; 2] = vertex_attr_array![0 => Float32x3, 1 => Float32x2];

@@ -4,13 +4,16 @@ use crate::{
   component_lib::AbilityMap,
   errors::FilesystemErrors,
   view::{
-    render_gl::{ModelVertex, Texture},
-    Material, Model,
+    render_gl::{
+      buffer::{IndexBuffer, VertexBuffer},
+      ModelVertex, Texture,
+    },
+    Material, Mesh, Model,
   },
 };
 use config::{Config, File as ConfigFile};
 use eyre::Result;
-use image::{io::Reader, DynamicImage};
+use image::io::Reader;
 use std::{
   collections::HashMap,
   env::{current_dir, var},
@@ -19,6 +22,7 @@ use std::{
   io::Read,
   path::Path,
 };
+use tobj::LoadOptions;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Device, Queue};
 
 //Refactor
@@ -33,29 +37,24 @@ use wgpu::{BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource
 // -Replace the load image with the stuff in renderer
 // -Replace load shader with the stuff in renderer
 
-///Load a [`Model`].
-pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroupLayout) -> Result<Model> {
+///Load a [`Model`] and its [`Texture`]s.
+pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroupLayout) -> Model {
   let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/models/{name}.obj");
-  let path = Path::new(&path);
 
-  let load_options = &tobj::LoadOptions {
+  let load_options = &LoadOptions {
     single_index: true,
     triangulate: true,
     ..Default::default()
   };
 
-  let (models, obj_materials) = tobj::load_obj(path, load_options)?;
-
-  let mut vertices = Vec::new();
-  let mut indices = Vec::new();
-  let mut lowest_y = 0.0;
-  let mut unique_vertices = HashMap::new();
+  let (models, obj_materials) = tobj::load_obj(path, load_options).unwrap();
 
   //Create the materials
   let mut materials = Vec::new();
-  for m in obj_materials? {
-    let diffuse_texture = load_texture(&m.diffuse_texture.unwrap(), device, queue)?;
-    //Create the texture and sampler bindgroup
+  for material in obj_materials.unwrap() {
+    let diffuse_texture = load_texture(&material.diffuse_texture.unwrap(), device, queue).unwrap();
+
+    //Create the Texture and Sampler bindgroup
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
       label: Some(diffuse_texture.label.as_str()),
       layout,
@@ -76,58 +75,52 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroup
     materials.push(material);
   }
 
-  //////////begin implementing here
+  //Iterate over the model's meshes to generate a Mesh
+  let meshes = models
+    .into_iter()
+    .map(|model| {
+      //Create the model's verticies by iterating over the mesh's indices
+      let vertices = (0..model.mesh.positions.len() / 3)
+        .map(|i| {
+          let position_offset = (i * 3) as usize;
+          let texture_offset = (i * 2) as usize;
 
-  for model in &models {
-    let mesh = &model.mesh;
+          //Calculate the position coords
+          let position = [
+            model.mesh.positions[position_offset],
+            model.mesh.positions[position_offset + 1],
+            model.mesh.positions[position_offset + 2],
+          ];
 
-    for index in &mesh.indices {
-      let position_offset = (index * 3) as usize;
-      let texture_offset = (index * 2) as usize;
+          //Get the texture coords
+          let texture = [model.mesh.texcoords[texture_offset], 1.0 - model.mesh.texcoords[texture_offset + 1]];
 
-      let position = [
-        mesh.positions[position_offset],
-        mesh.positions[position_offset + 1],
-        mesh.positions[position_offset + 2],
-      ];
-      if position[1] < lowest_y {
-        lowest_y = position[1];
-      }
+          //Create the vertex
+          ModelVertex::new(position, texture)
+        })
+        .collect::<Vec<_>>();
 
-      let texture = [mesh.texcoords[texture_offset], mesh.texcoords[texture_offset + 1]];
+      //Create the vertex and index buffers
+      let vertex_buffer = VertexBuffer::new(&device, &vertices);
+      let index_buffer = IndexBuffer::new(&device, &model.mesh.indices);
 
-      let vertex = ModelVertex::new(position, texture);
-
-      if let Some(index) = unique_vertices.get(&vertex) {
-        indices.push(*index as u32)
-      } else {
-        let index = vertices.len();
-        unique_vertices.insert(vertex, index);
-        vertices.push(vertex);
-        indices.push(index as u32);
-      }
-    }
-  }
-
-  for vertex in vertices.iter_mut() {
-    vertex.pos[1] += lowest_y.abs();
-  }
-  todo!()
+      Mesh::new(name, vertex_buffer, index_buffer, model.mesh.material_id.unwrap_or(0))
+    })
+    .collect::<Vec<_>>();
+  Model::new(meshes, materials)
 }
 
 ///Load a [`Texture`].
 pub fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Texture> {
-  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}.jpg");
-  let img = load_image(&path)?;
-  Ok(Texture::from_image(device, queue, img, name))
-}
+  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}");
 
-fn load_image(path: &str) -> Result<DynamicImage> {
-  let image = Reader::open(path)
-    .unwrap_or_else(|_| panic!("{}", FilesystemErrors::FailedToLoadImage))
-    .decode()
-    .unwrap_or_else(|_| panic!("{}", FilesystemErrors::FailedToDecodeImage));
-  Ok(image)
+  match Reader::open(&path) {
+    Ok(img) => match img.decode() {
+      Ok(img) => Ok(Texture::from_image(device, queue, img, name)),
+      Err(err) => return Err(FilesystemErrors::FailedToDecodeImage(err).into()),
+    },
+    Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name: name.to_string(), path }.into()),
+  }
 }
 
 pub fn load_champion_json(name: &str) -> Result<Champion> {
@@ -152,6 +145,7 @@ pub fn load_shader(path: &str) -> Result<CString> {
   Ok(shader)
 }
 
+#[deprecated(since = "0.0.0", note = "Please use `load_model` instead.")]
 ///Loads an object's vertices and indices from a file name.
 pub fn load_object(name: &str) -> Result<(Vec<ModelVertex>, Vec<u32>)> {
   let path = var("model_folder")? + "/" + name + "." + "obj";
@@ -167,14 +161,6 @@ pub fn load_object(name: &str) -> Result<(Vec<ModelVertex>, Vec<u32>)> {
   let mut indices = vec![];
   let mut lowest_y = 0.0;
   let mut unique_vertices = HashMap::new();
-  //this eventually is where the materials come from (the second part of the tuple)
-
-  //maybe just make the thing a solid color and don't worry about fighting textures so much rn
-  //Fix textures:
-  //--load in texture from the mtl file or wherever or figure out how to export a texture as a jpg
-  //--fix wrapping
-  //----UV wrapping?
-  //----first thing to check is if the loaded textures match the textures the gpu is getting
 
   let (models, _) = tobj::load_obj(path, load_options)?;
 
@@ -263,7 +249,7 @@ mod test {
   use crate::{
     errors::FilesystemErrors,
     filesystem::load::{load_config, load_root_directory},
-    view::render_gl::{ModelVertex, Vertex},
+    view::render_gl::ModelVertex,
   };
   use eyre::Result;
   use image::io::Reader;
@@ -293,14 +279,17 @@ mod test {
 
   #[test]
   fn load_image() -> Result<()> {
-    let name = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/wall.jpg";
+    let name = "cube";
+    let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}-diffuse.jpg");
 
-    let path = Path::new(name);
-    let _image = Reader::open(path)
-      .unwrap_or_else(|_| panic!("{}", { FilesystemErrors::FailedToLoadImage }))
-      .decode()
-      .unwrap_or_else(|_| panic!("{}", { FilesystemErrors::FailedToDecodeImage }));
-
+    //Check whether the image file loaded
+    match Reader::open(&path) {
+      Ok(img) => match img.decode() {
+        Ok(_) => {}
+        Err(err) => return Err(FilesystemErrors::FailedToDecodeImage(err).into()),
+      },
+      Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name: name.to_string(), path }.into()),
+    }
     Ok(())
   }
 
