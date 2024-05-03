@@ -144,7 +144,15 @@
 //   Ok(())
 // }
 
-use engine::{view::Renderer, windowing::create_window};
+use engine::{
+  ecs::{
+    systems::{register_components, register_resources, spawn_player},
+    World,
+  },
+  math::Transforms,
+  view::{camera::Camera, Renderer},
+  windowing::create_window,
+};
 use std::sync::Arc;
 use winit::{
   event::{Event, KeyEvent, WindowEvent},
@@ -152,11 +160,31 @@ use winit::{
 };
 
 // Refactor:
-// -Not sure I need the programs struct now that I have migrated to materials
-// #[rustfmt::skip]
-pub async fn run() {
-  let (mut window, events) = create_window();
-  let mut renderer = Renderer::new(Arc::new(window)).await;
+// -Re-add other systems
+// -Move the input handling to its own mod maybe the windowing mod/file
+// -Use a lazy static to get the config paths?
+// -Move the event loop into separate functions?
+// -Update the add resources method
+
+fn main() {
+  let mut world = World::new();
+  register_components(&mut world);
+  register_resources(&mut world);
+
+  let (window, events) = create_window();
+
+  //Create the camera
+  let mut camera = Camera::default();
+  let transforms = Transforms::from(window.inner_size());
+  camera.update_pv(&transforms);
+
+  let mut renderer = pollster::block_on(Renderer::new(Arc::new(window)));
+
+  spawn_player(&mut world, "warrior", 1, &mut renderer);
+
+  //Add the resources to world
+  world.add_resource(camera);
+  world.add_resource(transforms);
 
   events
     .run(move |event, target| match event {
@@ -170,112 +198,23 @@ pub async fn run() {
         } => target.exit(),
         WindowEvent::RedrawRequested => {
           if window_id == renderer.window().id() {
-            renderer.update();
+            renderer.update(&world);
             renderer.render().unwrap();
           }
+        }
+        WindowEvent::Resized(size) => {
+          renderer.resize(size);
+          let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
+          *transforms = Transforms::from(size);
         }
         WindowEvent::CloseRequested => target.exit(),
         _ => {}
       },
       Event::AboutToWait => {
-        //AFAICT this is the update loop
+        //AFAICT this is where the update loop goes
         renderer.window().request_redraw();
       }
       _ => {}
     })
     .unwrap();
-}
-
-fn main() {
-  pollster::block_on(run());
-  // asset_config();
-  // let mut world = World::new();
-  // let (mut glfw, mut window, events) = register_resources(&mut world);
-
-  // let gl = world.get_resource::<Gl>().unwrap();
-
-  // let pass = RenderPass::new(&gl)
-  //   .with_vert("CharacterVertexShader")
-  //   .unwrap()
-  //   .with_frag("CharacterFragShader")
-  //   .unwrap()
-  //   .enable(&[DEPTH_TEST])
-  //   .build()
-  //   .unwrap();
-
-  // let mut stage = RenderStage::new(RenderStageName::SkinnedMesh);
-  // stage.add_pass(pass);
-
-  // let sampler = Sampler::new(&gl, "warrior").unwrap();
-
-  // let mut material = Material::new();
-  // material.add_stage(stage);
-
-  // let (vertices, indices) = load_object("warrior").unwrap();
-
-  // let mut mesh = Mesh::new(&gl, vertices, indices).with_material(material).build().unwrap();
-
-  //Set up the programs
-  // let mut programs = Programs::new();
-
-  // //Create and register the widget program
-  // let gl = world.get_resource::<Gl>().unwrap();
-  // let program = ShaderProgram::new(&gl, "widget", "textured", FRAGMENT_SHADER)
-  //   .unwrap()
-  //   .with_model(&gl)
-  //   .unwrap()
-  //   .build()
-  //   .unwrap();
-  // programs.register_program(3, program);
-
-  // //Create a UI
-  // let ctx = window.render_context();
-  // let sceen_dimensions = Dimensions::new(1280, 720);
-  // let config = UIConfigInfo::new().parent_dimensions(sceen_dimensions).build().unwrap();
-  // let ui = UI::new(config, ctx);
-
-  // // //Create a button
-  // // let gl = world.get_resource::<Gl>().unwrap();
-  // // let btn_config = UIConfigInfo::new(sceen_dimensions)
-  // //   .width(20.0)
-  // //   .height(10.0)
-  // //   .horizontal_align(HorizontalAlign::Left)
-  // //   .vertical_align(VerticalAlign::Center)
-  // //   .build();
-  // // let button = Button::new("Button Name", btn_config).parent(&ui).mesh_info(&gl, "ground").build().unwrap();
-
-  // // while !window.should_close() {
-  // //   glfw.poll_events();
-  //   for (_, event) in glfw::flush_messages(&events) {
-  //     match event {
-  //       glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-  //       glfw::WindowEvent::MouseButton(..) => {
-  //         dbg!(window.get_cursor_pos());
-  //       }
-  //       _ => {}
-  //     }
-  //   }
-
-  //   //Render
-  // programs.use_program(3, &world);
-  //   let btn_position = button.config.ndc_position();
-
-  //   //Set the model transform's value
-  //   let model: Mat4 = identity::<f32, 4>();
-  //   let model_transform: Mat4 = translate(&model, &btn_position);
-  //   program.set_model_matrix(&gl, &model_transform);
-
-  //   //Set projection Transform
-  //   // let transforms = world.get_resource::<Transforms>().unwrap();
-  //   // let projection_transform = transforms.projection_transform.as_matrix();
-  //   // let t = Vec4::new(0.5, 0.5, 0.0, 1.0);
-  //   // dbg!(projection_transform * t);
-  //   // program.set_projection_matrix(&gl, &projection_transform);
-  //   // programs.set_vp_uniforms(3, &world);
-
-  //   unsafe { gl.ClearColor(0.1, 0.1, 0.1, 1.0) };
-  //   unsafe { gl.Clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT | STENCIL_BUFFER_BIT) }
-  //   button.draw(&gl);
-  //   window.swap_buffers();
-  // }
 }

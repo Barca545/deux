@@ -3,42 +3,26 @@ use crate::{
   arena::Grid,
   component_lib::AbilityMap,
   errors::FilesystemErrors,
-  view::{
-    render_gl::{
-      buffer::{IndexBuffer, VertexBuffer},
-      ModelVertex, Texture,
-    },
-    Material, Mesh, Model,
-  },
+  view::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer},
 };
 use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::io::Reader;
 use std::{
-  collections::HashMap,
   env::{current_dir, var},
-  ffi::CString,
-  fs::{self, File},
-  io::Read,
-  path::Path,
+  fs,
 };
 use tobj::LoadOptions;
-use wgpu::{BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Device, Queue};
+use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, Device, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 
 //Refactor
-// -Use a config file to load each PC will need a unique one so do gitignore
-// -Should the unwrap or else be some other form of unwrap
 // -Pull useful portions from the level editor
-// -have errors print the file that failed
-// -Each game object will need it's own named asset folder
 // -Move the path generation into its own function find/replace lowercase path
-// -Make load image not panic
 // -Loading in the grid might require flipping since I use Y as up but blender uses Z as up
-// -Replace the load image with the stuff in renderer
-// -Replace load shader with the stuff in renderer
+// -Use lazy static to define the paths
 
 ///Load a [`Model`] and its [`Texture`]s.
-pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroupLayout) -> Model {
+pub fn load_model(name: &str, device: &Device, queue: &Queue) -> Model {
   let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/models/{name}.obj");
 
   let load_options = &LoadOptions {
@@ -52,12 +36,15 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroup
   //Create the materials
   let mut materials = Vec::new();
   for material in obj_materials.unwrap() {
-    let diffuse_texture = load_texture(&material.diffuse_texture.unwrap(), device, queue).unwrap();
+    let diffuse_texture = match &material.diffuse_texture {
+      Some(texture) => load_texture(texture, device, queue).unwrap(),
+      None => load_texture("red.jpg", device, queue).unwrap(),
+    };
 
     //Create the Texture and Sampler bindgroup
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
       label: Some(diffuse_texture.label.as_str()),
-      layout,
+      layout: &&Renderer::texture_bind_group_layout(&device),
       entries: &[
         BindGroupEntry {
           binding: 0,
@@ -111,7 +98,7 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue, layout: &BindGroup
 }
 
 ///Load a [`Texture`].
-pub fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Texture> {
+fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Texture> {
   let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}");
 
   match Reader::open(&path) {
@@ -124,8 +111,21 @@ pub fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Textur
 }
 
 pub fn load_champion_json(name: &str) -> Result<Champion> {
-  let path = var("champion_folder")? + "/" + name + "." + "json";
-  let champion_string = fs::read_to_string(path)?;
+  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/champions/{name}.json");
+
+  let champion_string = match fs::read_to_string(&path) {
+    Ok(str) => str,
+    Err(err) => {
+      return Err(
+        FilesystemErrors::ChampDataDoesNotExist {
+          name: name.to_string(),
+          path,
+          err,
+        }
+        .into(),
+      )
+    }
+  };
 
   let champion = serde_json::from_str::<Champion>(&champion_string)?;
   Ok(champion)
@@ -133,85 +133,28 @@ pub fn load_champion_json(name: &str) -> Result<Champion> {
 
 ///Load an entity's [`AbilityMap`].
 pub fn load_scripts(name: &str) -> Result<AbilityMap> {
-  let path = var("champion_folder")? + name + "/scripts";
-
-  // Ok(path)
   todo!()
 }
 
-pub fn load_shader(path: &str) -> Result<CString> {
-  let path = var("shader_folder")? + "/" + path;
-  let shader = load_cstring(&path)?;
-  Ok(shader)
-}
+pub fn load_shader(device: &Device, name: &str) -> Result<ShaderModule> {
+  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/shaders/{name}.wgsl");
 
-#[deprecated(since = "0.0.0", note = "Please use `load_model` instead.")]
-///Loads an object's vertices and indices from a file name.
-pub fn load_object(name: &str) -> Result<(Vec<ModelVertex>, Vec<u32>)> {
-  let path = var("model_folder")? + "/" + name + "." + "obj";
-  let path = Path::new(&path);
-
-  let load_options = &tobj::LoadOptions {
-    single_index: true,
-    triangulate: true,
-    ..Default::default()
-  };
-
-  let mut vertices = vec![];
-  let mut indices = vec![];
-  let mut lowest_y = 0.0;
-  let mut unique_vertices = HashMap::new();
-
-  let (models, _) = tobj::load_obj(path, load_options)?;
-
-  for model in &models {
-    let mesh = &model.mesh;
-
-    for index in &mesh.indices {
-      let position_offset = (index * 3) as usize;
-      let texture_offset = (index * 2) as usize;
-
-      let position = [
-        mesh.positions[position_offset],
-        mesh.positions[position_offset + 1],
-        mesh.positions[position_offset + 2],
-      ];
-      if position[1] < lowest_y {
-        lowest_y = position[1];
-      }
-
-      let texture = [mesh.texcoords[texture_offset], mesh.texcoords[texture_offset + 1]];
-
-      let vertex = ModelVertex::new(position, texture);
-
-      if let Some(index) = unique_vertices.get(&vertex) {
-        indices.push(*index as u32)
-      } else {
-        let index = vertices.len();
-        unique_vertices.insert(vertex, index);
-        vertices.push(vertex);
-        indices.push(index as u32);
-      }
+  match fs::read_to_string(&path) {
+    Ok(shader) => Ok(device.create_shader_module(ShaderModuleDescriptor {
+      label: Some("model shader"),
+      source: ShaderSource::Wgsl(shader.into()),
+    })),
+    Err(err) => {
+      return Err(
+        FilesystemErrors::ShaderDoesNotExist {
+          name: name.to_string(),
+          path,
+          err,
+        }
+        .into(),
+      )
     }
   }
-
-  for vertex in vertices.iter_mut() {
-    vertex.pos[1] += lowest_y.abs();
-  }
-
-  Ok((vertices, indices))
-}
-
-pub fn load_cstring(path: &str) -> Result<CString> {
-  let mut file = File::open(path)?;
-  let mut buffer: Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
-
-  file.read_to_end(&mut buffer)?;
-
-  if buffer.iter().find(|i| **i == 0).is_some() {
-    return Err(FilesystemErrors::FileContainsNil.into());
-  }
-  Ok(unsafe { CString::from_vec_unchecked(buffer) })
 }
 
 ///Loads the a [`Grid`]'s information.
@@ -245,11 +188,11 @@ fn load_root_directory() -> Result<String> {
 
 #[cfg(test)]
 mod test {
-  use super::{load_champion_json, load_shader};
+  use super::load_champion_json;
   use crate::{
     errors::FilesystemErrors,
     filesystem::load::{load_config, load_root_directory},
-    view::render_gl::ModelVertex,
+    view::ModelVertex,
   };
   use eyre::Result;
   use image::io::Reader;
@@ -290,17 +233,6 @@ mod test {
       },
       Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name: name.to_string(), path }.into()),
     }
-    Ok(())
-  }
-
-  #[test]
-  fn load_test_shader() -> Result<()> {
-    let config = load_config()?;
-    let shader_path = config.get::<String>("shader_path")?;
-    set_var("shader_path", shader_path);
-
-    let shader = load_shader("textured.vert")?;
-    dbg!(shader);
     Ok(())
   }
 

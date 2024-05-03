@@ -1,11 +1,6 @@
-use super::gl_data::F32Tuple3;
-use cgmath::Vector3;
 use glm::{look_at as glm_look_at, TMat4, TVec2, TVec3, TVec4};
 use nalgebra::Perspective3;
 use std::{cmp::PartialOrd, f32::consts::PI};
-
-//When multiplying matrices the right-most matrix is first multiplied with the
-// vector so you should read the multiplications from right to left.
 
 pub type Vec2 = TVec2<f32>;
 pub type Vec3 = TVec3<f32>;
@@ -14,6 +9,8 @@ pub type Mat4 = TMat4<f32>;
 pub type Point3 = Vec3;
 pub type Point2 = Vec2;
 pub type Perspective = Perspective3<f32>;
+///Array represenation of a [`Mat4`] for GPU usage.
+pub type FlatMat4 = [[f32; 4]; 4];
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rect {
@@ -34,59 +31,11 @@ impl Rect {
   }
 }
 
-// #[derive(Debug, Clone, Copy)]
-//make wrappers around the vec structures so I can add deserialize to them
-
-pub enum Axis {
-  X,
-  Y,
-  Z,
-}
-
-//should the trait be Vector or Point? Avoiding this to avoid confusion for the
-// moment.
-pub fn translate(position: F32Tuple3, x: f32, y: f32, z: f32) -> F32Tuple3 {
-  F32Tuple3 {
-    d0: position.d0 + x,
-    d1: position.d1 + y,
-    d2: position.d2 + z,
-  }
-}
-
-// pub fn scale(position:F32Tuple3,x:f32,y:f32,z:f32)->F32Tuple3{
-//   F32Tuple3{
-//     d0: position.d0 * x,
-//     d1: position.d1 * y,
-//     d2: position.d2 * z
-//   }
-// }
-
-//consider quaternions for rotation
-pub fn rotate(position: F32Tuple3, axis: Axis, degrees: f32) -> F32Tuple3 {
-  match axis {
-    Axis::X => F32Tuple3 {
-      d0: position.d0,
-      d1: degrees.cos() * position.d1 - degrees.sin() * position.d2,
-      d2: degrees.sin() * position.d1 + degrees.cos() * position.d2,
-    },
-    Axis::Y => F32Tuple3 {
-      d0: degrees.cos() * position.d0 + degrees.sin() * position.d2,
-      d1: position.d1,
-      d2: -degrees.sin() * position.d0 + degrees.cos() * position.d2,
-    },
-    Axis::Z => F32Tuple3 {
-      d0: degrees.cos() * position.d0 - degrees.sin() * position.d1,
-      d1: degrees.sin() * position.d0 + degrees.cos() * position.d1,
-      d2: position.d2,
-    },
-  }
-}
-
-pub fn normalize(vec: Vector3<f32>) -> Vector3<f32> {
+pub fn normalize(vec: Vec3) -> Vec3 {
   let x = vec.x / vec.x.abs();
   let y = vec.y / vec.y.abs();
   let z = vec.z / vec.z.abs();
-  Vector3 { x, y, z }
+  Vec3::new(x, y, z)
 }
 
 /// Build a look at view matrix based on the right handedness.

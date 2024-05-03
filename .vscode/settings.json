@@ -4,7 +4,6 @@
   "editor.tabSize": 2,
   "editor.indentSize": "tabSize",
   "rust-analyzer.linkedProjects": [
-    "gl/Cargo.toml",
     "Cargo.toml",
     ".\\engine\\Cargo.toml"
   ],

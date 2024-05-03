@@ -1,4 +1,4 @@
-use crate::component_lib::PathingRadius;
+use crate::component_lib::{GameplayRadius, PathingRadius};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,4 +29,5 @@ pub struct Champion {
   pub unit_speed: f32,
   pub selection_radius: AABB3DInfo,
   pub pathing_radius: PathingRadius,
+  pub gameplay_radius: GameplayRadius,
 }

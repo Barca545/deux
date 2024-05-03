@@ -3,12 +3,10 @@ use crate::{
     Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position, PreviousPosition, SelectionRadius, Team, Velocity, KDA,
   },
   ecs::World,
-  filesystem::load_object,
   math::Vec3,
   // view::AABB3DDebugMesh,
 };
 use eyre::Result;
-use gl::Gl;
 
 pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
   //Create the dummy entity

@@ -5,11 +5,9 @@ edition = "2021"
 
 [dependencies]
 wgpu = {workspace=true}
-gl = {workspace=true}
 glfw = {workspace=true}
 eyre = {workspace=true}
 thiserror = {workspace=true}
-cgmath = {workspace=true}
 nalgebra-glm = {workspace=true}
 nalgebra = {workspace=true}
 image = {workspace=true}
@@ -22,6 +20,7 @@ serde_json = "1.0"
 tobj = "4.0.0"
 config = "0.14.0"
 list-any = "0.2.1"
+lazy_static = "1.4.0"
 
 
 [features]

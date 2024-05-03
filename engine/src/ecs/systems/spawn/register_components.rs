@@ -1,12 +1,11 @@
 use crate::{
   component_lib::{
-    AbilityMap, Armor, AutoAttack, CastQueue, Casting, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead, Destination, Exp,
-    GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path, PathingRadius,
-    PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius, SpellResource, Target, Team, UnitSpeed,
-    Velocity, VisionRadius, KDA,
+    AbilityMap, Armor, AutoAttack, AutoAttackModel, CastQueue, Casting, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead,
+    DebugModel, Destination, Exp, GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner,
+    Path, PathingRadius, PersistentScript, PhysicalDamage, Player, PlayerModel, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius,
+    SpellResource, StaticModel, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA,
   },
   ecs::World,
-  // view::AABB3DDebugMesh,
 };
 
 pub fn register_components(world: &mut World) {
@@ -62,10 +61,10 @@ pub fn register_components(world: &mut World) {
     .register_component::<PlayerState>()
     .register_component::<MovementState>()
     .register_component::<CrowdControlState>()
-    .register_component::<CrowdControlList>();
-  //Render components
-  // .register_component::<SkinnedMesh>()
-  // .register_component::<StaticMesh>()
-  // .register_component::<AutoAttackMesh>()
-  // .register_component::<AABB3DDebugMesh>();
+    .register_component::<CrowdControlList>()
+    //Render components
+    .register_component::<PlayerModel>()
+    .register_component::<AutoAttackModel>()
+    .register_component::<StaticModel>()
+    .register_component::<DebugModel>();
 }

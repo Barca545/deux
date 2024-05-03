@@ -1,5 +1,6 @@
 use super::math::{Mat4, Perspective, Vec3};
 use glm::{identity, scale, translate};
+use winit::dpi::PhysicalSize;
 
 //  Refactor:
 // -Screen dimension and Transforms can be merged? I think they're pretty much always accessed together but I should confirm.
@@ -24,6 +25,12 @@ pub struct Transforms {
   fovy: f32,
   znear: f32,
   zfar: f32,
+}
+
+impl From<PhysicalSize<u32>> for Transforms {
+  fn from(size: PhysicalSize<u32>) -> Self {
+    Transforms::new((size.width / size.height) as f32)
+  }
 }
 
 impl Transforms {

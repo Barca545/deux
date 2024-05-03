@@ -1,5 +1,4 @@
 mod dimensions;
-pub mod gl_data;
 pub mod math;
 mod raycasting;
 mod transforms;

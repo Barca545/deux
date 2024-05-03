@@ -47,7 +47,7 @@ impl Entities {
   }
 
   pub fn create_entity(&mut self) -> &mut Self {
-    if let Some((index, _)) = self.map.iter().enumerate().find(|(_index, mask)| **mask == 0) {
+    if let Some((index, _)) = self.map.iter().enumerate().find(|(index, mask)| **mask == 0) {
       self.inserting_into_index = index;
     } else {
       self.components.iter_mut().for_each(|(_key, components)| components.push(None));

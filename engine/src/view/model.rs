@@ -1,4 +1,4 @@
-use crate::view::render_gl::{
+use crate::view::{
   buffer::{IndexBuffer, VertexBuffer},
   Texture,
 };
@@ -57,26 +57,39 @@ impl Model {
 
 ///Exposes methods for rendering a single or multiple instances of a [`Model`].
 pub trait DrawModel<'a> {
-  fn draw_mesh(&mut self, mesh: &'a Mesh);
-  fn draw_mesh_instanced(&mut self, mesh: &'a Mesh, instances: Range<u32>);
+  fn draw_mesh(&mut self, mesh: &'a Mesh, material: &'a Material);
+  fn draw_mesh_instanced(&mut self, mesh: &'a Mesh, material: &'a Material, instances: Range<u32>);
+  fn draw_model_instanced(&mut self, model: &'a Model, instances: Range<u32>);
 }
 
 impl<'a, 'b> DrawModel<'b> for RenderPass<'a>
 where
   'b: 'a,
 {
-  fn draw_mesh(&mut self, mesh: &'b Mesh) {
-    self.draw_mesh_instanced(mesh, 0..1)
+  fn draw_mesh(&mut self, mesh: &'b Mesh, material: &'a Material) {
+    self.draw_mesh_instanced(mesh, material, 0..1)
   }
 
-  fn draw_mesh_instanced(&mut self, mesh: &'b Mesh, instances: Range<u32>) {
+  fn draw_mesh_instanced(&mut self, mesh: &'b Mesh, material: &'a Material, instances: Range<u32>) {
     //Buffer the vertices
     self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
 
     //Buffer the indices
     self.set_index_buffer(mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
+    //Set the texture bind group
+    self.set_bind_group(0, &material.bind_group, &[]);
+
     //Draw the mesh
     self.draw_indexed(mesh.indices_range(), 0, instances)
+  }
+
+  ///Iterate over the instances of a model and render each one.
+  fn draw_model_instanced(&mut self, model: &'b Model, instances: Range<u32>) {
+    //Iterate over the model's submeshes and render each one.
+    for mesh in &model.meshes {
+      let material = &model.materials[mesh.material];
+      self.draw_mesh_instanced(mesh, material, instances.clone());
+    }
   }
 }

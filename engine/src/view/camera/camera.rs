@@ -1,6 +1,6 @@
 extern crate nalgebra_glm as glm;
 use crate::math::{
-  math::{look_at, radians, Mat4, Vec3},
+  math::{look_at, radians, FlatMat4, Mat4, Vec3},
   Transforms,
 };
 
@@ -18,29 +18,23 @@ pub struct Camera {
   pub target: Vec3,
   pub up: Vec3,
   front: Vec3,
-  pv_mat: Option<[[f32; 4]; 4]>,
+  pv_mat: Option<FlatMat4>,
 }
 
 impl Camera {
   ///Create a new [`Camera`].
   pub fn new() -> Self {
-    // let x = 0.0;
-    // let z = DEFAULT_Z_DIST;
-    // let y = -z * radians(VIEW_ANGLE).tan();
+    let x = 0.0;
+    let z = DEFAULT_Z_DIST;
+    let y = -z * radians(VIEW_ANGLE).tan();
 
-    // let position: Vec3 = Vec3::new(x, y, z);
+    let position: Vec3 = Vec3::new(x, y, z);
 
-    //Delete
-    let position: Vec3 = Vec3::new(0.0, 1.0, 2.0);
-    let target: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-    let up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
-    let front: Vec3 = Vec3::new(0.0, 1.0, 0.0);
-
-    // let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
-    // let front: Vec3 = Vec3::new(-x, -y, -z);
-    // let right: Vec3 = front.cross(&world_up).normalize();
-    // let up: Vec3 = right.cross(&front).normalize();
-    // let target: Vec3 = position + front;
+    let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
+    let front: Vec3 = Vec3::new(-x, -y, -z);
+    let right: Vec3 = front.cross(&world_up).normalize();
+    let up: Vec3 = right.cross(&front).normalize();
+    let target: Vec3 = position + front;
 
     Camera {
       position,

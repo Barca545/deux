@@ -19,14 +19,6 @@ pub struct Texture {
 impl Texture {
   pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
-  pub fn new(device: &Device, queue: &Queue, label: &'static str) -> Self {
-    //Load the image
-    let bytes = include_bytes!("C:\\Users\\jamar\\Documents\\Hobbies\\Coding\\deux\\assets\\textures\\ground.jpg");
-    let img = image::load_from_memory(bytes).unwrap();
-
-    Self::from_image(device, queue, img, label)
-  }
-
   pub fn from_image(device: &Device, queue: &Queue, img: DynamicImage, label: &str) -> Self {
     // Create rgba8 image and dimension info
     let rgba = img.to_rgba8();

@@ -8,7 +8,7 @@ space_after_colon = false
 space_before_colon = false
 
 #DENSITY
-fn_params_layout = "Compressed"
+fn_params_layout = "Tall"
 use_field_init_shorthand = true
 control_brace_style = "ClosingNextLine"
 type_punctuation_density = "Wide"

@@ -1,6 +1,5 @@
-use crate::{component_lib::Position, ecs::World, filesystem::load_object, math::Vec3};
+use crate::{component_lib::Position, ecs::World, math::Vec3};
 use eyre::Result;
-use gl::Gl;
 
 pub fn spawn_enviroment(world: &mut World, name: &str) -> Result<()> {
   todo!()

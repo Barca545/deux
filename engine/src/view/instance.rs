@@ -1,23 +1,19 @@
-use crate::math::{Mat4, Vec3};
+use crate::{
+  component_lib::Position,
+  math::{math::FlatMat4, Mat4, Vec3},
+};
 use bytemuck::{Pod, Zeroable};
 use std::{mem, ops::Range};
-use wgpu::{vertex_attr_array, BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use wgpu::{vertex_attr_array, BufferAddress, VertexAttribute, VertexBufferLayout, VertexStepMode};
 
-//Get rid of the model transform from the Transforms section
-//Since the projection for my game is so simple I think I can just make
-//projection part of the camera again
-//InstanceRaw will become part of the mesh?
-
-//A Mat4 takes up 4 vertex slots as it is technically 4 vec4s.
-//We need to define a slot for each vec4.
-//We'll have to reassemble the mat4 in the shader.
+///Layout of an [`InstanceRaw`]'s matrix in the GPU. As a [`Mat4`] i.e. 4 vec4s, an `InstanceRaw` takes up four slots.
 const INST_ATTRIBS: [VertexAttribute; 4] = vertex_attr_array![5 => Float32x4,6 => Float32x4,7 => Float32x4,8 => Float32x4,];
 
 #[repr(C)]
-#[derive(Copy, Clone, Pod, Zeroable)]
+#[derive(Debug, Default, Copy, Clone, Pod, Zeroable)]
 ///Struct containing position information needed for rendering an instance of a `Mesh`.
 pub struct InstanceRaw {
-  model: [[f32; 4]; 4],
+  model: FlatMat4,
 }
 
 impl InstanceRaw {
@@ -34,6 +30,18 @@ impl InstanceRaw {
       step_mode: VertexStepMode::Instance,
       attributes: &INST_ATTRIBS,
     }
+  }
+}
+
+impl From<Position> for InstanceRaw {
+  fn from(position: Position) -> Self {
+    InstanceRaw::new(position.0)
+  }
+}
+
+impl From<&Position> for InstanceRaw {
+  fn from(position: &Position) -> Self {
+    InstanceRaw::new(position.0)
   }
 }
 

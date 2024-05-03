@@ -1,6 +1,6 @@
-use std::ops::RangeBounds;
-
 use super::Vertex;
+use crate::view::InstanceRaw;
+use std::ops::RangeBounds;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{Buffer, BufferAddress, BufferSlice, BufferUsages, Device};
 
@@ -49,6 +49,34 @@ impl IndexBuffer {
     IndexBuffer {
       buffer,
       len: indices.len() as u32,
+    }
+  }
+
+  ///Use only a portion of this Buffer for a given operation. Choosing a range with no end will use the rest of the buffer. Using a totally unbounded range will use the entire buffer.
+  pub fn slice<S>(&self, bounds: S) -> BufferSlice
+  where
+    S: RangeBounds<BufferAddress>,
+  {
+    self.buffer.slice(bounds)
+  }
+}
+
+pub struct InstanceBuffer {
+  buffer: Buffer,
+  pub len: u32,
+}
+
+impl InstanceBuffer {
+  pub fn new(device: &Device, instances: &Vec<InstanceRaw>) -> Self {
+    let buffer = device.create_buffer_init(&BufferInitDescriptor {
+      label: Some("instance buffer"),
+      contents: bytemuck::cast_slice(&instances),
+      usage: BufferUsages::VERTEX,
+    });
+
+    InstanceBuffer {
+      buffer,
+      len: instances.len() as u32,
     }
   }
 

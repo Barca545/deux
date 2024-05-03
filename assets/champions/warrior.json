@@ -15,5 +15,6 @@
     "height":0.7,
     "radius":0.7
   },
-  "pathing_radius":0.5
+  "pathing_radius":0.5,
+  "gameplay_radius":0.5
 }

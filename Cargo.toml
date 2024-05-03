@@ -1,19 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
-  "gl",
   "game_loop",
   "engine"
 ]
 
 [workspace.dependencies]
 game_loop = {path ="game_loop"}
-gl = {path ="gl"}
 engine = {path ="engine"}
 
 eyre = "0.3.7"
 thiserror = "1.0.48"
-cgmath = "0.18.0"
 image = "0.24.7"
 nalgebra = "0.32.3"
 nalgebra-glm = "0.18.0"
@@ -43,8 +40,6 @@ features = ["image"]
 version = "0.53.0"
 default-features = false
 
-[workspace.features]
-gl_debug = ["gl/debug"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
