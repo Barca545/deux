@@ -3,7 +3,7 @@ use glm::{self, inverse, vec3, vec4};
 use crate::view::camera::Camera;
 
 use super::math::{Mat4, Vec3, Vec4};
-use super::{Dimensions, Transforms};
+use super::Transforms;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RayCast {
@@ -74,15 +74,15 @@ impl RayCast {
 pub struct MouseRay(pub RayCast);
 
 impl MouseRay {
-  pub fn new(x: f64, y: f64, screen_dimensions: &Dimensions, transforms: &Transforms, camera: &Camera) -> Self {
+  pub fn new(x: f64, y: f64, transforms: &Transforms, camera: &Camera) -> Self {
     let inverse_projection: Mat4 = transforms.proj_mat().try_inverse().unwrap();
     let inverse_view: Mat4 = inverse(&camera.view_mat());
 
-    let ndc_x = 2.0 * x as f32 / screen_dimensions.width as f32 - 1.0; //range [-1,1]
-    let ndc_y = 1.0 - (2.0 * y as f32) / screen_dimensions.height as f32; //range [-1,1]
+    // let ndc_x = 2.0 * x as f32 / screen_dimensions.width as f32 - 1.0; //range [-1,1]
+    // let ndc_y = 1.0 - (2.0 * y as f32) / screen_dimensions.height as f32; //range [-1,1]
 
     //get the ray's origin in worldspace
-    let origin_ndc: Vec4 = vec4(ndc_x, ndc_y, -1.0, 1.0);
+    let origin_ndc: Vec4 = vec4(x as f32, y as f32, -1.0, 1.0);
 
     //convert to viewspace
     let mut ray_origin_viewspace_coordinates: Vec4 = inverse_projection * origin_ndc;
@@ -92,7 +92,7 @@ impl MouseRay {
     let mut ray_origin_worldspace_coordinates: Vec4 = inverse_view * ray_origin_viewspace_coordinates;
     ray_origin_worldspace_coordinates /= ray_origin_worldspace_coordinates.w;
 
-    let end_ndc: Vec4 = vec4(ndc_x, ndc_y, 0.0, 1.0);
+    let end_ndc: Vec4 = vec4(x as f32, y as f32, 0.0, 1.0);
 
     //convert to viewspace
     let mut ray_end_viewspace_coordinates: Vec4 = inverse_projection * end_ndc;
@@ -107,57 +107,5 @@ impl MouseRay {
 
   pub fn ray_ground_intersection(&self) -> Vec3 {
     self.0.ray_ground_intersection()
-  }
-}
-
-#[cfg(test)]
-mod test {
-  use super::MouseRay;
-  use crate::{
-    math::{Dimensions, Transforms},
-    view::camera::Camera,
-  };
-  use glm::{vec3, Vec3};
-  #[test]
-  fn ray_plane_intersection() {
-    let ray_direction: Vec3 = vec3(0.0, -1.0, -1.0);
-    let ray_origin: Vec3 = vec3(0.0, 0.0, 10.0);
-    let plane_normal: Vec3 = vec3(0.0, 0.0, 1.0); //I think the normal to plane xz is this
-    let plane_origin: Vec3 = vec3(0.0, 0.0, 5.0); //this is "plane_point" in the tutorial.
-
-    let numerator = (plane_origin - ray_origin).dot(&plane_normal);
-    let denominator = ray_direction.dot(&plane_normal);
-    let distance = numerator / denominator;
-
-    let intersection_point: Vec3 = ray_origin + ray_direction.scale(distance);
-    dbg!(intersection_point);
-  }
-
-  #[test]
-  fn mouse_intersection() {
-    // confirm a ray from the center of the screen hits the origin
-    let x = 1280.0 / 2.0;
-    let y = 720.0 / 2.0;
-
-    let screen_dimensions = Dimensions::new(720, 1280);
-    let transforms = Transforms::new(screen_dimensions.aspect);
-
-    let camera = Camera::default();
-
-    let mut mouse_ray = MouseRay::new(x, y, &screen_dimensions, &transforms, &camera).0;
-    mouse_ray.direction = vec3(0.0, -1.0, 0.0);
-
-    dbg!(mouse_ray.origin);
-    dbg!(mouse_ray.direction);
-
-    //this seems to be wrong, should return 0,0. Do this math by hand and dbg each
-    // line of the code to isolate the divergence-0-/9[p09-p[.9578-9-p[.]]]
-    // issue seems to have been I was accidently scaling by distance twice test some
-    // more points to confirm``
-    let intersection: Vec3 = mouse_ray.ray_ground_intersection();
-    dbg!(intersection);
-    //set the direction to straight down, the point of intersection should just
-    // be the input point with y = 0 if this is not the result the math
-    // error is happening elsewhere
   }
 }

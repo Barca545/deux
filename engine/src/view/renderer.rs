@@ -1,10 +1,12 @@
 use super::{buffer::InstanceBuffer, camera::Camera, DrawModel, Frame, InstanceRaw, Instances, Model, ModelId, ModelVertex, Texture};
 use crate::{
-  component_lib::{PlayerModel, Position},
+  component_lib::{Position, PreviousPosition, SkinnedRenderable, StaticRenderable},
   data_storage::Arena,
   ecs::World,
   filesystem::{load_model, load_shader},
   math::Transforms,
+  time::ServerTime,
+  utility::calculate_render_position,
   view::Vertex,
 };
 use eyre::Result;
@@ -26,8 +28,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 // -Does the Adapter/Device need to be released at the end of the program?
 // -Swap the frame buffer?
 // -Create load functions for the shaders
-// -Update method is where new instances and other data are passed in for rendering
-// -Update method may belong elsewhere
+// -Do static meshes need a different pipeline?
 
 pub static mut MODEL_NUM: usize = 0;
 
@@ -192,14 +193,29 @@ impl Renderer {
     //Create a new frame
     let mut frame = Frame::new(&camera);
 
-    let mut query = world.query();
-    let entities = query.with_component::<PlayerModel>().unwrap().run();
+    let server_time = world.get_resource::<ServerTime>().unwrap();
 
+    //Render skinned models
+    let mut query = world.query();
+    let entities = query.with_component::<SkinnedRenderable>().unwrap().run();
     //Add every instance of a model which needs to be rendered to the frame
     for entity in entities {
-      let model_id = entity.get_component::<PlayerModel>().unwrap();
+      let model_id = entity.get_component::<SkinnedRenderable>().unwrap();
       let position = entity.get_component::<Position>().unwrap();
-      frame.add_instance(&model_id.0, &position)
+      let previous_position = entity.get_component::<PreviousPosition>().unwrap();
+
+      let render_position = calculate_render_position(*previous_position, *position, server_time.get_interpolation_factor());
+      frame.add_instance(&model_id.0, &render_position);
+    }
+
+    //Render static models
+    let mut query = world.query();
+    let entities = query.with_component::<StaticRenderable>().unwrap().run();
+    //Add every instance of a model which needs to be rendered to the frame
+    for entity in entities {
+      let model_id = entity.get_component::<StaticRenderable>().unwrap();
+      let position = entity.get_component::<Position>().unwrap();
+      frame.add_instance(&model_id.0, &position);
     }
 
     self.frame = frame;

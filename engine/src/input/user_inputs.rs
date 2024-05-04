@@ -1,13 +1,17 @@
-use glfw::{get_key_name, Key, MouseButton, Window};
-use serde::{Deserialize, Serialize};
-
 use crate::{
   ecs::World,
   errors::InputErrors,
-  math::{Dimensions, MouseRay, Transforms},
+  math::{MouseRay, Transforms},
+  view::camera::Camera,
 };
 use eyre::Result;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug};
+use winit::{
+  dpi::PhysicalPosition,
+  event::MouseButton,
+  keyboard::{KeyCode, PhysicalKey as Key},
+};
 
 //Refactor:
 // -Keybinds need to be renamed since I want to have the Input struct hold the key action
@@ -15,6 +19,7 @@ use std::{collections::HashMap, fmt::Debug};
 // -Figure out better way to get the mouse button names
 // -Figure out if there is a reason for this to be separate from GameEvents? I think the inputs can possibly just be maped to those here, directly
 //  One reason might be so the client and server can be decoupled
+// -Need to find ways to store mouse bindings
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Keybind {
@@ -26,64 +31,59 @@ pub enum Keybind {
 }
 
 #[derive(Debug, Clone)]
-pub struct Keybinds(HashMap<String, Keybind>);
+pub struct Keybinds {
+  buttons: HashMap<Key, Keybind>,
+  mouse: HashMap<MouseButton, Keybind>,
+}
+
 impl Keybinds {
   ///Create an [`Input`] from a [`Key`].
-  pub fn key_input(&self, world: &World, window: &Window, key: Key) -> Result<Input> {
-    todo!()
-    // if let Some(keystring) = key.get_name() {
-    //   if let Some(keybind) = self.0.get(&keystring) {
-    //     let (x, y) = window.get_cursor_pos();
-    //     let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
-    //     let transforms = world.get_resource::<Transforms>().unwrap();
-    //     let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
-    //     Ok(Input { mouse, keybind: *keybind })
-    //   } else {
-    //     return Err(InputErrors::KeyNotRegistered { key }.into());
-    //   }
-    // } else {
-    //   return Err(InputErrors::KeyNameNotFound { key }.into());
-    // }
+  pub fn key_input(&self, world: &World, mouse_pos: &PhysicalPosition<f64>, key: Key) -> Result<Input> {
+    if let Some(keybind) = self.buttons.get(&key) {
+      let transforms = world.get_resource::<Transforms>().unwrap();
+      let camera = world.get_resource::<Camera>().unwrap();
+      let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera);
+
+      Ok(Input { mouse, keybind: *keybind })
+    } else {
+      return Err(InputErrors::KeyNotRegistered { key }.into());
+    }
   }
 
-  ///Create an [`Input`] from a [`Key`].
-  pub fn mouse_input(&self, world: &World, window: &Window, button: MouseButton) -> Result<Input> {
-    todo!()
-    // let buttonstring = format!("{:?}", button);
-    // if let Some(keybind) = self.0.get(&buttonstring) {
-    //   let (x, y) = window.get_cursor_pos();
-    //   dbg!((x, y));
-    //   let screen_dimensions = world.get_resource::<Dimensions>().unwrap();
-    //   let transforms = world.get_resource::<Transforms>().unwrap();
-    //   let mouse = MouseRay::new(x, y, &screen_dimensions, &transforms);
-    //   Ok(Input { mouse, keybind: *keybind })
-    // } else {
-    //   return Err(InputErrors::ButtonNotRegistered { button }.into());
-    // }
+  ///Create an [`Input`] from a mouse button click.
+  pub fn mouse_input(&self, world: &World, mouse_pos: &PhysicalPosition<f64>, button: &MouseButton) -> Result<Input> {
+    if let Some(keybind) = self.mouse.get(&button) {
+      let transforms = world.get_resource::<Transforms>().unwrap();
+      let camera = world.get_resource::<Camera>().unwrap();
+      let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera);
+      Ok(Input { mouse, keybind: *keybind })
+    } else {
+      return Err(InputErrors::ButtonNotRegistered { button: *button }.into());
+    }
   }
 
   ///Returns a [`Key`]'s corresponding [`Keybind`].
-  pub fn get_input(&self, key: Key, scancode: i32) -> Result<Keybind> {
-    if let Some(keystring) = get_key_name(Some(key), Some(scancode)) {
-      if let Some(keybind) = self.0.get(&keystring) {
-        Ok(*keybind)
-      } else {
-        return Err(InputErrors::KeyNotRegistered { key }.into());
-      }
+  pub fn get_input(&self, key: Key) -> Result<Keybind> {
+    if let Some(keybind) = self.buttons.get(&key) {
+      Ok(*keybind)
     } else {
-      return Err(InputErrors::KeyNameNotFound { key }.into());
+      return Err(InputErrors::KeyNotRegistered { key }.into());
     }
   }
 }
 
 impl Default for Keybinds {
   fn default() -> Self {
-    let mut keybinds = Keybinds(HashMap::new());
-    keybinds.0.insert(String::from("Button2"), Keybind::MouseClick);
-    keybinds.0.insert(String::from("q"), Keybind::AbilityOne);
-    keybinds.0.insert(String::from("w"), Keybind::AbilityTwo);
-    keybinds.0.insert(String::from("e"), Keybind::AbilityThree);
-    keybinds.0.insert(String::from("r"), Keybind::AbilityFour);
+    let mut keybinds = Keybinds {
+      buttons: HashMap::new(),
+      mouse: HashMap::new(),
+    };
+    keybinds.buttons.insert(Key::Code(KeyCode::KeyQ), Keybind::AbilityOne);
+    keybinds.buttons.insert(Key::Code(KeyCode::KeyW), Keybind::AbilityTwo);
+    keybinds.buttons.insert(Key::Code(KeyCode::KeyE), Keybind::AbilityThree);
+    keybinds.buttons.insert(Key::Code(KeyCode::KeyR), Keybind::AbilityFour);
+
+    keybinds.mouse.insert(MouseButton::Left, Keybind::MouseClick);
     keybinds
   }
 }
@@ -129,32 +129,5 @@ impl FrameInputs {
   pub fn clear(&mut self) {
     //This needs to do something like not clear the ones still being held down?
     self.inputs.clear()
-  }
-}
-
-#[cfg(test)]
-mod test {
-  use crate::{
-    ecs::World,
-    input::user_inputs::Keybind,
-    math::{Dimensions, Transforms},
-  };
-  use eyre::Result;
-  use glfw::Key;
-
-  use super::Keybinds;
-
-  #[test]
-  fn get_user_input_from_keybinds() -> Result<()> {
-    todo!()
-    // let keybinds = Keybinds::default();
-    // let mut world = World::new();
-    // let screen_dimensions = Dimensions::new(1280, 720);
-    // let transforms = Transforms::new(&screen_dimensions.aspect);
-    // world.add_resource(screen_dimensions).add_resource(transforms);
-    // let q = keybinds.get_input(Key::Q, 16)?;
-
-    // assert_eq!(q, Keybind::AbilityOne);
-    // Ok(())
   }
 }

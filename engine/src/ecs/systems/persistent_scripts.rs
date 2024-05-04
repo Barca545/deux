@@ -37,13 +37,13 @@ pub fn execute_scripts(world: &mut World) {
   }
 
   //Delete the timed out scripts and run their stop logic
-  for (owner, entity, stop) in timed_out_scripts {
-    run_scripts(world, &owner, &stop.0);
-    world.delete_entity(entity).unwrap();
+  for (owner, ability_id, stop) in timed_out_scripts {
+    run_scripts(world, &owner, &ability_id, &stop.0);
+    world.delete_entity(ability_id).unwrap();
   }
 
   //Execute scripts
-  for (owner, entity, running) in buffered_scripts {
-    run_scripts(world, &owner, &running.0)
+  for (owner, ability_id, running) in buffered_scripts {
+    run_scripts(world, &owner, &ability_id, &running.0)
   }
 }

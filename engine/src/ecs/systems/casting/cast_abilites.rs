@@ -30,16 +30,17 @@ pub fn cast_abilites(world: &mut World) {
         //Buffer the start logic for the ability
         let owner = cast.ability.owner;
         let mouse = cast.ability.mouse;
+        let target = cast.ability.target;
         let start_script = cast.ability.scripts.start().unwrap();
-        buffered_scripts.push((mouse, owner.id(), start_script.0.clone(), cooldown));
+        buffered_scripts.push((mouse, owner.id(), start_script.0.clone(), cooldown, target));
       }
     }
   }
 
   //Cast the buffered abilities
-  for (mouse, owner, script, cooldown) in &mut buffered_scripts {
+  for (mouse, owner, script, cooldown, target) in &mut buffered_scripts {
     //Execute the scripts
-    let did_cast = eval_scripts_mouse::<bool>(world, owner, owner, mouse, script).unwrap();
+    let did_cast = eval_scripts_mouse::<bool>(world, owner, target, mouse, script).unwrap();
 
     if did_cast {
       //Reset the ability's cooldown

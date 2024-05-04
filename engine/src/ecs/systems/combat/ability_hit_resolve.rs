@@ -42,8 +42,8 @@ pub fn ability_hit_resolve(world: &mut World) {
     });
   }
   //Run the onhit field of the script and delete the ability
-  for (owner, entity, script) in &buffered_scripts {
-    run_scripts(world, owner, script);
-    world.delete_entity(*entity).unwrap();
+  for (owner, ability_id, script) in &buffered_scripts {
+    run_scripts(world, owner, ability_id, script);
+    world.delete_entity(*ability_id).unwrap();
   }
 }

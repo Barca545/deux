@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::{Controllable, Owner, Player, SelectionRadius, Target},
+  component_lib::{AbilityMap, Controllable, Owner, Player, SelectionRadius, Target},
   ecs::World,
   event::{GameEvent, GameEventQueue},
   input::user_inputs::{FrameInputs, Keybind},
@@ -28,14 +28,12 @@ pub fn update_target(world: &World, entity: usize, mouse: MouseRay) {
     if ray_aabb3d_collision_test(hitbox.0, mouse.0) {
       *target = Target::new(targetable_entity.id);
       if can_attack(world, entity, targetable_entity.id) {
-        let owner = Owner::new(entity);
-        let mut queue = world.get_resource_mut::<GameEventQueue>().unwrap();
-        //Add the event to the events' pending field
-        queue.push(GameEvent::AbilityStart {
-          owner,
-          ability_slot: 12,
-          mouse,
-        });
+        let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
+
+        let ability_map = world.get_component::<AbilityMap>(entity).unwrap();
+        if let Some(buffered_cast) = ability_map.create_ability_cast(12, Owner::new(entity), mouse, *target) {
+          events.push(GameEvent::AbilityStart(buffered_cast));
+        }
       }
       //Return early if a target is found
       return;
@@ -59,41 +57,13 @@ pub fn process_inputs(world: &World) {
   let inputs = world.get_resource_mut::<FrameInputs>().unwrap();
   inputs.process_inputs(|input| match input.keybind {
     Keybind::MouseClick => update_target(world, player_id, input.mouse),
-    Keybind::AbilityOne => {
+    keybind => {
       let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-      //Create the ability 1 start event
-      events.push(GameEvent::AbilityStart {
-        owner: Owner::new(player_id),
-        ability_slot: 1,
-        mouse: input.mouse,
-      })
-    }
-    Keybind::AbilityTwo => {
-      let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-      //Create the ability 2 start event
-      events.push(GameEvent::AbilityStart {
-        owner: Owner::new(player_id),
-        ability_slot: 2,
-        mouse: input.mouse,
-      })
-    }
-    Keybind::AbilityThree => {
-      let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-      //Create the ability 3 start event
-      events.push(GameEvent::AbilityStart {
-        owner: Owner::new(player_id),
-        ability_slot: 3,
-        mouse: input.mouse,
-      })
-    }
-    Keybind::AbilityFour => {
-      let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
-      //Create the ability 4 start event
-      events.push(GameEvent::AbilityStart {
-        owner: Owner::new(player_id),
-        ability_slot: 4,
-        mouse: input.mouse,
-      })
+      let target = entity.get_component::<Target>().unwrap();
+      let ability_map = entity.get_component::<AbilityMap>().unwrap();
+      if let Some(buffered_cast) = ability_map.create_ability_cast(keybind as u32, Owner::new(player_id), input.mouse, *target) {
+        events.push(GameEvent::AbilityStart(buffered_cast));
+      }
     }
   });
 }

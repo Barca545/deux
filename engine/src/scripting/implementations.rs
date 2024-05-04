@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::{
   arena::{Grid, Terrain},
   component_lib::{
-    AbilityMap, BecsId, DamageType, Destination, Health, IncomingDamage, MagicDamage, Owner, Path, PhysicalDamage, Position, SpellResource, Target, UnitSpeed,
+    AbilityMap, BecsId, DamageType, Destination, Health, IncomingDamage, MagicDamage, Owner, PhysicalDamage, Position, SpellResource, Target, UnitSpeed,
   },
   ecs::World,
   math::{MouseRay, Vec3},
@@ -15,7 +15,6 @@ use mlua::{FromLua, Lua, Result as LuaResult, UserData, UserDataMethods, Value};
 
 // Refactor
 // -Figure out how to convert ECS errors into LuaErrors
-// -Convert terrain to lua. ergonomically, I think I'll do strings until it shows as a performance issue
 // -I think the damage calculation might need to be here so I can have stuff like lifesteal etc
 
 impl UserData for World {
@@ -23,7 +22,7 @@ impl UserData for World {
     //Get an entity's target
     methods.add_method("getTarget", |_, world, entity: usize| {
       let target = world.get_component::<Target>(entity).unwrap();
-      let target = LuaEntity::from(target.0.unwrap());
+      let target = LuaEntity::from(*target);
       Ok(target)
     });
 
@@ -65,8 +64,8 @@ impl UserData for World {
     });
 
     //Spawn a targeted projectile
-    methods.add_method_mut("spawnTargetedProjectile", |_, world, (owner, target): (usize, usize)| {
-      let auto_attack = create_ranged_auto_attack(world, Owner::new(owner), Target(Some(target)));
+    methods.add_method_mut("spawnTargetedProjectile", |_, world, (owner, target, ability_slot): (usize, usize, u32)| {
+      let auto_attack = create_ranged_auto_attack(world, Owner::new(owner), Target(Some(target)), ability_slot);
       world.create_entity().with_components(auto_attack).unwrap();
       Ok(())
     });
@@ -114,14 +113,6 @@ impl UserData for World {
       Ok([position.0.x, position.0.y, position.0.z])
     });
 
-    //Add a new node to an entity's Path component
-    methods.add_method("addNodetoPath", |_, world, (entity, node): (usize, [f32; 3])| {
-      let mut path = world.get_component_mut::<Path>(entity).unwrap();
-      let node = Destination::from(node);
-      path.push(node);
-      Ok(())
-    });
-
     //Instantly move an entity to a new position
     methods.add_method("blink", |_, world, (owner, new_position): (usize, [f32; 3])| {
       //set the position of the entity and its destination equal to the target position
@@ -132,7 +123,7 @@ impl UserData for World {
       //need logic to eject a player if they're inside another hitbox
       //loop through entities, check for a collision, if inside push in direction facing by collided entity radius then check again not inside, etc
       // if it does this more than two times, try another direction
-      // (backwards then 90 degrees etc)
+      // (backwards then forwards then 90 degrees etc)
       Ok(())
     });
 
@@ -154,7 +145,8 @@ impl UserData for World {
         running = scripts.running();
         stop = scripts.stop();
       }
-      create_persistent_script(world, owner, running, stop, duration).unwrap();
+
+      create_persistent_script(world, owner, running, stop, duration);
       Ok(())
     });
 

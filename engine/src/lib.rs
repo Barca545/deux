@@ -3,7 +3,6 @@ extern crate nalgebra_glm as glm;
 
 pub mod arena;
 pub mod component_lib;
-pub mod config;
 pub mod data_storage;
 pub mod ecs;
 pub mod errors;

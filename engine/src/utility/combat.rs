@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::{Armor, AutoAttack, BecsId, Destination, MagicResist, MissleSpeed, Owner, Position, PreviousPosition, Target, Team, Velocity},
+  component_lib::{AbilityMap, Armor, AutoAttack, BecsId, Destination, MagicResist, MissleSpeed, Owner, Position, PreviousPosition, Target, Team, Velocity},
   ecs::{Bundle, World},
 };
 
@@ -31,39 +31,39 @@ pub fn can_attack(world: &World, player: usize, target: usize) -> bool {
 }
 
 ///Returns a [`Bundle`] containing the data needed to spawn an auto attack entity.
-pub fn create_ranged_auto_attack(world: &World, owner: Owner, target: Target) -> impl Bundle {
-  todo!()
-  // let bundle;
-  // {
-  //   //Get the owner's position
-  //   let owner_position = world.get_component::<Position>(owner.id()).unwrap();
+pub fn create_ranged_auto_attack(world: &World, owner: Owner, target: Target, ability_slot: u32) -> impl Bundle {
+  let bundle;
+  {
+    //Get the owner's position
+    let owner_position = world.get_component::<Position>(owner.id()).unwrap();
 
-  //   //Create the projectile's position information
-  //   let attack_position = Position(owner_position.0);
-  //   let previous_attack_position = PreviousPosition(owner_position.0);
+    //Create the projectile's position information
+    let attack_position = Position(owner_position.0);
+    let previous_attack_position = PreviousPosition(owner_position.0);
 
-  //   //Get the target's position
-  //   let destination = Destination::from(*world.get_component::<Position>(target.0.unwrap()).unwrap());
+    //Get the target's position
+    let destination = Destination::from(*world.get_component::<Position>(target.0.unwrap()).unwrap());
 
-  //   //Create the projectile speed
-  //   let speed = world.get_component::<MissleSpeed>(owner.id()).unwrap();
+    //Create the projectile speed
+    let speed = world.get_component::<MissleSpeed>(owner.id()).unwrap();
 
-  //   //Calculate velocity
-  //   let velocity = Velocity::new(&attack_position, &destination, &speed.total());
+    //Calculate velocity
+    let velocity = Velocity::new(&attack_position, &destination, &speed.total());
 
-  //   //Get the mesh info
-  //   let auto_attack_mesh = world.get_component::<AutoAttackMesh>(owner.id()).unwrap();
+    //Get the mesh info
+    let map = world.get_component::<AbilityMap>(owner.id()).unwrap();
+    let info = map.get(ability_slot);
 
-  //   bundle = (
-  //     AutoAttack::default(),
-  //     attack_position,
-  //     previous_attack_position,
-  //     *speed,
-  //     velocity,
-  //     SkinnedMesh::from(auto_attack_mesh.clone()),
-  //     owner,
-  //     target,
-  //   );
-  //   bundle
-  // }
+    bundle = (
+      AutoAttack::default(),
+      attack_position,
+      previous_attack_position,
+      *speed,
+      velocity,
+      info.model_id.unwrap(),
+      owner,
+      target,
+    );
+    bundle
+  }
 }

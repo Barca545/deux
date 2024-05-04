@@ -35,6 +35,12 @@ impl From<Position> for PreviousPosition {
   }
 }
 
+impl From<[f32; 3]> for PreviousPosition {
+  fn from(value: [f32; 3]) -> Self {
+    PreviousPosition(Vec3::from(value))
+  }
+}
+
 #[derive(Debug, Clone, Copy)]
 ///Component holding the position an entity is moving towards.
 pub struct Destination(pub Vec3);

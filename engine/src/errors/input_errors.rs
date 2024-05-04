@@ -1,10 +1,8 @@
-use glfw::{Key, MouseButton};
 use thiserror::Error;
+use winit::{event::MouseButton, keyboard::PhysicalKey as Key};
 
 #[derive(Debug, Error)]
 pub enum InputErrors {
-  #[error("GLFW key name not found for {key:?}")]
-  KeyNameNotFound { key: Key },
   #[error("No Keybind registered for {key:?}")]
   KeyNotRegistered { key: Key },
   #[error("No Keybind registered for {button:?}")]

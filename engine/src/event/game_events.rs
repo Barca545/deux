@@ -1,5 +1,5 @@
 use crate::{
-  component_lib::{Cooldown, Owner},
+  component_lib::{BufferedAbilityCast, Cooldown, Owner},
   math::MouseRay,
   time::Timer,
 };
@@ -11,13 +11,12 @@ use crate::{
 //  Not 100% on this, there may be reasons to keep it.
 // -Need an ability cast event that can be emitted by the stage in the casting system when an ability is cast
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum GameEvent {
   //Ability events
-  AbilityStart { owner: Owner, ability_slot: u32, mouse: MouseRay },
-  AbilityCast,
+  AbilityStart(BufferedAbilityCast),
   AbilityHit { owner: Owner, ability_slot: u32, ability_id: usize },
-
+  AbilityCast,
   //Combat events
   EntityKilled { target: usize, killer: usize },
 
@@ -105,7 +104,7 @@ impl GameEventQueue {
     let completed = self
       .pending
       .iter()
-      .filter_map(|event| if event.timer.is_zero() { Some(event.event) } else { None })
+      .filter_map(|event| if event.timer.is_zero() { Some(event.event.clone()) } else { None })
       .collect::<Vec<GameEvent>>();
 
     //Add the completed events to the current events

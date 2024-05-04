@@ -5,13 +5,9 @@ use crate::{
   errors::FilesystemErrors,
   view::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer},
 };
-use config::{Config, File as ConfigFile};
 use eyre::Result;
 use image::io::Reader;
-use std::{
-  env::{current_dir, var},
-  fs,
-};
+use std::fs;
 use tobj::LoadOptions;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, Device, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 
@@ -159,129 +155,9 @@ pub fn load_shader(device: &Device, name: &str) -> Result<ShaderModule> {
 
 ///Loads the a [`Grid`]'s information.
 pub fn load_grid(name: &str, extension: &str) -> Result<Grid> {
-  let path = var("grid_folder")? + "/" + name + "." + extension;
-  let grid_path = fs::read_to_string(path)?;
-  let grid: Grid = serde_json::from_str(&grid_path)?;
-  Ok(grid)
-}
-
-///Loads a configuration file from a given path.
-pub fn load_config() -> Result<Config> {
-  let root_directory = load_root_directory()?;
-  let config_path = &(root_directory + "config");
-
-  let config_path = "C:/Users/jamar/Documents/Hobbies/Coding/deux/config";
-
-  let config = Config::builder().add_source(ConfigFile::with_name(config_path)).build().unwrap();
-  Ok(config)
-}
-
-///Returns the path of the working directory as a string (the path "./").
-fn load_root_directory() -> Result<String> {
-  //For testing in the engine
-  // let directory = current_dir()?.parent().unwrap().to_str().unwrap().to_owned() + "/";
-
-  //For production
-  let directory = current_dir()?.to_str().unwrap().to_owned() + "/";
-  Ok(directory)
-}
-
-#[cfg(test)]
-mod test {
-  use super::load_champion_json;
-  use crate::{
-    errors::FilesystemErrors,
-    filesystem::load::{load_config, load_root_directory},
-    view::ModelVertex,
-  };
-  use eyre::Result;
-  use image::io::Reader;
-  use std::{
-    env::{set_var, var},
-    path::Path,
-  };
-  use tobj;
-
-  #[test]
-  fn get_config() -> Result<()> {
-    let config = load_config()?;
-    let shader_path: String = config.get("shader_path")?;
-
-    set_var("shader_path", shader_path);
-    let test = var("shader_path")?;
-    dbg!(test);
-    Ok(())
-  }
-
-  #[test]
-  fn get_working_directory() -> Result<()> {
-    let directory = load_root_directory()?;
-    dbg!(directory);
-    Ok(())
-  }
-
-  #[test]
-  fn load_image() -> Result<()> {
-    let name = "cube";
-    let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}-diffuse.jpg");
-
-    //Check whether the image file loaded
-    match Reader::open(&path) {
-      Ok(img) => match img.decode() {
-        Ok(_) => {}
-        Err(err) => return Err(FilesystemErrors::FailedToDecodeImage(err).into()),
-      },
-      Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name: name.to_string(), path }.into()),
-    }
-    Ok(())
-  }
-
-  #[test]
-  fn load_champion_components_from_json() -> Result<()> {
-    let champion = load_champion_json("test_champion")?;
-    let health = champion.health;
-    dbg!(health);
-    let speed = champion.unit_speed;
-    dbg!(speed);
-    let selection_radius = champion.selection_radius;
-    dbg!(selection_radius);
-    let pathing_radius = champion.pathing_radius;
-    dbg!(pathing_radius);
-    let auto_attack_missle_speed = champion.auto_attack_missle_speed;
-    dbg!(auto_attack_missle_speed);
-    let auto_attack_cooldown = champion.auto_attack_cooldown;
-    dbg!(auto_attack_cooldown);
-    let attack_damage = champion.attack_damage;
-    dbg!(attack_damage);
-
-    Ok(())
-  }
-
-  #[test]
-  fn load_obj() -> Result<()> {
-    let name = "C:/Users/Jamari/Documents/Hobbies/Coding/deux/target/debug/assets/box.obj";
-    let path = Path::new(name);
-    // let load_options = tobj::LoadOptions { single_index: (), triangulate: (), ignore_points: (), ignore_lines: () }
-    let (models, _materials) = tobj::load_obj(path, &tobj::GPU_LOAD_OPTIONS)?;
-    let mesh = &models[0].mesh;
-    //unsure cloning is the way but I want to own the data not reference it
-    let indices = &mesh.indices;
-
-    let mut vertices = vec![];
-
-    for index in indices {
-      let position_offset = (index * 3) as usize;
-      let texture_offset = (index * 2) as usize;
-      let position = [
-        mesh.positions[position_offset],
-        mesh.positions[position_offset + 1],
-        mesh.positions[position_offset + 2],
-      ];
-      let texture = [mesh.positions[texture_offset], mesh.positions[texture_offset + 1]];
-
-      let vertex = ModelVertex::new(position, texture);
-      vertices.push(vertex)
-    }
-    Ok(())
-  }
+  // let path = var("grid_folder")? + "/" + name + "." + extension;
+  // let grid_path = fs::read_to_string(path)?;
+  // let grid: Grid = serde_json::from_str(&grid_path)?;
+  // Ok(grid)
+  todo!()
 }

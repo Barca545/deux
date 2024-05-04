@@ -1,7 +1,7 @@
 use crate::{
   component_lib::{
     AbilityInfo, AbilityMap, CastQueue, Controllable, Destination, Exp, Gold, Health, IncomingDamage, Level, MissleSpeed, Path, PhysicalDamage, Player,
-    PlayerModel, PlayerState, Position, PreviousPosition, Script, SelectionRadius, SpellResource, Target, Team, UnitSpeed, Velocity, KDA,
+    PlayerState, Position, PreviousPosition, Script, SelectionRadius, SkinnedRenderable, SpellResource, Target, Team, UnitSpeed, Velocity, KDA,
   },
   ecs::{world_resources::DebugElements, World},
   filesystem::load_champion_json,
@@ -50,7 +50,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut R
   let path = Path::new();
 
   //Render info
-  let player_model = PlayerModel(renderer.add_model(name));
+  let player_model = SkinnedRenderable(renderer.add_model(name));
 
   //Combat info
   let incoming_damage = IncomingDamage::new();
@@ -73,10 +73,10 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut R
   let ability_3_scripts = Script::new(
     Some(
       r#"
-      world:accelerate(owner.id,3.0)
+      world:accelerate(owner.id,3.0);
       world:spawnPersistentScript(owner.id,5.0,3);
-      local pos = mouse:ground_intersection()
-      world:blink(owner.id,pos)
+      local pos = mouse:ground_intersection();
+      world:blink(owner.id,pos);
       "#,
     ),
     Some("onhit"),
@@ -91,11 +91,11 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut R
   let auto_attack_scripts = Script::new(
     Some(
       r#"
-      local target = world:getTarget(entity.id);
+      local ability_slot = 12;
       local cost = 50;
       if world:hasResource(owner.id, cost) and world:targetIsalive(target.id) and world:isEnemy(owner.id, target.id) then
         world:removeResource(owner.id, cost);
-        world:spawnTargetedProjectile(owner.id, target.id);
+        world:spawnTargetedProjectile(owner.id, target.id, ability_slot);
         return true
       else
         return false
@@ -104,7 +104,7 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut R
     ),
     Some(
       r#"
-      local target = world:getTarget(owner.id);
+      local target = world:getTarget(ability.id);
       world:knockback(owner.id,target.id,0.1,1.0);
       local damage = world:getPhysicalDamage(owner.id);
       world:dealTrueDamage(owner.id,target.id,damage*100);
@@ -117,17 +117,23 @@ pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut R
   {
     //Create the abilityinfo for the basic abilities
     let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
-    let ability_1 = AbilityInfo::new(ability_1_cooldown_duration, &mut server_time, ability_1_cast_time, ability_1_scripts);
-    let ability_2 = AbilityInfo::new(ability_2_cooldown_duration, &mut server_time, ability_2_cast_time, ability_2_scripts);
-    let ability_3 = AbilityInfo::new(ability_3_cooldown_duration, &mut server_time, ability_3_cast_time, ability_3_scripts);
-    let ability_4 = AbilityInfo::new(ability_4_cooldown_duration, &mut server_time, ability_4_cast_time, ability_4_scripts);
-    let auto_attack = AbilityInfo::new(auto_attack_cooldown_duration, &mut server_time, auto_attack_cast_time, auto_attack_scripts);
+    let ability_1 = AbilityInfo::new(ability_1_cooldown_duration, &mut server_time, ability_1_cast_time, ability_1_scripts, None);
+    let ability_2 = AbilityInfo::new(ability_2_cooldown_duration, &mut server_time, ability_2_cast_time, ability_2_scripts, None);
+    let ability_3 = AbilityInfo::new(ability_3_cooldown_duration, &mut server_time, ability_3_cast_time, ability_3_scripts, None);
+    let ability_4 = AbilityInfo::new(ability_4_cooldown_duration, &mut server_time, ability_4_cast_time, ability_4_scripts, None);
+    let auto_attack = AbilityInfo::new(
+      auto_attack_cooldown_duration,
+      &mut server_time,
+      auto_attack_cast_time,
+      auto_attack_scripts,
+      Some(SkinnedRenderable(renderer.add_model("ball"))),
+    );
 
     //Insert the basic abilities into the ability map
-    ability_map.insert(1, ability_1);
-    ability_map.insert(2, ability_2);
-    ability_map.insert(3, ability_3);
-    ability_map.insert(4, ability_4);
+    ability_map.insert(0, ability_1);
+    ability_map.insert(1, ability_2);
+    ability_map.insert(2, ability_3);
+    ability_map.insert(3, ability_4);
     ability_map.insert(12, auto_attack);
   }
 

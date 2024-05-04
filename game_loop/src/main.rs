@@ -1,24 +1,3 @@
-// extern crate engine;
-// extern crate gl;
-// extern crate glfw;
-// extern crate nalgebra_glm as glm;
-// mod update;
-// use engine::{
-//   config::asset_config,
-//   ecs::{
-//     systems::{register_components, register_resources, render, spawn_dummy, spawn_enviroment, spawn_player},
-//     world_resources::ScreenDimensions,
-//     World,
-//   },
-//   input::user_inputs::{FrameInputs, Keybinds},
-//   math::{Transforms, Vec3},
-//   time::ServerTime,
-// };
-// use eyre::Result;
-// use gl::Gl;
-// use glfw::{Action, Context, Key};
-// use update::update;
-
 // Refactor:
 // -Switch to using FileType enum in the file system
 // -Make window a resource?
@@ -146,10 +125,12 @@
 
 use engine::{
   ecs::{
-    systems::{register_components, register_resources, spawn_player},
+    systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
     World,
   },
+  input::user_inputs::{FrameInputs, Keybinds},
   math::Transforms,
+  time::ServerTime,
   view::{camera::Camera, Renderer},
   windowing::create_window,
 };
@@ -158,6 +139,8 @@ use winit::{
   event::{Event, KeyEvent, WindowEvent},
   keyboard::{KeyCode, PhysicalKey},
 };
+mod update;
+use update::update;
 
 // Refactor:
 // -Re-add other systems
@@ -165,6 +148,8 @@ use winit::{
 // -Use a lazy static to get the config paths?
 // -Move the event loop into separate functions?
 // -Update the add resources method
+// -Organize the inputs using helper functions and move the control flow into its own function
+// -Renderer needs to interpolate I believe
 
 fn main() {
   let mut world = World::new();
@@ -178,28 +163,87 @@ fn main() {
   let transforms = Transforms::from(window.inner_size());
   camera.update_pv(&transforms);
 
+  //Spawn the renderer
   let mut renderer = pollster::block_on(Renderer::new(Arc::new(window)));
 
+  //Spawn the player
   spawn_player(&mut world, "warrior", 1, &mut renderer);
+
+  //Spawn the ground
+  spawn_enviroment(&mut world, "ground", &mut renderer);
+
+  //Spawn dummies
+  spawn_dummy(&mut world, [3.0, 0.0, -3.0], &mut renderer);
+  spawn_dummy(&mut world, [5.0, 0.0, 0.0], &mut renderer);
 
   //Add the resources to world
   world.add_resource(camera);
   world.add_resource(transforms);
 
+  let mut mouse_pos = None;
+
   events
     .run(move |event, target| match event {
+      Event::AboutToWait => {
+        //UPDATE
+        {
+          let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+          server_time.tick();
+        }
+
+        if world.get_resource_mut::<ServerTime>().unwrap().should_update() {
+          update(&mut world);
+
+          //Update the delta timer
+          let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+          server_time.decrement_seconds_since_update()
+        }
+
+        //RENDER
+        if world.get_resource_mut::<ServerTime>().unwrap().should_render() {
+          renderer.window().request_redraw();
+        }
+      }
       Event::WindowEvent { event, window_id, .. } => match event {
+        WindowEvent::CursorMoved { mut position, .. } => {
+          let dimensions = renderer.window().inner_size();
+
+          //Convert the mouse to ndc coords
+          position.x = 2.0 * position.x as f64 / dimensions.width as f64 - 1.0; //range [-1,1]
+          position.y = 1.0 - (2.0 * position.y as f64) / dimensions.height as f64; //range [-1,1]
+
+          mouse_pos = Some(position);
+        }
+        WindowEvent::MouseInput { button, .. } => {
+          if let Some(mouse_pos) = mouse_pos {
+            let keybinds = world.get_resource::<Keybinds>().unwrap();
+            if let Ok(input) = keybinds.mouse_input(&world, &mouse_pos, &button) {
+              let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+              inputs.push(input)
+            }
+          }
+        }
         WindowEvent::KeyboardInput {
-          event: KeyEvent {
-            physical_key: PhysicalKey::Code(KeyCode::Escape),
-            ..
-          },
+          event: KeyEvent { physical_key: key, .. },
           ..
-        } => target.exit(),
+        } => {
+          if key == PhysicalKey::Code(KeyCode::Escape) {
+            target.exit();
+          }
+          let keybinds = world.get_resource::<Keybinds>().unwrap();
+          if let Some(mouse_pos) = mouse_pos {
+            if let Ok(input) = keybinds.key_input(&world, &mouse_pos, key) {
+              let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+              inputs.push(input);
+            }
+          }
+        }
         WindowEvent::RedrawRequested => {
           if window_id == renderer.window().id() {
             renderer.update(&world);
             renderer.render().unwrap();
+            let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+            server_time.decrement_seconds_since_render()
           }
         }
         WindowEvent::Resized(size) => {
@@ -210,10 +254,6 @@ fn main() {
         WindowEvent::CloseRequested => target.exit(),
         _ => {}
       },
-      Event::AboutToWait => {
-        //AFAICT this is where the update loop goes
-        renderer.window().request_redraw();
-      }
       _ => {}
     })
     .unwrap();

@@ -1,52 +1,63 @@
 use crate::{
   component_lib::{
-    Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position, PreviousPosition, SelectionRadius, Team, Velocity, KDA,
+    Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position, PreviousPosition, SelectionRadius, SkinnedRenderable, Team,
+    Velocity, KDA,
   },
   ecs::World,
-  math::Vec3,
-  // view::AABB3DDebugMesh,
+  view::Renderer,
 };
-use eyre::Result;
 
-pub fn spawn_dummy(world: &mut World, position: Vec3) -> Result<()> {
+// Refactor:
+// -Dummy should load in from a JSON too
+
+pub fn spawn_dummy(world: &mut World, position: [f32; 3], renderer: &mut Renderer) {
   //Create the dummy entity
-  todo!()
-  // let dummy_position = Position(position);
-  // let dummy_previous_position = PreviousPosition(position);
-  // let destination = Destination::from(position);
-  // let dummy_hitbox = SelectionRadius::new(&dummy_position, 2.0, 1.0);
-  // let (dummy_vertices, dummy_indices) = load_object("box").unwrap();
-  // let dummy_mesh;
-  // let dummy_hitbox_mesh;
-  // {
-  //   let gl = world.get_resource::<Gl>().unwrap();
-  //   dummy_mesh = SkinnedMesh::new(&gl, dummy_vertices, dummy_indices, "wall", 1.0);
-  //   dummy_hitbox_mesh = AABB3DDebugMesh::new(&gl, dummy_hitbox.0, position);
-  // }
-  // //Combat info
-  // let dummy_team = Team::Red;
-  // let dummy_health = Health::new(50000000);
-  // let incoming_damage = IncomingDamage::new();
-  // // let dummy_target = Target(None);
 
-  // world
-  //   .create_entity()
-  //   // .with_component(Player)?
-  //   .with_component(dummy_mesh)?
-  //   .with_component(dummy_position)?
-  //   .with_component(dummy_previous_position)?
-  //   .with_component(Armor::new(100))?
-  //   .with_component(destination)?
-  //   // .with_component(UnitSpeed::new(0.05))?
-  //   .with_component(Velocity::default())?
-  //   .with_component(dummy_hitbox)?
-  //   .with_component(dummy_hitbox_mesh)?
-  //   .with_component(PathingRadius(0.2))?
-  //   .with_component(GameplayRadius(0.1))?
-  //   .with_component(dummy_team)?
-  //   .with_component(dummy_health)?
-  //   .with_component(Gold::default())?
-  //   .with_component(KDA::default())?
-  //   .with_component(incoming_damage)?;
+  let dummy_position = Position::from(position);
+  let dummy_previous_position = PreviousPosition::from(position);
+  let destination = Destination::from(position);
+  let dummy_hitbox = SelectionRadius::new(&dummy_position, 2.0, 1.0);
+
+  //Render info
+  let player_model = SkinnedRenderable(renderer.add_model("cube"));
+
+  //Combat info
+  let dummy_team = Team::Red;
+  let dummy_health = Health::new(50000000);
+  let incoming_damage = IncomingDamage::new();
+  // let dummy_target = Target(None);
+
+  world
+    .create_entity()
+    // .with_component(Player).unwrap()
+    .with_component(player_model)
+    .unwrap()
+    .with_component(dummy_position)
+    .unwrap()
+    .with_component(dummy_previous_position)
+    .unwrap()
+    .with_component(Armor::new(100))
+    .unwrap()
+    .with_component(destination)
+    .unwrap()
+    // .with_component(UnitSpeed::new(0.05)).unwrap()
+    .with_component(Velocity::default())
+    .unwrap()
+    .with_component(dummy_hitbox)
+    .unwrap()
+    .with_component(PathingRadius(0.2))
+    .unwrap()
+    .with_component(GameplayRadius(0.1))
+    .unwrap()
+    .with_component(dummy_team)
+    .unwrap()
+    .with_component(dummy_health)
+    .unwrap()
+    .with_component(Gold::default())
+    .unwrap()
+    .with_component(KDA::default())
+    .unwrap()
+    .with_component(incoming_damage)
+    .unwrap();
   // Ok(())
 }
