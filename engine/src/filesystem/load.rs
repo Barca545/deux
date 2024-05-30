@@ -1,9 +1,9 @@
 use super::champion::Champion;
 use crate::{
   arena::Grid,
-  component_lib::AbilityMap,
+  data_lib::AbilityMap,
   errors::FilesystemErrors,
-  view::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer},
+  view::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer}
 };
 use eyre::Result;
 use image::io::Reader;
@@ -14,16 +14,15 @@ use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, Device, Queue, 
 //Refactor
 // -Pull useful portions from the level editor
 // -Move the path generation into its own function find/replace lowercase path
-// -Loading in the grid might require flipping since I use Y as up but blender uses Z as up
-// -Use lazy static to define the paths
+// -Loading in the grid might require flipping since I use Y as up but blender
+// uses Z as up -Use lazy static to define the paths
 
 ///Load a [`Model`] and its [`Texture`]s.
-pub fn load_model(name: &str, device: &Device, queue: &Queue) -> Model {
-  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/models/{name}.obj");
-
+pub fn load_model(name:&str, device:&Device, queue:&Queue) -> Model {
+  let path = format!("assets/models/{name}.obj");
   let load_options = &LoadOptions {
-    single_index: true,
-    triangulate: true,
+    single_index:true,
+    triangulate:true,
     ..Default::default()
   };
 
@@ -34,23 +33,23 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue) -> Model {
   for material in obj_materials.unwrap() {
     let diffuse_texture = match &material.diffuse_texture {
       Some(texture) => load_texture(texture, device, queue).unwrap(),
-      None => load_texture("red.jpg", device, queue).unwrap(),
+      None => load_texture("red.jpg", device, queue).unwrap()
     };
 
     //Create the Texture and Sampler bindgroup
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
-      label: Some(diffuse_texture.label.as_str()),
-      layout: &&Renderer::texture_bind_group_layout(&device),
-      entries: &[
+      label:Some(diffuse_texture.label.as_str()),
+      layout:&&Renderer::texture_bind_group_layout(&device),
+      entries:&[
         BindGroupEntry {
-          binding: 0,
-          resource: BindingResource::TextureView(&diffuse_texture.view),
+          binding:0,
+          resource:BindingResource::TextureView(&diffuse_texture.view)
         },
         BindGroupEntry {
-          binding: 1,
-          resource: BindingResource::Sampler(&diffuse_texture.sampler),
-        },
-      ],
+          binding:1,
+          resource:BindingResource::Sampler(&diffuse_texture.sampler)
+        }
+      ]
     });
 
     //Create and add the material
@@ -72,7 +71,7 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue) -> Model {
           let position = [
             model.mesh.positions[position_offset],
             model.mesh.positions[position_offset + 1],
-            model.mesh.positions[position_offset + 2],
+            model.mesh.positions[position_offset + 2]
           ];
 
           //Get the texture coords
@@ -94,31 +93,31 @@ pub fn load_model(name: &str, device: &Device, queue: &Queue) -> Model {
 }
 
 ///Load a [`Texture`].
-fn load_texture(name: &str, device: &Device, queue: &Queue) -> Result<Texture> {
-  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/textures/{name}");
+fn load_texture(name:&str, device:&Device, queue:&Queue) -> Result<Texture> {
+  let path = format!("assets/textures/{name}");
 
   match Reader::open(&path) {
     Ok(img) => match img.decode() {
       Ok(img) => Ok(Texture::from_image(device, queue, img, name)),
-      Err(err) => return Err(FilesystemErrors::FailedToDecodeImage(err).into()),
+      Err(err) => return Err(FilesystemErrors::FailedToDecodeImage(err).into())
     },
-    Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name: name.to_string(), path }.into()),
+    Err(_) => return Err(FilesystemErrors::FailedToLoadImage { name:name.to_string(), path }.into())
   }
 }
 
-pub fn load_champion_json(name: &str) -> Result<Champion> {
-  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/champions/{name}.json");
+pub fn load_champion_json(name:&str) -> Result<Champion> {
+  let path = format!("assets/champions/{name}.json");
 
   let champion_string = match fs::read_to_string(&path) {
     Ok(str) => str,
     Err(err) => {
       return Err(
         FilesystemErrors::ChampDataDoesNotExist {
-          name: name.to_string(),
+          name:name.to_string(),
           path,
-          err,
+          err
         }
-        .into(),
+        .into()
       )
     }
   };
@@ -128,33 +127,33 @@ pub fn load_champion_json(name: &str) -> Result<Champion> {
 }
 
 ///Load an entity's [`AbilityMap`].
-pub fn load_scripts(name: &str) -> Result<AbilityMap> {
+pub fn load_scripts(name:&str) -> Result<AbilityMap> {
   todo!()
 }
 
-pub fn load_shader(device: &Device, name: &str) -> Result<ShaderModule> {
-  let path = format!("C:/Users/jamar/Documents/Hobbies/Coding/deux/assets/shaders/{name}.wgsl");
+pub fn load_shader(device:&Device, name:&str) -> Result<ShaderModule> {
+  let path = format!("assets/shaders/{name}.wgsl");
 
   match fs::read_to_string(&path) {
     Ok(shader) => Ok(device.create_shader_module(ShaderModuleDescriptor {
-      label: Some("model shader"),
-      source: ShaderSource::Wgsl(shader.into()),
+      label:Some("model shader"),
+      source:ShaderSource::Wgsl(shader.into())
     })),
     Err(err) => {
       return Err(
         FilesystemErrors::ShaderDoesNotExist {
-          name: name.to_string(),
+          name:name.to_string(),
           path,
-          err,
+          err
         }
-        .into(),
+        .into()
       )
     }
   }
 }
 
 ///Loads the a [`Grid`]'s information.
-pub fn load_grid(name: &str, extension: &str) -> Result<Grid> {
+pub fn load_grid(name:&str, extension:&str) -> Result<Grid> {
   // let path = var("grid_folder")? + "/" + name + "." + extension;
   // let grid_path = fs::read_to_string(path)?;
   // let grid: Grid = serde_json::from_str(&grid_path)?;

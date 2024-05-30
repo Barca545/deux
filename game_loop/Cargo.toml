@@ -9,6 +9,7 @@ edition = "2021"
 engine = {workspace=true}
 
 eyre = {workspace=true}
+nina = {workspace=true}
 thiserror = {workspace=true}
 nalgebra-glm = {workspace=true}
 serde = {workspace=true}

@@ -1,22 +1,20 @@
 use engine::{
-  ecs::{
-    systems::{casting, combat, execute_scripts, movement, process_inputs},
-    World,
-  },
   event::GameEventQueue,
   input::user_inputs::FrameInputs,
+  systems::{casting, combat, execute_scripts, movement, process_inputs}
 };
+use nina::world::World;
 
-pub fn update(world: &mut World) {
+pub fn update(world:&mut World) {
   process_inputs(world);
   execute_scripts(world);
   movement(world);
   casting(world);
   combat(world);
 
-  let mut frame_inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+  let frame_inputs = world.get_resource_mut::<FrameInputs>();
   frame_inputs.clear();
-  let mut events = world.get_resource_mut::<GameEventQueue>().unwrap();
+  let events = world.get_resource_mut::<GameEventQueue>();
   events.clear();
   events.move_pending();
 }

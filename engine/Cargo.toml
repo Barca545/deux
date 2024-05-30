@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 wgpu = {workspace=true}
+nina = {workspace=true}
 eyre = {workspace=true}
 thiserror = {workspace=true}
 nalgebra-glm = {workspace=true}

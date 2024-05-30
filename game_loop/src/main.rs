@@ -1,14 +1,16 @@
 // Refactor:
 // -Switch to using FileType enum in the file system
 // -Make window a resource?
-// -Glfw.poll_events could probably go inside a function that goes inside the input system but confirm this doesn't have threading issues or anything
+// -Glfw.poll_events could probably go inside a function that goes inside the
+// input system but confirm this doesn't have threading issues or anything
 // -Update to cast abilities based on keyboard inputs.
-// -Add a skillshot, AS steroid, blink, and point and click to test the ability scripting.
-//  The point and click should have a burn effect.
+// -Add a skillshot, AS steroid, blink, and point and click to test the ability
+// scripting.  The point and click should have a burn effect.
 // -Add death system and update queries to ignore dead entities
-//  Issue is based on distance from screen, the entity closer to the user is selected first?
-// -Move the resize window code into its own function and only run it if one of the events was a window resize
-//  Window can be cloned and passed around
+//  Issue is based on distance from screen, the entity closer to the user is
+// selected first? -Move the resize window code into its own function and only
+// run it if one of the events was a window resize  Window can be cloned and
+// passed around
 
 // Refactor - Rendering:
 // -Experiment with putting Gl in an Rc
@@ -18,16 +20,17 @@
 // -World can be added as a resource. Maybe events can too?
 
 // Refactor - Grid
-// -Could probably replace the check for if position == new_position in the renderer once I add in some sort of movement state tracker
-// -Consider moving to a slower tick rate LoL uses 30hz
-// -Grid should load in from a JSON once I build the grid in the level editor
-// -Grid might also need to be a resource. I'm unsure if other systems will need it
-// -Dimensions should load from a settings file
-// -Maybe I just pass it in directly to the system that handles inputs, or just pass a copy of the raw event pump and handle it there?
+// -Could probably replace the check for if position == new_position in the
+// renderer once I add in some sort of movement state tracker -Consider moving
+// to a slower tick rate LoL uses 30hz -Grid should load in from a JSON once I
+// build the grid in the level editor -Grid might also need to be a resource.
+// I'm unsure if other systems will need it -Dimensions should load from a
+// settings file -Maybe I just pass it in directly to the system that handles
+// inputs, or just pass a copy of the raw event pump and handle it there?
 
 // Refactor - Movement:
-// -Make the list of open/closed indexes a global in lua since it's constant throughout the game
-// -Function to check the cell a given position is inside
+// -Make the list of open/closed indexes a global in lua since it's constant
+// throughout the game -Function to check the cell a given position is inside
 // -Run an a* pathing script
 
 // fn main() -> Result<()> {
@@ -62,20 +65,20 @@
 //     glfw.poll_events();
 //     for (_, event) in glfw::flush_messages(&events) {
 //       match event {
-//         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-//         glfw::WindowEvent::Key(key, _, Action::Press, _) => {
-//           let keybinds = world.get_resource::<Keybinds>().unwrap();
-//           if let Ok(input) = keybinds.key_input(&world, &window, key) {
-//             let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-//             inputs.push(input)
-//           }
+//         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) =>
+// window.set_should_close(true),         glfw::WindowEvent::Key(key, _,
+// Action::Press, _) => {           let keybinds =
+// world.get_resource::<Keybinds>().unwrap();           if let Ok(input) =
+// keybinds.key_input(&world, &window, key) {             let mut inputs =
+// world.get_resource_mut::<FrameInputs>().unwrap();
+// inputs.push(input)           }
 //         }
 //         glfw::WindowEvent::MouseButton(button, Action::Press, _) => {
 //           let keybinds = world.get_resource::<Keybinds>().unwrap();
 //           if let Ok(input) = keybinds.mouse_input(&world, &window, button) {
-//             let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
-//             inputs.push(input)
-//           }
+//             let mut inputs =
+// world.get_resource_mut::<FrameInputs>().unwrap();
+// inputs.push(input)           }
 //         }
 //         _ => {}
 //       }
@@ -92,8 +95,8 @@
 //     }
 
 //     //Render
-//     //Can I clear the buffers before binding or do they need to be cleared after
-//     // binding? Binding currently happens in their own functions.
+//     //Can I clear the buffers before binding or do they need to be cleared
+// after     // binding? Binding currently happens in their own functions.
 //     if server_time.should_render() {
 // //have some flag so it only runs if it was resized
 // let (width, height) = window.get_size();
@@ -124,20 +127,18 @@
 // }
 
 use engine::{
-  ecs::{
-    systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
-    World,
-  },
   input::user_inputs::{FrameInputs, Keybinds},
   math::Transforms,
+  systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
   time::ServerTime,
   view::{camera::Camera, Renderer},
-  windowing::create_window,
+  windowing::create_window
 };
+use nina::world::World;
 use std::sync::Arc;
 use winit::{
   event::{Event, KeyEvent, WindowEvent},
-  keyboard::{KeyCode, PhysicalKey},
+  keyboard::{KeyCode, PhysicalKey}
 };
 mod update;
 use update::update;
@@ -148,8 +149,8 @@ use update::update;
 // -Use a lazy static to get the config paths?
 // -Move the event loop into separate functions?
 // -Update the add resources method
-// -Organize the inputs using helper functions and move the control flow into its own function
-// -Renderer needs to interpolate I believe
+// -Organize the inputs using helper functions and move the control flow into
+// its own function -Renderer needs to interpolate I believe
 
 fn main() {
   let mut world = World::new();
@@ -187,20 +188,20 @@ fn main() {
       Event::AboutToWait => {
         //UPDATE
         {
-          let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+          let server_time = world.get_resource_mut::<ServerTime>();
           server_time.tick();
         }
 
-        if world.get_resource_mut::<ServerTime>().unwrap().should_update() {
+        if world.get_resource_mut::<ServerTime>().should_update() {
           update(&mut world);
 
           //Update the delta timer
-          let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+          let server_time = world.get_resource_mut::<ServerTime>();
           server_time.decrement_seconds_since_update()
         }
 
         //RENDER
-        if world.get_resource_mut::<ServerTime>().unwrap().should_render() {
+        if world.get_resource_mut::<ServerTime>().should_render() {
           renderer.window().request_redraw();
         }
       }
@@ -216,9 +217,9 @@ fn main() {
         }
         WindowEvent::MouseInput { button, .. } => {
           if let Some(mouse_pos) = mouse_pos {
-            let keybinds = world.get_resource::<Keybinds>().unwrap();
+            let keybinds = world.get_resource::<Keybinds>();
             if let Ok(input) = keybinds.mouse_input(&world, &mouse_pos, &button) {
-              let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+              let inputs = world.get_resource_mut::<FrameInputs>();
               inputs.push(input)
             }
           }
@@ -230,10 +231,10 @@ fn main() {
           if key == PhysicalKey::Code(KeyCode::Escape) {
             target.exit();
           }
-          let keybinds = world.get_resource::<Keybinds>().unwrap();
+          let keybinds = world.get_resource::<Keybinds>();
           if let Some(mouse_pos) = mouse_pos {
             if let Ok(input) = keybinds.key_input(&world, &mouse_pos, key) {
-              let mut inputs = world.get_resource_mut::<FrameInputs>().unwrap();
+              let inputs = world.get_resource_mut::<FrameInputs>();
               inputs.push(input);
             }
           }
@@ -242,13 +243,13 @@ fn main() {
           if window_id == renderer.window().id() {
             renderer.update(&world);
             renderer.render().unwrap();
-            let mut server_time = world.get_resource_mut::<ServerTime>().unwrap();
+            let server_time = world.get_resource_mut::<ServerTime>();
             server_time.decrement_seconds_since_render()
           }
         }
         WindowEvent::Resized(size) => {
           renderer.resize(size);
-          let mut transforms = world.get_resource_mut::<Transforms>().unwrap();
+          let transforms = world.get_resource_mut::<Transforms>();
           *transforms = Transforms::from(size);
         }
         WindowEvent::CloseRequested => target.exit(),

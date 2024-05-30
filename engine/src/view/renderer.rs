@@ -1,15 +1,16 @@
 use super::{buffer::InstanceBuffer, camera::Camera, DrawModel, Frame, InstanceRaw, Instances, Model, ModelId, ModelVertex, Texture};
 use crate::{
-  component_lib::{Position, PreviousPosition, SkinnedRenderable, StaticRenderable},
+  data_lib::{Position, PreviousPosition, SkinnedRenderable, StaticRenderable},
   data_storage::Arena,
-  ecs::World,
+  // ecs::World,
   filesystem::{load_model, load_shader},
   math::Transforms,
   time::ServerTime,
   utility::calculate_render_position,
-  view::Vertex,
+  view::Vertex
 };
 use eyre::Result;
+use nina::world::World;
 use std::{iter::once, sync::Arc};
 use wgpu::{
   util::{BufferInitDescriptor, DeviceExt},
@@ -19,7 +20,7 @@ use wgpu::{
   PipelineLayoutDescriptor, PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
   RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, SamplerBindingType, ShaderModule,
   ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor,
-  TextureViewDimension, VertexBufferLayout, VertexState,
+  TextureViewDimension, VertexBufferLayout, VertexState
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -30,27 +31,27 @@ use winit::{dpi::PhysicalSize, window::Window};
 // -Create load functions for the shaders
 // -Do static meshes need a different pipeline?
 
-pub static mut MODEL_NUM: usize = 0;
+pub static mut MODEL_NUM:usize = 0;
 
 pub struct Renderer {
   //reference to the window
   //I kinda think it might be able to take in the above info in render
-  window: Arc<Window>,
-  surface: Surface<'static>,
-  device: Device,
-  queue: Queue,
-  config: SurfaceConfiguration,
-  size: PhysicalSize<u32>,
-  pipeline: RenderPipeline,
-  camera_bind_group: BindGroup,
-  camera_buffer: Buffer,
-  depth_texture: Texture,
-  models: Arena<Model>,
-  frame: Frame,
+  window:Arc<Window>,
+  surface:Surface<'static>,
+  device:Device,
+  queue:Queue,
+  config:SurfaceConfiguration,
+  size:PhysicalSize<u32>,
+  pipeline:RenderPipeline,
+  camera_bind_group:BindGroup,
+  camera_buffer:Buffer,
+  depth_texture:Texture,
+  models:Arena<Model>,
+  frame:Frame
 }
 
 impl Renderer {
-  pub async fn new(window: Arc<Window>) -> Self {
+  pub async fn new(window:Arc<Window>) -> Self {
     let size = window.inner_size();
 
     //Create the instance
@@ -67,9 +68,9 @@ impl Renderer {
 
     //Create the device and command_queue
     let descriptor = DeviceDescriptor {
-      label: None,
-      required_features: Features::empty(),
-      required_limits: Default::default(),
+      label:None,
+      required_features:Features::empty(),
+      required_limits:Default::default()
     };
     let (device, queue) = adapter.request_device(&descriptor, None).await.unwrap();
 
@@ -85,55 +86,55 @@ impl Renderer {
 
     //Configure the surface's texture
     let config = SurfaceConfiguration {
-      usage: TextureUsages::RENDER_ATTACHMENT,
-      format: surface_format,
-      width: size.width,
-      height: size.height,
-      present_mode: surface_capabilities.present_modes[0],
-      alpha_mode: surface_capabilities.alpha_modes[0],
-      desired_maximum_frame_latency: 2,
-      view_formats: Vec::new(),
+      usage:TextureUsages::RENDER_ATTACHMENT,
+      format:surface_format,
+      width:size.width,
+      height:size.height,
+      present_mode:surface_capabilities.present_modes[0],
+      alpha_mode:surface_capabilities.alpha_modes[0],
+      desired_maximum_frame_latency:2,
+      view_formats:Vec::new()
     };
     surface.configure(&device, &config);
 
     //Create the camera buffer
     //Buffer will be empty until the first update call
     let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
-      label: Some("camera buffer"),
-      contents: bytemuck::cast_slice(&[[[0; 4]; 4]]),
-      usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+      label:Some("camera buffer"),
+      contents:bytemuck::cast_slice(&[[[0; 4]; 4]]),
+      usage:BufferUsages::UNIFORM | BufferUsages::COPY_DST
     });
 
     //Create the camera bindgroup layout
     let camera_bindgroup_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-      label: Some("camera_bind_group_layout"),
-      entries: &[BindGroupLayoutEntry {
-        binding: 0,
-        visibility: ShaderStages::VERTEX,
-        ty: BindingType::Buffer {
-          ty: BufferBindingType::Uniform,
-          has_dynamic_offset: false,
-          min_binding_size: None,
+      label:Some("camera_bind_group_layout"),
+      entries:&[BindGroupLayoutEntry {
+        binding:0,
+        visibility:ShaderStages::VERTEX,
+        ty:BindingType::Buffer {
+          ty:BufferBindingType::Uniform,
+          has_dynamic_offset:false,
+          min_binding_size:None
         },
-        count: None,
-      }],
+        count:None
+      }]
     });
 
     //Create the camera bindgroup
     let camera_bind_group = device.create_bind_group(&BindGroupDescriptor {
-      label: Some("camera bind group"),
-      layout: &camera_bindgroup_layout,
-      entries: &[BindGroupEntry {
-        binding: 0,
-        resource: camera_buffer.as_entire_binding(),
-      }],
+      label:Some("camera bind group"),
+      layout:&camera_bindgroup_layout,
+      entries:&[BindGroupEntry {
+        binding:0,
+        resource:camera_buffer.as_entire_binding()
+      }]
     });
 
     //Create the render pipeline layout
     let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-      label: Some("render pipeline layout"),
-      bind_group_layouts: &[&Self::texture_bind_group_layout(&device), &camera_bindgroup_layout],
-      push_constant_ranges: &[],
+      label:Some("render pipeline layout"),
+      bind_group_layouts:&[&Self::texture_bind_group_layout(&device), &camera_bindgroup_layout],
+      push_constant_ranges:&[]
     });
 
     //Load and instantiate the shaders
@@ -145,7 +146,7 @@ impl Renderer {
       config.format,
       Some(Texture::DEPTH_FORMAT),
       &[ModelVertex::desc(), InstanceRaw::desc()],
-      model_shader,
+      model_shader
     );
 
     //Create the depth texture
@@ -162,8 +163,8 @@ impl Renderer {
       camera_bind_group,
       camera_buffer,
       depth_texture,
-      models: Arena::new(),
-      frame: Frame::default(),
+      models:Arena::new(),
+      frame:Frame::default()
     }
   }
 
@@ -172,7 +173,7 @@ impl Renderer {
     &self.window
   }
 
-  pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
+  pub fn resize(&mut self, new_size:PhysicalSize<u32>) {
     if new_size.width > 0 && new_size.height > 0 {
       self.size = new_size;
       self.config.width = new_size.width;
@@ -184,16 +185,16 @@ impl Renderer {
     }
   }
 
-  pub fn update(&mut self, world: &World) {
+  pub fn update(&mut self, world:&World) {
     //Update the camera
-    let transforms = world.get_resource::<Transforms>().unwrap();
-    let mut camera = world.get_resource_mut::<Camera>().unwrap();
+    let transforms = world.get_resource::<Transforms>();
+    let camera = world.get_resource_mut::<Camera>();
     camera.update_pv(&transforms);
 
     //Create a new frame
     let mut frame = Frame::new(&camera);
 
-    let server_time = world.get_resource::<ServerTime>().unwrap();
+    let server_time = world.get_resource::<ServerTime>();
 
     //Render skinned models
     let mut query = world.query();
@@ -232,35 +233,30 @@ impl Renderer {
     let view = output.texture.create_view(&TextureViewDescriptor::default());
 
     //Create a command encoder for draw commands
-    let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor { label: Some("Render Encoder") });
+    let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor { label:Some("Render Encoder") });
 
     //Create a render pass descriptor
     let descriptor = RenderPassDescriptor {
-      label: Some("Render Pass Test"),
-      color_attachments: &[Some(RenderPassColorAttachment {
-        view: &view,
-        resolve_target: None,
-        ops: Operations {
-          load: LoadOp::Clear(Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-          }),
-          store: StoreOp::Store,
-        },
+      label:Some("Render Pass Test"),
+      color_attachments:&[Some(RenderPassColorAttachment {
+        view:&view,
+        resolve_target:None,
+        ops:Operations {
+          load:LoadOp::Clear(Color { r:0.0, g:0.0, b:0.0, a:1.0 }),
+          store:StoreOp::Store
+        }
       })],
       //Attach the depth stencil
-      depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
-        view: &self.depth_texture.view,
-        depth_ops: Some(Operations {
-          load: LoadOp::Clear(1.0),
-          store: StoreOp::Store,
+      depth_stencil_attachment:Some(RenderPassDepthStencilAttachment {
+        view:&self.depth_texture.view,
+        depth_ops:Some(Operations {
+          load:LoadOp::Clear(1.0),
+          store:StoreOp::Store
         }),
-        stencil_ops: None,
+        stencil_ops:None
       }),
-      timestamp_writes: None,
-      occlusion_query_set: None,
+      timestamp_writes:None,
+      occlusion_query_set:None
     };
 
     let instance_buffers = self
@@ -297,7 +293,7 @@ impl Renderer {
   }
 
   ///Adds a [`Model`] to the [`Renderer`] and returns it's [`ModelId`]
-  pub fn add_model(&mut self, name: &str) -> ModelId {
+  pub fn add_model(&mut self, name:&str) -> ModelId {
     let model = load_model(name, &self.device, &self.queue);
     let model = self.models.alloc(model);
 
@@ -314,83 +310,83 @@ impl Renderer {
 
   ///Create a new [`RenderPipeline`].
   fn create_render_pipeline(
-    device: &Device,
-    pipeline_layout: PipelineLayout,
-    color_format: TextureFormat,
-    depth_format: Option<TextureFormat>,
-    vertex_layouts: &[VertexBufferLayout],
-    shader: ShaderModule,
+    device:&Device,
+    pipeline_layout:PipelineLayout,
+    color_format:TextureFormat,
+    depth_format:Option<TextureFormat>,
+    vertex_layouts:&[VertexBufferLayout],
+    shader:ShaderModule
   ) -> RenderPipeline {
     //Create the render pipeline
     device.create_render_pipeline(&RenderPipelineDescriptor {
-      label: Some("render pipeline"),
-      layout: Some(&pipeline_layout),
-      vertex: VertexState {
-        module: &shader,
-        entry_point: "vs_main",
-        buffers: vertex_layouts,
+      label:Some("render pipeline"),
+      layout:Some(&pipeline_layout),
+      vertex:VertexState {
+        module:&shader,
+        entry_point:"vs_main",
+        buffers:vertex_layouts
       },
-      fragment: Some(FragmentState {
-        module: &shader,
-        entry_point: "fs_main",
-        targets: &[Some(ColorTargetState {
-          format: color_format,
-          blend: Some(BlendState::REPLACE),
-          write_mask: ColorWrites::ALL,
-        })],
+      fragment:Some(FragmentState {
+        module:&shader,
+        entry_point:"fs_main",
+        targets:&[Some(ColorTargetState {
+          format:color_format,
+          blend:Some(BlendState::REPLACE),
+          write_mask:ColorWrites::ALL
+        })]
       }),
-      primitive: PrimitiveState {
-        topology: PrimitiveTopology::TriangleList,
-        strip_index_format: None,
+      primitive:PrimitiveState {
+        topology:PrimitiveTopology::TriangleList,
+        strip_index_format:None,
         //Cull triangles whose verts are not arranged counter clockwise
-        front_face: FrontFace::Ccw,
-        cull_mode: Some(Face::Back),
+        front_face:FrontFace::Ccw,
+        cull_mode:Some(Face::Back),
         //Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-        polygon_mode: PolygonMode::Fill,
+        polygon_mode:PolygonMode::Fill,
         //Requires Features::DEPTH_CLIP_CONTROL
-        unclipped_depth: false,
+        unclipped_depth:false,
         //Requires Features::CONSERVATIVE_RASTERIZATION
-        conservative: false,
+        conservative:false
       },
       //Instantiate depth testing
-      depth_stencil: depth_format.map(|format| DepthStencilState {
+      depth_stencil:depth_format.map(|format| DepthStencilState {
         format,
-        depth_write_enabled: true,
-        depth_compare: CompareFunction::Less,
-        stencil: StencilState::default(),
-        bias: DepthBiasState::default(),
+        depth_write_enabled:true,
+        depth_compare:CompareFunction::Less,
+        stencil:StencilState::default(),
+        bias:DepthBiasState::default()
       }),
-      multisample: MultisampleState {
-        count: 1,
-        mask: !0,
-        alpha_to_coverage_enabled: false,
+      multisample:MultisampleState {
+        count:1,
+        mask:!0,
+        alpha_to_coverage_enabled:false
       },
-      multiview: None,
+      multiview:None
     })
   }
 
   ///Returns the [`BindGroupLayout`] for a [`Texture`].
-  pub fn texture_bind_group_layout(device: &Device) -> BindGroupLayout {
+  pub fn texture_bind_group_layout(device:&Device) -> BindGroupLayout {
     device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-      label: Some("layout bindgroup layout"),
-      entries: &[
+      label:Some("layout bindgroup layout"),
+      entries:&[
         BindGroupLayoutEntry {
-          binding: 0,
-          visibility: ShaderStages::FRAGMENT,
-          ty: BindingType::Texture {
-            multisampled: false,
-            view_dimension: TextureViewDimension::D2,
-            sample_type: TextureSampleType::Float { filterable: true },
+          binding:0,
+          visibility:ShaderStages::FRAGMENT,
+          ty:BindingType::Texture {
+            multisampled:false,
+            view_dimension:TextureViewDimension::D2,
+            sample_type:TextureSampleType::Float { filterable:true }
           },
-          count: None,
+          count:None
         },
         BindGroupLayoutEntry {
-          binding: 1,
-          visibility: ShaderStages::FRAGMENT,
-          ty: BindingType::Sampler(SamplerBindingType::Filtering),
-          count: None,
-        },
-      ],
+          binding:1,
+          visibility:ShaderStages::FRAGMENT,
+          ty:BindingType::Sampler(SamplerBindingType::Filtering),
+          count:None
+        }
+      ]
     })
   }
 }
