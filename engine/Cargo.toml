@@ -21,6 +21,8 @@ tobj = "4.0.0"
 config = "0.14.0"
 list-any = "0.2.1"
 lazy_static = "1.4.0"
+num-traits = "0.2"
+num-derive = "0.3"
 
 
 [features]

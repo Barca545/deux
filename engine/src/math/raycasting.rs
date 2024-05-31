@@ -1,7 +1,7 @@
 use super::math::{Mat4, Vec3, Vec4};
 use super::Transforms;
 use crate::view::camera::Camera;
-use glm::{self, inverse, vec3, vec4};
+use glm::{inverse, vec3, vec4};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RayCast {
