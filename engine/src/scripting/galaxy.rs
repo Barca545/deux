@@ -18,6 +18,8 @@ enum OpCode {
   LOAD_INT,
   /// Load a float into the target register.
   LOAD_FLOAT,
+  /// Move a value between registers.
+  MOVE,
   /// Perform multiplication on the values in two registers.
   /// Store the result in [`Tardis`]'s `eax` register.
   MULT,
@@ -59,11 +61,10 @@ enum OpCode {
   JNZ,
   /// Load 1 byte into a register.
   LOADU8,
-  /// Load 2 bytes into a register.
-  LOADU16,
   /// Load 4 bytes into a register.
   LOADU32,
   CALL,
+  RETURN,
   SYS_CALL
 }
 
@@ -114,26 +115,27 @@ impl Tardis {
   fn execute(&mut self, op:OpCode) -> LoopControl {
     match op {
       OpCode::HLT => LoopControl::Break,
-      OpCode::LOAD_INT => todo!(),
-      OpCode::LOAD_FLOAT => todo!(),
-      OpCode::MULT => todo!(),
-      OpCode::DIV => todo!(),
-      OpCode::ADD => todo!(),
-      OpCode::SUB => todo!(),
-      OpCode::POW => todo!(),
-      OpCode::EQUAL => todo!(),
-      OpCode::NOT_EQUAL => todo!(),
-      OpCode::GREATER => todo!(),
-      OpCode::LESS => todo!(),
-      OpCode::GREATER_EQUAL => todo!(),
-      OpCode::LESS_EQUAL => todo!(),
-      OpCode::JUMP => todo!(),
-      OpCode::JZ => todo!(),
-      OpCode::JNZ => todo!(),
-      OpCode::LOADU8 => todo!(),
-      OpCode::LOADU16 => todo!(),
-      OpCode::LOADU32 => todo!(),
+      OpCode::LOAD_INT => self.LOAD_INT(),
+      OpCode::LOAD_FLOAT => self.LOAD_FLOAT(),
+      OpCode::MOVE => self.MOVE(),
+      OpCode::MULT => self.MULT(),
+      OpCode::DIV => self.DIV(),
+      OpCode::ADD => self.ADD(),
+      OpCode::SUB => self.SUB(),
+      OpCode::POW => self.POW(),
+      OpCode::EQUAL => self.EQUAL(),
+      OpCode::NOT_EQUAL => self.NOT_EQUAL(),
+      OpCode::GREATER => self.GREATER(),
+      OpCode::LESS => self.LESS(),
+      OpCode::GREATER_EQUAL => self.GREATER_EQUAL(),
+      OpCode::LESS_EQUAL => self.LESS_EQUAL(),
+      OpCode::JUMP => self.JUMP(),
+      OpCode::JZ => self.JZ(),
+      OpCode::JNZ => self.JNZ(),
+      OpCode::LOADU8 => self.LOADU8(),
+      OpCode::LOADU32 => self.LOADU32(),
       OpCode::CALL => todo!(),
+      OpCode::RETURN => todo!(),
       OpCode::SYS_CALL => todo!()
     }
   }
@@ -223,6 +225,11 @@ impl Tardis {
     // Perform the operation
     self.float[register] = float;
 
+    LoopControl::Continue
+  }
+
+  fn MOVE(&mut self) -> LoopControl {
+    self.registers[self.fetch_u8() as usize] = self.registers[self.fetch_u8() as usize];
     LoopControl::Continue
   }
 
@@ -346,12 +353,32 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  // JZ,
-  // JNZ,
-  // LOADU8,
-  // LOADU16,
-  // LOADU32,
+  fn JZ(&mut self) -> LoopControl {
+    if self.registers[self.fetch_u8() as usize] == 0 {
+      self.pc = self.fetch_u8() as usize;
+    }
+    LoopControl::Continue
+  }
+
+  fn JNZ(&mut self) -> LoopControl {
+    if self.registers[self.fetch_u8() as usize] != 0 {
+      self.pc = self.fetch_u8() as usize;
+    }
+    LoopControl::Continue
+  }
+
+  fn LOADU8(&mut self) -> LoopControl {
+    self.registers[self.fetch_u8() as usize] = self.fetch_u8() as u32;
+    LoopControl::Continue
+  }
+
+  fn LOADU32(&mut self) -> LoopControl {
+    self.registers[self.fetch_u8() as usize] = self.fetch_u32() as u32;
+    LoopControl::Continue
+  }
+
   // CALL,
+  // RETURN
   // SYS_CALL
 }
 
@@ -367,5 +394,11 @@ mod test {
     vm.load(program);
     let op = vm.decode();
     assert_eq!(op, OpCode::HLT);
+  }
+
+  #[test]
+  fn test_operations() {
+    let mut vm = Tardis::new();
+    let program = vec![0, 1];
   }
 }
