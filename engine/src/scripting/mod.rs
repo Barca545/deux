@@ -1,3 +1,4 @@
+mod errors;
 mod galaxy;
 mod implementations;
 mod movement;

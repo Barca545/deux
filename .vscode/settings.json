@@ -16,4 +16,5 @@
     "world",
     "owner"
   ],
+  "rust-analyzer.checkOnSave": true,
 }
