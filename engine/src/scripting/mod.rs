@@ -1,7 +1,7 @@
-mod errors;
-mod galaxy;
+mod compiler;
 mod implementations;
 mod movement;
+mod vm;
 
 pub use self::implementations::*;
 

@@ -1,7 +1,15 @@
+use super::errors::VMError;
+use nina::world::World;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use super::errors::VMErrors;
+#[no_mangle]
+pub extern "C" fn get_health(world:*mut World) {}
+
+// give the VM a globals field
+// store a world pointer in that
+
+// alternatively make the functions into a C ABI and call them from a header?
 
 // To Do:
 // - Make the opcodes constants?
@@ -25,7 +33,6 @@ use super::errors::VMErrors;
 // the function knows ok param 3 is the first thing off the stack param 2 is the
 // second, etc ok so I guess I get the theory now
 
-#[allow(unused)]
 pub struct StackFrame {
   ///The function's return address.
   lr:usize,
@@ -46,7 +53,7 @@ pub struct StackFrame {
 #[allow(non_camel_case_types)]
 #[allow(unused)]
 #[derive(FromPrimitive, Debug, PartialEq, Clone, Copy)]
-enum OpCode {
+pub enum OpCode {
   /// Halt the execution of code.
   HLT,
   /// Takes 2 argument:
@@ -214,6 +221,8 @@ pub enum LoopControl {
 /// Tardis is big endian.
 #[allow(unused)]
 struct Tardis {
+  ///Global variables
+  globals:Vec<u8>,
   /// The program counter indicates the next instruction to execute.
   pc:usize,
   /// Program bytecode.
@@ -234,6 +243,7 @@ struct Tardis {
 impl Tardis {
   pub fn new() -> Self {
     Tardis {
+      globals:Vec::new(),
       pc:0,
       program:Vec::new(),
       registers:[0; 255],
@@ -244,7 +254,7 @@ impl Tardis {
 
   fn decode(&mut self) -> (OpCode) {
     let op_byte = self.program[self.pc];
-    let op = FromPrimitive::from_u8(op_byte).ok_or(VMErrors::UnrecognizedOpCode(op_byte)).unwrap();
+    let op = FromPrimitive::from_u8(op_byte).ok_or(VMError::UnrecognizedOpCode(op_byte)).unwrap();
     self.pc += 1;
     (op)
   }
@@ -629,8 +639,9 @@ impl Tardis {
 
 #[cfg(test)]
 mod test {
+  use crate::scripting::vm::galaxy::OpCode;
+
   use super::Tardis;
-  use crate::scripting::galaxy::OpCode;
 
   #[test]
   fn get_u8_and_get_u32_work() {
@@ -913,7 +924,7 @@ fn function_calling_works() {
   program.extend_from_slice(&[OpCode::MOVE as u8, Tardis::ECX as u8, Tardis::EAX as u8]);
   program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::ECX as u8, 56]); // End of the loop
   program.extend_from_slice(&[OpCode::RETURN as u8, OpCode::NOOP as u8, OpCode::NOOP as u8]);
-  
+
   vm.load(program);
   vm.run();
 
