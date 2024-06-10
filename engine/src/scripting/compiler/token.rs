@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::errors::ParsingError;
 
 // TODO:
@@ -84,7 +86,7 @@ pub(super) enum TokenKind {
   TOKEN_FOR, TOKEN_WHILE, TOKEN_LOOP,
   TOKEN_IF, TOKEN_ELSE, TOKEN_ELSE_IF,
   TOKEN_FN, TOKEN_RETURN, TOKEN_PRINT, 
-  TOKEN_LET, TOKEN_MUT,
+  TOKEN_LET, TOKEN_MUT, TOKEN_LET_MUT,
   // Terminators
   TOKEN_ERROR(ParsingError), TOKEN_EOF
 }
@@ -95,7 +97,7 @@ impl TokenKind {
     // Return early if the token kind is a string
     if value.starts_with('"') {
       // Check if the string terminates, return a TOKEN_ERROR if it does not
-      return match value.chars().max().unwrap() == '"' {
+      return match value.chars().last().unwrap() == '"' {
         true => TokenKind::TOKEN_STRING,
         false => TokenKind::TOKEN_ERROR(ParsingError::StringNotTerminated)
       };
@@ -104,7 +106,7 @@ impl TokenKind {
     // Return early if the token kind is a number
     if value.chars().nth(0).unwrap().is_numeric() {
       // Check if the token is an int or a float
-      if value.parse::<f32>().is_ok() {
+      if is_float(value) {
         return TokenKind::TOKEN_FLOAT;
       }
       else if value.parse::<u32>().is_ok() {
@@ -155,9 +157,35 @@ impl TokenKind {
       "print" => TokenKind::TOKEN_PRINT,
       "let" => TokenKind::TOKEN_LET,
       "mut" => TokenKind::TOKEN_MUT,
+      "letmut" => TokenKind::TOKEN_LET_MUT,
       _ => TokenKind::TOKEN_ERROR(ParsingError::CharNotRecognized(value.to_string()))
     }
   }
+}
+
+fn is_float(val:&str) -> bool {
+  // Check string only has one period and otherwise only contains numbers
+  let mut period_found = false;
+  let mut only_numbers = true;
+  for ch in val.chars() {
+    if !ch.is_numeric() {
+      if ch == '.' {
+        if period_found {
+          only_numbers = false;
+        }
+        else {
+          period_found = true;
+        }
+      }
+      else {
+        only_numbers = false
+      }
+    }
+  }
+
+  // If the first and last chars are numeric and it has not other elements other
+  // than a period, it is a float
+  val.chars().nth(0).unwrap().is_numeric() && val.chars().last().unwrap().is_numeric() && period_found && only_numbers
 }
 
 #[derive(Debug, Clone)]
@@ -184,26 +212,20 @@ impl Token {
     }
   }
 
-  /// Create an Identifier [`Token`] from a [`String`].
-  pub fn new_ident(value:Option<&str>, loc:Location) -> Token {
+  /// Convert a [`Token`]'s `kind`into `TOKEN_IDENTIFIER`.
+  pub fn to_ident(&mut self) {
     // Confirm the token is a valid identifier
-    let val = value.unwrap().to_string();
-    if val.chars().nth(0).unwrap().is_alphabetic() {
-      return Token {
-        value:Some(val.clone()),
-        kind:TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(val)),
-        loc
-      };
-    }
-    else {
-      Token {
-        value:Some(val),
-        kind:TokenKind::TOKEN_IDENTIFIER,
-        loc
+    if let Some(val) = &self.value {
+      if val.chars().nth(0).unwrap().is_alphabetic() {
+        self.kind = TokenKind::TOKEN_IDENTIFIER;
+      }
+      else {
+        self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(self.value.clone().unwrap().to_string()));
       }
     }
   }
 
+  ///Create a`TOKEN_ERROR(ParsingError::VarNotDeclared)` [`Token`].
   pub fn var_not_declared_token(value:Option<&str>, loc:Location) -> Token {
     Token {
       value:Some(value.unwrap().to_string()),
