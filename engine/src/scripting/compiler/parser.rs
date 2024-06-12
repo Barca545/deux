@@ -6,6 +6,12 @@ use super::{
 };
 use eyre::Result;
 
+// TO DO:
+// - Use ANSI escape codes to color the errors
+
+//I think what he calls consume is the function that emits bytecode but I don't
+// want to do that yet, I just want to make an AST
+
 ///Structure used to generate an AST from a [`TokenStream`].
 struct Parser {
   current:Token,
@@ -111,7 +117,14 @@ impl Parser {
 
     //Create the indicator to the error
     let indicator = "_".repeat(loc.col as usize,);
-    print!("{}\n\n{}\n{}^ Near here", err.to_string(), line_string, indicator,);
+    print!(
+      "{}\n\n{}\n{}^ Panicked near ln:{} col:{} \n",
+      err.to_string(),
+      line_string,
+      indicator,
+      loc.line,
+      loc.col
+    );
   }
 }
 

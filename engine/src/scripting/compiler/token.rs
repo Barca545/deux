@@ -3,7 +3,7 @@ use super::errors::ParsingError;
 // TODO:
 // - Debating getting rid of the difference between floats and ints and just
 //   using floats only
-// - The error reporting does not properly repeat the dashes
+// - Not sure I need the double colon operator
 
 #[derive(Debug, Clone, Copy,)]
 pub(super) struct Location {
@@ -15,7 +15,7 @@ pub(super) struct Location {
 impl Location {
   /// Create a new [`Location`].
   pub fn new() -> Self {
-    Location { line:1, col:1, index:0, }
+    Location { line:0, col:0, index:0, }
   }
 
   pub fn next(&mut self, newline:bool,) {
@@ -40,6 +40,7 @@ pub(super) enum TokenKind {
   // Single-character tokens
   TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
   TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
+  TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET,
   TOKEN_COMMA, TOKEN_DOT, TOKEN_SEMICOLON, TOKEN_DOUBLE_COLON,
   // Math
   TOKEN_MINUS, TOKEN_PLUS, TOKEN_SLASH, TOKEN_STAR,
@@ -93,6 +94,8 @@ impl TokenKind {
       ")" => TokenKind::TOKEN_RIGHT_PAREN,
       "{" => TokenKind::TOKEN_LEFT_BRACE,
       "}" => TokenKind::TOKEN_RIGHT_BRACE,
+      "[" => TokenKind::TOKEN_LEFT_BRACKET,
+      "]" => TokenKind::TOKEN_RIGHT_BRACKET,
       ";" => TokenKind::TOKEN_SEMICOLON,
       "::" => TokenKind::TOKEN_DOUBLE_COLON,
       "," => TokenKind::TOKEN_COMMA,
