@@ -14,7 +14,7 @@ control_brace_style = "ClosingNextLine"
 type_punctuation_density = "Wide"
 
 #MISCELLANEOUS
-trailing_comma = "Never"
+trailing_comma = "Always"
 match_arm_blocks = true
 trailing_semicolon = true
 where_single_line = true

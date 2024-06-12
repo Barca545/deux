@@ -1,25 +1,24 @@
-use std::collections::HashSet;
-
 use super::errors::ParsingError;
 
 // TODO:
 // - Debating getting rid of the difference between floats and ints and just
 //   using floats only
+// - The error reporting does not properly repeat the dashes
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy,)]
 pub(super) struct Location {
   pub(super) line:u32,
   pub(super) col:u32,
-  pub(super) index:usize
+  pub(super) index:usize,
 }
 
 impl Location {
   /// Create a new [`Location`].
   pub fn new() -> Self {
-    Location { line:0, col:0, index:0 }
+    Location { line:1, col:1, index:0, }
   }
 
-  pub fn next(&mut self, newline:bool) {
+  pub fn next(&mut self, newline:bool,) {
     match newline {
       true => {
         self.line += 1;
@@ -30,35 +29,6 @@ impl Location {
         self.index += 1;
       }
     }
-  }
-
-  ///Reads through the whole source code until it locates the target line.
-  /// Returns a string pointing to where in the line the error occured.
-  fn dbg(&self, raw:&String, error:ParsingError) -> Result<(), String> {
-    let mut line = 0;
-    let mut line_string = String::new();
-
-    // Find the whole line of original source
-    for char in raw.chars() {
-      if char == '\n' {
-        line += 1;
-
-        // If a linebreak was reached and the line is not empty than we have finished
-        // searching the line.
-        if !line_string.is_empty() {
-          break;
-        }
-        continue;
-      }
-
-      if self.line == line {
-        line_string.push(char);
-      }
-    }
-
-    //Create the indicator to the error
-    let indicator = "-".repeat(self.col as usize);
-    Err(format!("{}\n\n{}\n{}^ Near here", error.to_string(), line_string, indicator))
   }
 }
 
@@ -86,38 +56,38 @@ pub(super) enum TokenKind {
   TOKEN_FOR, TOKEN_WHILE, TOKEN_LOOP,
   TOKEN_IF, TOKEN_ELSE, TOKEN_ELSE_IF,
   TOKEN_FN, TOKEN_RETURN, TOKEN_PRINT, 
-  TOKEN_LET, TOKEN_MUT, TOKEN_LET_MUT,
+  TOKEN_LET, TOKEN_MUT, 
   // Terminators
   TOKEN_ERROR(ParsingError), TOKEN_EOF
 }
 
 impl TokenKind {
   ///Create a new token type.
-  fn new(value:&str) -> Self {
+  fn new(value:&String,) -> Self {
     // Return early if the token kind is a string
-    if value.starts_with('"') {
+    if value.starts_with('"',) {
       // Check if the string terminates, return a TOKEN_ERROR if it does not
       return match value.chars().last().unwrap() == '"' {
         true => TokenKind::TOKEN_STRING,
-        false => TokenKind::TOKEN_ERROR(ParsingError::StringNotTerminated)
+        false => TokenKind::TOKEN_ERROR(ParsingError::StringNotTerminated,),
       };
     }
 
     // Return early if the token kind is a number
-    if value.chars().nth(0).unwrap().is_numeric() {
+    if value.chars().nth(0,).unwrap().is_numeric() {
       // Check if the token is an int or a float
-      if is_float(value) {
+      if is_float(&value,) {
         return TokenKind::TOKEN_FLOAT;
       }
       else if value.parse::<u32>().is_ok() {
         return TokenKind::TOKEN_INT;
       }
       else {
-        return TokenKind::TOKEN_ERROR(ParsingError::NotValidNumber(value.to_string()));
+        return TokenKind::TOKEN_ERROR(ParsingError::NotValidNumber(value.to_string(),),);
       }
     }
 
-    match value {
+    match value.as_str() {
       // Single-character tokens
       "(" => TokenKind::TOKEN_LEFT_PAREN,
       ")" => TokenKind::TOKEN_RIGHT_PAREN,
@@ -157,80 +127,142 @@ impl TokenKind {
       "print" => TokenKind::TOKEN_PRINT,
       "let" => TokenKind::TOKEN_LET,
       "mut" => TokenKind::TOKEN_MUT,
-      "letmut" => TokenKind::TOKEN_LET_MUT,
-      _ => TokenKind::TOKEN_ERROR(ParsingError::CharNotRecognized(value.to_string()))
+      _ => TokenKind::TOKEN_ERROR(ParsingError::ChunkNotRecognized(value.to_string(),),),
     }
   }
 }
 
-fn is_float(val:&str) -> bool {
+fn is_float(val:&str,) -> bool {
   // Check string only has one period and otherwise only contains numbers
   let mut period_found = false;
-  let mut only_numbers = true;
   for ch in val.chars() {
     if !ch.is_numeric() {
       if ch == '.' {
         if period_found {
-          only_numbers = false;
+          return false;
         }
         else {
           period_found = true;
         }
       }
       else {
-        only_numbers = false
+        return false;
       }
     }
   }
 
   // If the first and last chars are numeric and it has not other elements other
   // than a period, it is a float
-  val.chars().nth(0).unwrap().is_numeric() && val.chars().last().unwrap().is_numeric() && period_found && only_numbers
+  val.chars().nth(0,).unwrap().is_numeric() && val.chars().last().unwrap().is_numeric() && period_found
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug,)]
+///Intermediary struct for storing the data needed to create a [`Token`].
+pub struct Chunk {
+  loc:Location,
+  val:String,
+  newline:bool,
+}
+
+impl Chunk {
+  ///Create a new [`Chunk`].
+  pub fn new() -> Self {
+    Chunk {
+      loc:Location::new(),
+      val:String::new(),
+      newline:false,
+    }
+  }
+
+  pub fn push(&mut self, ch:char,) {
+    self.val.push(ch,);
+    if ch == '\n' {
+      self.newline = true
+    }
+    else {
+      self.newline = false
+    }
+  }
+
+  pub fn len(&self,) -> usize {
+    self.val.len()
+  }
+
+  ///Emit a [`Token`] and ready a new [`Chunk`].
+  pub fn to_token(&mut self,) -> Token {
+    //Ensure the pointer is to the front of the token.
+    let mut loc = self.loc;
+    loc.col -= self.val.chars().count() as u32;
+    loc.index -= self.val.chars().count();
+    let token = Token::new(Some(&self.val,), loc,);
+    self.val = String::new();
+    token
+  }
+
+  ///Create a new [`Token`] from a [`String`].
+  pub fn new_token(&mut self, val:&str,) -> Token {
+    //Ensure the pointer is to the front of the token.
+    let mut loc = self.loc;
+    loc.col -= self.val.chars().count() as u32;
+    loc.index -= self.val.chars().count();
+    let token = Token::new(Some(&String::from(val,),), loc,);
+    token
+  }
+
+  ///Increment the [`Chunk`]'s [`Location`]
+  pub fn next(&mut self,) {
+    self.loc.next(self.newline,);
+    self.newline = false;
+  }
+
+  pub fn loc(&self,) -> Location {
+    self.loc
+  }
+}
+
+#[derive(Debug, Clone,)]
 pub(super) struct Token {
-  pub value:Option<String>,
+  pub value:Option<String,>,
   pub kind:TokenKind,
-  pub loc:Location
+  pub loc:Location,
 }
 
 impl Token {
   /// Create a [`Token`] from a [`String`].
-  pub fn new(value:Option<&str>, loc:Location) -> Token {
+  pub fn new(value:Option<&String,>, loc:Location,) -> Token {
     match value {
-      Some(str) => Token {
-        value:Some(str.to_string()),
-        kind:TokenKind::new(str),
-        loc
+      Some(str,) => Token {
+        value:Some(str.to_string(),),
+        kind:TokenKind::new(str,),
+        loc,
       },
       None => Token {
         value:None,
         kind:TokenKind::TOKEN_EOF,
-        loc
-      }
+        loc,
+      },
     }
   }
 
   /// Convert a [`Token`]'s `kind`into `TOKEN_IDENTIFIER`.
-  pub fn to_ident(&mut self) {
+  pub fn to_ident(&mut self,) {
     // Confirm the token is a valid identifier
-    if let Some(val) = &self.value {
-      if val.chars().nth(0).unwrap().is_alphabetic() {
+    if let Some(val,) = &self.value {
+      if val.chars().nth(0,).unwrap().is_alphabetic() {
         self.kind = TokenKind::TOKEN_IDENTIFIER;
       }
       else {
-        self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(self.value.clone().unwrap().to_string()));
+        self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(self.value.clone().unwrap().to_string(),),);
       }
     }
   }
 
   ///Create a`TOKEN_ERROR(ParsingError::VarNotDeclared)` [`Token`].
-  pub fn var_not_declared_token(value:Option<&str>, loc:Location) -> Token {
+  pub fn var_not_declared_token(value:Option<&str,>, loc:Location,) -> Token {
     Token {
-      value:Some(value.unwrap().to_string()),
-      kind:TokenKind::TOKEN_ERROR(ParsingError::VarNotDeclared),
-      loc
+      value:Some(value.unwrap().to_string(),),
+      kind:TokenKind::TOKEN_ERROR(ParsingError::VarNotDeclared,),
+      loc,
     }
   }
 }
