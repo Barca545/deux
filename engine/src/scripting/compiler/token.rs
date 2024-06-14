@@ -4,6 +4,7 @@ use super::errors::ParsingError;
 // - Debating getting rid of the difference between floats and ints and just
 //   using floats only
 // - Not sure I need the double colon operator
+// - How do tokenizers actually handle type declarations
 
 #[derive(Debug, Clone, Copy,)]
 pub(super) struct Location {
@@ -41,7 +42,7 @@ pub(super) enum TokenKind {
   TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
   TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
   TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET,
-  TOKEN_COMMA, TOKEN_DOT, TOKEN_SEMICOLON, TOKEN_DOUBLE_COLON,
+  TOKEN_COMMA, TOKEN_DOT, TOKEN_SEMICOLON,TOKEN_COLON, TOKEN_DOUBLE_COLON,
   // Math
   TOKEN_MINUS, TOKEN_PLUS, TOKEN_SLASH, TOKEN_STAR,
   // Equality
@@ -51,6 +52,8 @@ pub(super) enum TokenKind {
   TOKEN_LESS, TOKEN_LESS_EQUAL,
   // Literals
   TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INT, TOKEN_FLOAT,
+  TOKEN_TYPE,
+
   // Keywords
   TOKEN_AND, TOKEN_OR, 
   TOKEN_TRUE, TOKEN_FALSE,
@@ -88,6 +91,11 @@ impl TokenKind {
       }
     }
 
+    //If the token starts with a type it is a type declaration
+    if value.starts_with("int",) || value.starts_with("float",) || value.starts_with("usize",) {
+      return TokenKind::TOKEN_TYPE;
+    }
+
     match value.as_str() {
       // Single-character tokens
       "(" => TokenKind::TOKEN_LEFT_PAREN,
@@ -97,6 +105,7 @@ impl TokenKind {
       "[" => TokenKind::TOKEN_LEFT_BRACKET,
       "]" => TokenKind::TOKEN_RIGHT_BRACKET,
       ";" => TokenKind::TOKEN_SEMICOLON,
+      ":" => TokenKind::TOKEN_COLON,
       "::" => TokenKind::TOKEN_DOUBLE_COLON,
       "," => TokenKind::TOKEN_COMMA,
       "." => TokenKind::TOKEN_DOT,

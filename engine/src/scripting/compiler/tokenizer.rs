@@ -1,11 +1,11 @@
 use super::{
   errors::ParsingError,
-  token::{Chunk, Location, Token, TokenKind},
+  token::{Chunk, Token, TokenKind},
 };
 // TODO:
-// - Fix the loc incrementor so it does not ignore white space. Turn the output
-//   of the create_chunks so each chunk holds a location.
-// - The second pass might be better off in the parser
+// - Update so it takes a &str. Will probably require changes to the tokens as
+//   well.
+//
 
 pub type TokenStream = Vec<Token,>;
 

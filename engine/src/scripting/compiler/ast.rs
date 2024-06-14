@@ -1,19 +1,153 @@
-use super::tokenizer::TokenStream;
+use super::token::Location;
 
-struct Node {
-  index:usize,
-  kind:ExpressionKind,
-  tokens:TokenStream,
-  descendants:Vec<Node,>,
+//Will still need to handle arrays
+//I think I do need strings after all
+
+//I think the AST also has to do with the symbol table
+
+// #[derive(Debug,)]
+// pub struct Literal;
+
+// #[derive(Debug,)]
+// pub struct FunctionCall;
+
+// #[derive(Debug,)]
+// pub struct FunctionDeclaration;
+
+// #[derive(Debug,)]
+// pub struct If;
+
+// #[derive(Debug,)]
+// pub struct While;
+
+// #[derive(Debug,)]
+// pub struct For;
+
+// #[derive(Debug,)]
+// pub struct Binary;
+
+// #[derive(Debug,)]
+// pub struct Declaration;
+
+// #[derive(Debug,)]
+// pub struct Return;
+
+#[derive(Debug,)]
+///Owned smart pointer on the heap.
+pub struct P<T,> {
+  ptr:Box<T,>,
 }
 
-enum ExpressionKind {}
+impl<T,> P<T,> {
+  pub fn new(val:T,) -> Self {
+    P { ptr:Box::new(val,), }
+  }
+}
 
-pub struct AbstractSyntaxTree {}
+#[derive(Debug,)]
+pub struct Expression;
+
+#[derive(Debug,)]
+pub enum Ty {
+  Int,
+  Float,
+  Usize,
+  String,
+  Array(P<Ty,>,),
+}
+
+impl Ty {
+  pub fn new(val:String,) -> Option<Self,> {
+    match val.as_str() {
+      "int" => Some(Ty::Int,),
+      "float" => Some(Ty::Float,),
+      "usize" => Some(Ty::Usize,),
+      "string" => Some(Ty::String,),
+      "int[]" => Some(Ty::Array(P::new(Ty::Int,),),),
+      "float[]" => Some(Ty::Array(P::new(Ty::Float,),),),
+      "usize[]" => Some(Ty::Array(P::new(Ty::Usize,),),),
+      "string[]" => Some(Ty::Array(P::new(Ty::String,),),),
+      _ => None,
+    }
+  }
+}
+
+#[derive(Debug,)]
+pub struct Ident {
+  pub name:String,
+  pub loc:Location,
+}
+
+#[derive(Debug,)]
+pub enum PatKind {
+  Ident { mutable:bool, ident:Ident, },
+}
+
+#[derive(Debug,)]
+pub struct Pat {
+  pub id:usize,
+  ///[`Location`] of the first element in the statement
+  pub loc:Location,
+  pub kind:PatKind,
+}
+
+#[derive(Debug,)]
+pub enum LocalKind {
+  ///Local declaration. Example: `let x;`
+  Decl,
+  ///Local declaration with an initializer. Example: `let x = y;`
+  Init(P<Expression,>,),
+}
+
+#[derive(Debug,)]
+pub struct Local {
+  pub id:usize,
+  ///[`Location`] of the first element in the statement
+  pub loc:Location,
+  ///Type of the local.
+  pub ty:Option<P<Ty,>,>,
+  pub pat:P<Pat,>,
+  pub kind:LocalKind,
+}
+
+#[derive(Debug,)]
+pub enum StatementKind {
+  Let(P<Local,>,),
+  Item(),
+  Expression(Expression,),
+}
+
+#[derive(Debug,)]
+pub struct Statement {
+  pub id:usize,
+  ///[`Location`] of the first element in the statement
+  pub loc:Location,
+  pub kind:StatementKind,
+}
+
+impl Statement {
+  pub fn new(loc:Location, kind:StatementKind,) -> Self {
+    Statement { id:0, loc, kind, }
+  }
+}
+
+// #[derive(Debug,)]
+// struct Node {
+//   pub id:usize,
+//   pub statement:Statement,
+// }
+
+#[derive(Debug,)]
+pub struct AbstractSyntaxTree(Vec<Statement,>,);
 
 impl AbstractSyntaxTree {
   pub fn new() -> Self {
-    AbstractSyntaxTree {}
+    AbstractSyntaxTree(Vec::new(),)
+  }
+
+  pub fn push(&mut self, statement:Statement,) {
+    // let node = Node { id:0, statement, };
+    self.0.push(statement,);
   }
 }
 
