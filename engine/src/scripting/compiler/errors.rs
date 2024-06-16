@@ -16,4 +16,6 @@ pub enum ParsingError {
   UnexpectedToken(String,),
   #[error("{0:?} is not a valid type. Accepted types are int, float, usize, and str or their corresponding arrays int[], float[], usize[], and str[]")]
   InvalidTpe(String,),
+  #[error("No statement match")]
+  NoStatementMatch,
 }

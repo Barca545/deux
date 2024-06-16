@@ -1,4 +1,4 @@
-use super::token::Location;
+use super::{symbol_table::Symbol, token::Location};
 
 //Will still need to handle arrays
 //I think I do need strings after all
@@ -43,9 +43,31 @@ impl<T,> P<T,> {
     P { ptr:Box::new(val,), }
   }
 }
+#[derive(Debug,)]
+pub enum LiteralKind {
+  Bool,
+  Integer,
+  Float,
+  Str,
+}
 
 #[derive(Debug,)]
-pub struct Expression;
+pub struct Literal {
+  pub kind:LiteralKind,
+  pub symbol:Symbol,
+}
+
+#[derive(Debug,)]
+pub enum ExpressionKind {
+  Literal(P<Literal,>,),
+}
+
+#[derive(Debug,)]
+pub struct Expression {
+  pub id:usize,
+  pub kind:ExpressionKind,
+  pub loc:Location,
+}
 
 #[derive(Debug,)]
 pub enum Ty {

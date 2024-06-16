@@ -1,8 +1,9 @@
 use crate::scripting::compiler::ast::{StatementKind, P};
 
 use super::{
-  ast::{AbstractSyntaxTree, Expression, Ident, Local, LocalKind, Pat, PatKind, Statement, Ty},
+  ast::{AbstractSyntaxTree, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
   errors::ParsingError,
+  symbol_table::Symbol,
   token::{Location, Token, TokenKind},
   tokenizer::{tokenize, TokenStream},
 };
@@ -19,7 +20,8 @@ use eyre::Result;
 // might lead to duplicate code but should make adding IR steps later on a lot
 // easier.
 
-// unsure that in advance I should be doing self.cursor +=1 in the loop
+// I should finish up the parser first then do the symbol table based on that
+// paper I found
 
 ///Structure used to generate an AST from a [`TokenStream`].
 struct Parser {
@@ -50,8 +52,8 @@ impl Parser {
   }
 
   ///Returns a reference to the current [`Token`].
-  fn current(&self,) -> &Token {
-    &self.tokens[self.cursor]
+  fn current(&self,) -> Token {
+    self.tokens[self.cursor].clone()
   }
 
   ///Returns a reference to the next [`Token`].
@@ -109,15 +111,12 @@ impl Parser {
   }
 
   fn parse(&mut self,) -> Result<AbstractSyntaxTree,> {
-    // self.advance();
-
     let mut ast = AbstractSyntaxTree::new();
 
-    // while self.cursor < self.tokens.len() {
-    //   ast.push(self.parse_statement(),)
-    // }
-
-    // self.consume(TokenKind::TOKEN_EOF, "Expected end of expression.",)?;
+    while self.tokens.len() > 0 && self.current().kind != TokenKind::TOKEN_EOF {
+      ast.push(self.parse_statement().unwrap(),);
+      self.next();
+    }
 
     Ok(ast,)
   }
@@ -125,52 +124,40 @@ impl Parser {
 
 //Actual Parsing rules
 impl Parser {
-  //should have incremented before so
-
-  // fn parse_local(&mut self,) {
-  //   //Peek at the next token, it should be either a TOKEN_MUT or a
-  //   // TOKEN_IDENTIFIER otherwise return an error
-  //   match self.peek().kind {
-  //     TokenKind::TOKEN_MUT => {
-  //       self.cursor += 2;
-  //       self
-  //         .consume(TokenKind::TOKEN_IDENTIFIER, "Expected an identifier after a
-  // \"let\" declaration",)         .unwrap();
-  //     }
-  //     TokenKind::TOKEN_IDENTIFIER => {
-  //       self.cursor += 1;
-  //       self
-  //         .consume(TokenKind::TOKEN_IDENTIFIER, "Expected an identifier after a
-  // \"let\" declaration",)         .unwrap();
-  //     }
-  //     _ => {}
-  //   }
-  //
-  //Store the local in the symbol table
-  //
-  //Return a Let Statement
-  // }
-
   ///Returns an [`Expression`].
-  fn parse_expression() {}
-
-  ///Returns a [`Statement`].
-  fn parse_statement(&mut self,) -> Statement {
-    let lhs = self.next();
-
-    while self.tokens.len() > 0 {
-      self.next();
-
-      let token = self.current();
-
-      match token.kind {
-        TokenKind::TOKEN_EOF => break,
-        TokenKind::TOKEN_LET => {}
-        _ => {}
+  fn parse_expression(&mut self,) -> Expression {
+    self.next();
+    let token = self.current();
+    match token.kind {
+      TokenKind::TOKEN_INT => self.parse_integer(token,),
+      _ => {
+        todo!()
       }
     }
+  }
 
-    todo!()
+  fn parse_integer(&mut self, token:Token,) -> Expression {
+    let val = Literal {
+      kind:LiteralKind::Integer,
+      symbol:Symbol,
+    };
+
+    Expression {
+      id:0,
+      kind:ExpressionKind::Literal(P::new(val,),),
+      loc:token.loc,
+    }
+  }
+
+  ///Returns a [`Statement`].
+  fn parse_statement(&mut self,) -> Result<Statement,> {
+    // let lhs = self.next();
+
+    let token = self.current();
+    match token.kind {
+      TokenKind::TOKEN_LET => Ok(self.parse_let(&token,),),
+      _ => Err(ParsingError::NoStatementMatch.into(),),
+    }
   }
 
   ///Parse a `let` statement (`let <pat>::<ty> = <expr>`)
@@ -199,13 +186,13 @@ impl Parser {
       id,
       loc,
       ty,
-      pat:P::new(pat),
+      pat:P::new(pat,),
       kind:self.parse_local_kind(),
     };
 
     let stmt_kind = StatementKind::Let(P::new(local,),);
 
-    todo!()
+    Statement::new(loc, stmt_kind,)
   }
 
   ///Checks if the next [`Token`] is mutable and consumes it if so.
@@ -214,17 +201,15 @@ impl Parser {
   }
 
   ///Checks if the next [`Token`]s are `:<ty>` and consumes them if so.
-  fn parse_type(&mut self,) -> Option<P<Ty> >{
+  fn parse_type(&mut self,) -> Option<P<Ty,>,> {
     //Check for a colon if a colon is found continue otherwise return false
     if self.eat_token_if_match(TokenKind::TOKEN_COLON,) {
       //Check for a type if no type is found print an error
       self.eat_token_expect(TokenKind::TOKEN_TYPE, "Expected type declaration",).unwrap();
 
-      let ty = 
-
       //If the type is not a valid type, error
-      if let Some(ty) = Ty::new(self.current().value.clone().unwrap(),){
-        return Some(P::new(ty));
+      if let Some(ty,) = Ty::new(self.current().value.clone().unwrap(),) {
+        return Some(P::new(ty,),);
       };
 
       self.err_detected(self.current().loc, &ParsingError::InvalidTpe(self.current().value.clone().unwrap(),),)
@@ -234,8 +219,9 @@ impl Parser {
 
   fn parse_ident(&mut self,) -> Ident {
     // Eat the token expecting an ident
+
     self
-      .eat_token_expect(self.current().kind.clone(), &ParsingError::VarNotDeclared.to_string(),)
+      .eat_token_expect(TokenKind::TOKEN_IDENTIFIER, &ParsingError::VarNotDeclared.to_string(),)
       .unwrap();
     Ident {
       name:self.current().value.clone().unwrap(),
@@ -243,9 +229,22 @@ impl Parser {
     }
   }
 
-  fn parse_local_kind(&self,) -> LocalKind {
-    // If not an equals sign error "expected assignent `=`"
-    todo!()
+  fn parse_local_kind(&mut self,) -> LocalKind {
+    // If equals sign, parse the output of the next statement, expect an Expression.
+    if self.eat_token_if_match(TokenKind::TOKEN_EQUAL,) {
+      let expression = self.parse_expression();
+      //Line must end after the expression so expect a semicolon
+      self
+        .eat_token_expect(TokenKind::TOKEN_SEMICOLON, "Must end Let statement with a semicolon",)
+        .unwrap();
+      return LocalKind::Init(P::new(expression,),);
+    }
+    // If equals no sign error it's a delayed assignment so expect a semicolon
+    self
+      .eat_token_expect(TokenKind::TOKEN_SEMICOLON, "Must end Let statement with a semicolon",)
+      .unwrap();
+
+    LocalKind::Decl
   }
 }
 
@@ -318,11 +317,13 @@ mod tests {
   #[test]
   fn parse_works() {
     let source = String::from(
-      r#"let mut value_test = value;
+      r#"
+      let mut value_test = 5;
+      let value = 3;
     "#,
     );
 
     let mut parser = Parser::new(source,);
-    parser.parse();
+    let ast = parser.parse().unwrap();
   }
 }
