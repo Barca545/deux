@@ -179,12 +179,13 @@ mod test {
 
     = (+ / * >=  \t  == , fn for != >) 
     ///jdjdjdjdjd
+    true
     "
     .to_string();
 
     let tokens = tokenize(source,);
 
-    assert_eq!(tokens.len(), 14);
+    assert_eq!(tokens.len(), 15);
     assert_eq!(tokens[0].kind, TokenKind::TOKEN_EQUAL);
     assert_eq!(tokens[1].kind, TokenKind::TOKEN_LEFT_PAREN);
     assert_eq!(tokens[2].kind, TokenKind::TOKEN_PLUS);
@@ -195,10 +196,11 @@ mod test {
     assert_eq!(tokens[7].kind, TokenKind::TOKEN_COMMA);
     assert_eq!(tokens[8].kind, TokenKind::TOKEN_FN);
     assert_eq!(tokens[9].kind, TokenKind::TOKEN_FOR);
-    assert_eq!(tokens[10].kind, TokenKind::TOKEN_BANG_EQUAL);
+    assert_eq!(tokens[10].kind, TokenKind::TOKEN_NOT_EQUAL);
     assert_eq!(tokens[11].kind, TokenKind::TOKEN_GREATER);
     assert_eq!(tokens[12].kind, TokenKind::TOKEN_RIGHT_PAREN);
-    assert_eq!(tokens[13].kind, TokenKind::TOKEN_EOF);
+    assert_eq!(tokens[13].kind, TokenKind::TOKEN_BOOL);
+    assert_eq!(tokens[14].kind, TokenKind::TOKEN_EOF);
   }
 
   #[test]

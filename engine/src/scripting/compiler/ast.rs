@@ -1,4 +1,9 @@
-use super::{symbol_table::Symbol, token::Location};
+use std::ops::Deref;
+
+use super::{
+  symbol_table::Symbol,
+  token::{Location, Token, TokenKind},
+};
 
 //Will still need to handle arrays
 //I think I do need strings after all
@@ -32,10 +37,18 @@ use super::{symbol_table::Symbol, token::Location};
 // #[derive(Debug,)]
 // pub struct Return;
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 ///Owned smart pointer on the heap.
 pub struct P<T,> {
   ptr:Box<T,>,
+}
+
+impl<T,> Deref for P<T,> {
+  type Target = T;
+
+  fn deref(&self,) -> &Self::Target {
+    &*self.ptr
+  }
 }
 
 impl<T,> P<T,> {
@@ -43,7 +56,8 @@ impl<T,> P<T,> {
     P { ptr:Box::new(val,), }
   }
 }
-#[derive(Debug,)]
+
+#[derive(Debug, Clone,)]
 pub enum LiteralKind {
   Bool,
   Integer,
@@ -51,25 +65,62 @@ pub enum LiteralKind {
   Str,
 }
 
-#[derive(Debug,)]
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, PartialEq, Eq,)]
+pub enum BinOpKind {
+  MINUS,
+  PLUS,
+  SLASH,
+  STAR,
+  EQUAL_EQUAL,
+  NOT_EQUAL,
+  GREATER,
+  GREATER_EQUAL,
+  LESS,
+  LESS_EQUAL,
+}
+
+impl From<&Token,> for BinOpKind {
+  fn from(token:&Token,) -> Self {
+    match token.kind {
+      TokenKind::TOKEN_MINUS => BinOpKind::MINUS,
+      TokenKind::TOKEN_PLUS => BinOpKind::PLUS,
+      TokenKind::TOKEN_SLASH => BinOpKind::SLASH,
+      TokenKind::TOKEN_STAR => BinOpKind::STAR,
+      TokenKind::TOKEN_EQUAL_EQUAL => BinOpKind::EQUAL_EQUAL,
+      TokenKind::TOKEN_NOT_EQUAL => BinOpKind::NOT_EQUAL,
+      TokenKind::TOKEN_GREATER => BinOpKind::GREATER,
+      TokenKind::TOKEN_GREATER_EQUAL => BinOpKind::GREATER_EQUAL,
+      TokenKind::TOKEN_LESS => BinOpKind::LESS,
+      TokenKind::TOKEN_LESS_EQUAL => BinOpKind::LESS_EQUAL,
+      _ => todo!(),
+    }
+  }
+}
+
+#[derive(Debug, Clone,)]
 pub struct Literal {
   pub kind:LiteralKind,
   pub symbol:Symbol,
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub enum ExpressionKind {
   Literal(P<Literal,>,),
+  ///A binary operation i.e.`true == false`
+  BinOp(P<Expression,>, BinOpKind, P<Expression,>,),
+  // Call,
+  // Array
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Expression {
   pub id:usize,
   pub kind:ExpressionKind,
   pub loc:Location,
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub enum Ty {
   Int,
   Float,
@@ -94,18 +145,18 @@ impl Ty {
   }
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Ident {
   pub name:String,
   pub loc:Location,
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub enum PatKind {
   Ident { mutable:bool, ident:Ident, },
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Pat {
   pub id:usize,
   ///[`Location`] of the first element in the statement
@@ -113,7 +164,7 @@ pub struct Pat {
   pub kind:PatKind,
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub enum LocalKind {
   ///Local declaration. Example: `let x;`
   Decl,
@@ -121,7 +172,7 @@ pub enum LocalKind {
   Init(P<Expression,>,),
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Local {
   pub id:usize,
   ///[`Location`] of the first element in the statement
@@ -132,14 +183,14 @@ pub struct Local {
   pub kind:LocalKind,
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub enum StatementKind {
   Let(P<Local,>,),
   Item(),
   Expression(Expression,),
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Statement {
   pub id:usize,
   ///[`Location`] of the first element in the statement
@@ -160,16 +211,18 @@ impl Statement {
 // }
 
 #[derive(Debug,)]
-pub struct AbstractSyntaxTree(Vec<Statement,>,);
+pub struct AbstractSyntaxTree {
+  pub statements:Vec<Statement,>,
+}
 
 impl AbstractSyntaxTree {
   pub fn new() -> Self {
-    AbstractSyntaxTree(Vec::new(),)
+    AbstractSyntaxTree { statements:Vec::new(), }
   }
 
   pub fn push(&mut self, statement:Statement,) {
     // let node = Node { id:0, statement, };
-    self.0.push(statement,);
+    self.statements.push(statement,);
   }
 }
 

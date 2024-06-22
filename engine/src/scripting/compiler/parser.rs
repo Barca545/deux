@@ -1,13 +1,19 @@
-use crate::scripting::compiler::ast::{StatementKind, P};
-
 use super::{
-  ast::{AbstractSyntaxTree, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
+  ast::{AbstractSyntaxTree, BinOpKind, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
   errors::ParsingError,
   symbol_table::Symbol,
   token::{Location, Token, TokenKind},
   tokenizer::{tokenize, TokenStream},
 };
+use crate::scripting::compiler::ast::{StatementKind, P};
 use eyre::Result;
+
+// Refactor:
+// - Switch to using lifetimes for tokens and the parser (must be done before
+//   switching to peekable)
+// - Switch to iter().peekable() instead of just a vec with methods. I think
+//   then all `current()`s become `next()`s
+// - next has higher precedence might need a less than sign
 
 // TO DO:
 // - Use ANSI escape codes to color the errors
@@ -44,6 +50,12 @@ impl Parser {
       had_err:false,
       erroring:false,
     }
+  }
+
+  /// Checks whether the current [`Token`] has a higher precedence than the
+  /// following `Token`.
+  fn next_is_less_precedence(&self, rbp:u32,) -> bool {
+    self.peek().precedence() > rbp
   }
 
   ///Increments the `cursor`.
@@ -126,16 +138,68 @@ impl Parser {
 impl Parser {
   ///Returns an [`Expression`].
   fn parse_expression(&mut self,) -> Expression {
+    //this next needs to happen before parse expression
+    self.parse_expression_precedence(0,)
+  }
+
+  fn parse_expression_precedence(&mut self, rbp:u32,) -> Expression {
     self.next();
+    // Get the left hand expression
+    let mut left = self.parse_expression_null_detonation();
+
+    // Keep eating tokens as long as the next token's precedence is greater than
+    // the current token -- lower precedence will cause the loop to terminate
+    while self.next_is_less_precedence(rbp,) {
+      left = self.parse_expression_left_denotation(left,)
+    }
+    left
+  }
+
+  ///Returns an [`Expression`] consisting of the current [`Token`].
+  fn parse_expression_null_detonation(&mut self,) -> Expression {
+    // Should be some kind of literal
     let token = self.current();
     match token.kind {
       TokenKind::TOKEN_INT => self.parse_integer(token,),
-      _ => {
-        todo!()
-      }
+      TokenKind::TOKEN_FLOAT => self.parse_float(token,),
+      TokenKind::TOKEN_BOOL => self.parse_bool(token,),
+      // This should recur if it finds another expression beginning?
+
+      // This should probably enter an error state
+      // I think it should error that it was expecting some kind of literal
+      _ => panic!("{:?}", token.kind),
     }
   }
 
+  ///Returns an [`Expression`] consisting of the currently parsed [`Token`]s
+  /// and the next `Token`.
+  fn parse_expression_left_denotation(&mut self, left:Expression,) -> Expression {
+    self.next();
+    //Should be some kind of operator
+    let token = self.current();
+    match token.kind {
+      //BinOps
+      TokenKind::TOKEN_MINUS
+      | TokenKind::TOKEN_PLUS
+      | TokenKind::TOKEN_STAR
+      | TokenKind::TOKEN_SLASH
+      | TokenKind::TOKEN_EQUAL_EQUAL
+      | TokenKind::TOKEN_NOT_EQUAL
+      | TokenKind::TOKEN_GREATER
+      | TokenKind::TOKEN_GREATER_EQUAL
+      | TokenKind::TOKEN_LESS
+      | TokenKind::TOKEN_LESS_EQUAL => {
+        let loc = left.loc;
+        let binop_kind = BinOpKind::from(&token,);
+        let right = self.parse_expression_precedence(token.precedence(),);
+        let kind = ExpressionKind::BinOp(P::new(left,), binop_kind, P::new(right,),);
+        Expression { id:0, kind, loc, }
+      }
+      _ => panic!("{:?} {}", token.kind, token.value.unwrap()),
+    }
+  }
+
+  ///Return an expression containing an integer [`Literal`].
   fn parse_integer(&mut self, token:Token,) -> Expression {
     let val = Literal {
       kind:LiteralKind::Integer,
@@ -149,10 +213,36 @@ impl Parser {
     }
   }
 
+  ///Return an expression containing a float [`Literal`].
+  fn parse_float(&mut self, token:Token,) -> Expression {
+    let val = Literal {
+      kind:LiteralKind::Float,
+      symbol:Symbol,
+    };
+
+    Expression {
+      id:0,
+      kind:ExpressionKind::Literal(P::new(val,),),
+      loc:token.loc,
+    }
+  }
+
+  ///Return an expression containing a boolean [`Literal`].
+  fn parse_bool(&mut self, token:Token,) -> Expression {
+    let val = Literal {
+      kind:LiteralKind::Bool,
+      symbol:Symbol,
+    };
+
+    Expression {
+      id:0,
+      kind:ExpressionKind::Literal(P::new(val,),),
+      loc:token.loc,
+    }
+  }
+
   ///Returns a [`Statement`].
   fn parse_statement(&mut self,) -> Result<Statement,> {
-    // let lhs = self.next();
-
     let token = self.current();
     match token.kind {
       TokenKind::TOKEN_LET => Ok(self.parse_let(&token,),),
@@ -313,17 +403,36 @@ impl Parser {
 #[cfg(test)]
 mod tests {
   use super::Parser;
+  use crate::scripting::compiler::ast::{BinOpKind, ExpressionKind, LocalKind, StatementKind};
 
   #[test]
   fn parse_works() {
     let source = String::from(
       r#"
-      let mut value_test = 5;
+      let mut value_test = 5 + 10;
       let value = 3;
     "#,
     );
 
     let mut parser = Parser::new(source,);
     let ast = parser.parse().unwrap();
+
+    //Check the AST is correct
+    match ast.statements.clone()[0].kind.clone() {
+      StatementKind::Let(local,) => {
+        match &local.kind {
+          LocalKind::Init(expr,) => match &expr.kind {
+            ExpressionKind::BinOp(lhs, op, rhs,) => {
+              //check the value of the lhs and the rns and the op
+              assert_eq!(*op, BinOpKind::PLUS);
+            }
+            _ => panic!(),
+          },
+          _ => panic!(),
+        };
+      }
+      _ => panic!(),
+    }
+    // assert_eq!()
   }
 }

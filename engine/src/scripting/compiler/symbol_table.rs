@@ -9,7 +9,7 @@ enum DataType {
   Float,
   Usize,
 }
-#[derive(Debug,)]
+#[derive(Debug, Clone,)]
 pub struct Symbol;
 
 struct AttributeTable {}
@@ -30,6 +30,8 @@ impl SymbolTable {
     }
     code % self.hashtable.len() as u32
   }
+
+  //insert checks if a key is already in and errors saying can't reuse names
 }
 
 #[cfg(test)]

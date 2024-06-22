@@ -4,7 +4,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 #[no_mangle]
-pub extern "C" fn get_health(world:*mut World) {}
+pub extern "C" fn get_health(world:*mut World,) {}
 
 // give the VM a globals field
 // store a world pointer in that
@@ -46,13 +46,13 @@ pub struct StackFrame {
   function_base:usize,
   /// Number of values to copy from the registers starting at the
   /// `function_base` to the registers starting at the `caller_base`.
-  return_num:usize
+  return_num:usize,
 }
 
 //Define opcodes
 #[allow(non_camel_case_types)]
 #[allow(unused)]
-#[derive(FromPrimitive, Debug, PartialEq, Clone, Copy)]
+#[derive(FromPrimitive, Debug, PartialEq, Clone, Copy,)]
 pub enum OpCode {
   /// Halt the execution of code.
   HLT,
@@ -205,13 +205,13 @@ pub enum OpCode {
   RETURN,
   SYS_CALL,
   /// A noop.
-  NOOP
+  NOOP,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq,)]
 pub enum LoopControl {
   Continue,
-  Break
+  Break,
 }
 
 //Define arguments
@@ -222,11 +222,11 @@ pub enum LoopControl {
 #[allow(unused)]
 struct Tardis {
   ///Global variables
-  globals:Vec<u8>,
+  globals:Vec<u8,>,
   /// The program counter indicates the next instruction to execute.
   pc:usize,
   /// Program bytecode.
-  program:Vec<u8>,
+  program:Vec<u8,>,
   /// The VM's registers:
   /// - Float registers range from R0-R31.
   /// - Eq register is R32.
@@ -234,9 +234,9 @@ struct Tardis {
   /// - ECX is R34.
   /// - General purpose registers are R35-R255.
   registers:[u32; 255],
-  callstack:Vec<StackFrame>,
+  callstack:Vec<StackFrame,>,
   /// Heap memory.
-  mem:Vec<u8>
+  mem:Vec<u8,>,
 }
 
 #[allow(unused)]
@@ -248,18 +248,18 @@ impl Tardis {
       program:Vec::new(),
       registers:[0; 255],
       callstack:Vec::new(),
-      mem:Vec::new()
+      mem:Vec::new(),
     }
   }
 
-  fn decode(&mut self) -> (OpCode) {
+  fn decode(&mut self,) -> (OpCode) {
     let op_byte = self.program[self.pc];
-    let op = FromPrimitive::from_u8(op_byte).ok_or(VMError::UnrecognizedOpCode(op_byte)).unwrap();
+    let op = FromPrimitive::from_u8(op_byte,).ok_or(VMError::UnrecognizedOpCode(op_byte,),).unwrap();
     self.pc += 1;
     (op)
   }
 
-  fn execute(&mut self, op:OpCode) -> LoopControl {
+  fn execute(&mut self, op:OpCode,) -> LoopControl {
     match op {
       OpCode::HLT => LoopControl::Break,
       OpCode::LOADU8 => self.LOADU8(),
@@ -288,32 +288,32 @@ impl Tardis {
       OpCode::CALL => self.CALL(),
       OpCode::RETURN => self.RETURN(),
       OpCode::SYS_CALL => todo!(),
-      OpCode::NOOP => LoopControl::Continue
+      OpCode::NOOP => LoopControl::Continue,
     }
   }
 
-  pub fn run(&mut self) {
+  pub fn run(&mut self,) {
     loop {
       let op = self.decode();
-      match self.execute(op) {
+      match self.execute(op,) {
         LoopControl::Break => break,
-        LoopControl::Continue => continue
+        LoopControl::Continue => continue,
       }
     }
   }
 
   ///Load a program into the [`Tardis`]'s `program` slot.
-  pub fn load(&mut self, program:Vec<u8>) {
+  pub fn load(&mut self, program:Vec<u8,>,) {
     self.program = program;
   }
 
   ///Empty the [`Tardis`]'s `program` slot.
-  pub fn clear(&mut self) {
+  pub fn clear(&mut self,) {
     self.program = Vec::new();
   }
 
   ///Fetch the next byte from the `program`.
-  fn get_u8(&mut self) -> u8 {
+  fn get_u8(&mut self,) -> u8 {
     // Fetch the next byte in the program
     let num = self.program[self.pc];
     // Increment the pc
@@ -322,15 +322,15 @@ impl Tardis {
   }
 
   ///Fetch the next 4 bytes from the `program`as a u32.
-  fn get_u32(&mut self) -> u32 {
+  fn get_u32(&mut self,) -> u32 {
     // Fetch the next four bytes in the program as a [u8;4]
     // and convert them into a u32
     let num = u32::from_be_bytes([
       self.program[self.pc],
       self.program[self.pc + 1],
       self.program[self.pc + 2],
-      self.program[self.pc + 3]
-    ]);
+      self.program[self.pc + 3],
+    ],);
 
     // Increment the pc
     self.pc += 4;
@@ -338,15 +338,15 @@ impl Tardis {
   }
 
   ///Fetch the next 4 bytes from the `program` as a f32.
-  fn get_f32(&mut self) -> f32 {
+  fn get_f32(&mut self,) -> f32 {
     // Fetch the next four bytes in the program as a [u8;4]
     // and transmute them into a f32
     let num = f32::from_be_bytes([
       self.program[self.pc],
       self.program[self.pc + 1],
       self.program[self.pc + 2],
-      self.program[self.pc + 3]
-    ]);
+      self.program[self.pc + 3],
+    ],);
     // Increment the pc
     self.pc += 4;
     num
@@ -368,7 +368,7 @@ impl Tardis {
   /// to be repeated.
   const ECX:usize = 34;
 
-  fn LOAD_INT(&mut self) -> LoopControl {
+  fn LOAD_INT(&mut self,) -> LoopControl {
     // Get the arguments
     let register = self.get_u8() as usize;
     let int = self.get_u32();
@@ -378,7 +378,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn LOAD_FLOAT(&mut self) -> LoopControl {
+  fn LOAD_FLOAT(&mut self,) -> LoopControl {
     // Get the arguments
     let register = self.get_u8() as usize;
     let float = self.get_f32();
@@ -388,7 +388,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn MOVE(&mut self) -> LoopControl {
+  fn MOVE(&mut self,) -> LoopControl {
     let a = self.get_u8() as usize;
     let b = self.get_u8() as usize;
 
@@ -396,7 +396,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn MULT(&mut self) -> LoopControl {
+  fn MULT(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -406,7 +406,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn DIV(&mut self) -> LoopControl {
+  fn DIV(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -416,7 +416,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn ADD(&mut self) -> LoopControl {
+  fn ADD(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -426,7 +426,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn SUB(&mut self) -> LoopControl {
+  fn SUB(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -436,77 +436,77 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn POW(&mut self) -> LoopControl {
+  fn POW(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
 
     // Perform the operation
-    self.registers[Self::EAX] = a.pow(b);
+    self.registers[Self::EAX] = a.pow(b,);
     LoopControl::Continue
   }
 
-  fn F_MULT(&mut self) -> LoopControl {
+  fn F_MULT(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation
     self.registers[Self::EAX] = (a * b).to_bits();
     LoopControl::Continue
   }
 
-  fn F_DIV(&mut self) -> LoopControl {
+  fn F_DIV(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation
     self.registers[Self::EAX] = (a / b).to_bits();
     LoopControl::Continue
   }
 
-  fn F_ADD(&mut self) -> LoopControl {
+  fn F_ADD(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation
     self.registers[Self::EAX] = (a + b).to_bits();
     LoopControl::Continue
   }
 
-  fn F_SUB(&mut self) -> LoopControl {
+  fn F_SUB(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation
     self.registers[Self::EAX] = (a - b).to_bits();
     LoopControl::Continue
   }
 
-  fn F_POW(&mut self) -> LoopControl {
+  fn F_POW(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation
-    self.registers[Self::EAX] = a.powf(b).to_bits();
+    self.registers[Self::EAX] = a.powf(b,).to_bits();
     LoopControl::Continue
   }
 
-  fn EQUAL(&mut self) -> LoopControl {
+  fn EQUAL(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = f32::from_bits(self.registers[self.get_u8() as usize]);
-    let b = f32::from_bits(self.registers[self.get_u8() as usize]);
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
 
     // Perform the operation and store it in the registers as a u32
     self.registers[Self::EQ] = (a == b) as u32;
     LoopControl::Continue
   }
 
-  fn NOT_EQUAL(&mut self) -> LoopControl {
+  fn NOT_EQUAL(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -516,7 +516,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn GREATER(&mut self) -> LoopControl {
+  fn GREATER(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -526,7 +526,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn LESS(&mut self) -> LoopControl {
+  fn LESS(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -536,7 +536,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn GREATER_EQUAL(&mut self) -> LoopControl {
+  fn GREATER_EQUAL(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -546,7 +546,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn LESS_EQUAL(&mut self) -> LoopControl {
+  fn LESS_EQUAL(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize];
     let b = self.registers[self.get_u8() as usize];
@@ -556,12 +556,12 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn JUMP(&mut self) -> LoopControl {
+  fn JUMP(&mut self,) -> LoopControl {
     self.pc = self.get_u8() as usize;
     LoopControl::Continue
   }
 
-  fn JZ(&mut self) -> LoopControl {
+  fn JZ(&mut self,) -> LoopControl {
     let test = self.registers[self.get_u8() as usize];
     let pc = self.get_u8() as usize;
 
@@ -571,7 +571,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn JNZ(&mut self) -> LoopControl {
+  fn JNZ(&mut self,) -> LoopControl {
     let test = self.registers[self.get_u8() as usize];
     let pc = self.get_u8() as usize;
 
@@ -581,14 +581,14 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn LOADU8(&mut self) -> LoopControl {
+  fn LOADU8(&mut self,) -> LoopControl {
     let register = self.get_u8() as usize;
     let byte = self.get_u8() as u32;
     self.registers[register] = byte;
     LoopControl::Continue
   }
 
-  fn CALL(&mut self) -> LoopControl {
+  fn CALL(&mut self,) -> LoopControl {
     let function_address = self.get_u8() as usize;
     // Create a CallFrame and push it to the callstack
     let function_base = self.get_u8() as usize;
@@ -601,10 +601,10 @@ impl Tardis {
       lr:self.pc + 1,
       caller_base,
       function_base,
-      return_num
+      return_num,
     };
 
-    self.callstack.push(frame);
+    self.callstack.push(frame,);
 
     // Copy the args from the caller reg to the functions registers
     for arg_index in 0..num_args {
@@ -617,7 +617,7 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn RETURN(&mut self) -> LoopControl {
+  fn RETURN(&mut self,) -> LoopControl {
     // Get the stack frame
     let frame = self.callstack.pop().unwrap();
 
@@ -632,21 +632,20 @@ impl Tardis {
     LoopControl::Continue
   }
 
-  fn SYS_CALL(&mut self) -> LoopControl {
+  fn SYS_CALL(&mut self,) -> LoopControl {
     LoopControl::Continue
   }
 }
 
 #[cfg(test)]
 mod test {
-  use crate::scripting::vm::galaxy::OpCode;
-
   use super::Tardis;
+  use crate::scripting::vm::galaxy::OpCode;
 
   #[test]
   fn get_u8_and_get_u32_work() {
     let mut vm = Tardis::new();
-    vm.load(vec![2, 0, 0, 0, 32]);
+    vm.load(vec![2, 0, 0, 0, 32],);
 
     assert_eq!(2, vm.get_u8());
     assert_eq!(32, vm.get_u32());
@@ -656,7 +655,7 @@ mod test {
   fn decode_works() {
     let mut vm = Tardis::new();
     let program = vec![0, 1];
-    vm.load(program);
+    vm.load(program,);
     let op = vm.decode();
     assert_eq!(op, OpCode::HLT);
   }
@@ -669,74 +668,74 @@ mod test {
     let mut program = vec![OpCode::LOAD_INT as u8, 35, 0, 0, 0, 15, OpCode::LOAD_INT as u8, 36, 0, 0, 0, 10];
 
     // TEST: JUMP
-    program.extend_from_slice(&[OpCode::JUMP as u8, 15]);
-    program.resize(15, 0);
-    program.extend_from_slice(&[OpCode::JUMP as u8, 30]);
-    program.resize(30, 0);
+    program.extend_from_slice(&[OpCode::JUMP as u8, 15,],);
+    program.resize(15, 0,);
+    program.extend_from_slice(&[OpCode::JUMP as u8, 30,],);
+    program.resize(30, 0,);
 
     // TEST: EQUAL & JZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::EQUAL as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::EQUAL as u8, 35, 36,],);
 
     // JZ check
-    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 40]);
-    program.resize(40, 0);
+    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 40,],);
+    program.resize(40, 0,);
 
     // TEST: NOT_EQUAL & JNZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::NOT_EQUAL as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::NOT_EQUAL as u8, 35, 36,],);
 
     // JNZ check
-    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 50]);
-    program.resize(50, 0);
+    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 50,],);
+    program.resize(50, 0,);
 
     // TEST: LESS & JZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::LESS as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::LESS as u8, 35, 36,],);
     assert_eq!(program[50], OpCode::LESS as u8);
 
     // Jump check
-    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 60]);
-    program.resize(60, 0);
+    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 60,],);
+    program.resize(60, 0,);
 
     // TEST: GREATER & JNZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::GREATER as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::GREATER as u8, 35, 36,],);
 
     // Jump check
-    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 70]);
-    program.resize(70, 0);
+    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 70,],);
+    program.resize(70, 0,);
 
     // TEST: GREATER_EQUAL & JNZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::GREATER_EQUAL as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::GREATER_EQUAL as u8, 35, 36,],);
 
     // Jump check
-    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 80]);
-    program.resize(80, 0);
+    program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::EQ as u8, 80,],);
+    program.resize(80, 0,);
 
     // TEST: LESS_EQUAL & JZ
 
     // Equality check
-    program.extend_from_slice(&[OpCode::LESS_EQUAL as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::LESS_EQUAL as u8, 35, 36,],);
 
     // Jump check
-    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 90]);
-    program.resize(90, 0);
+    program.extend_from_slice(&[OpCode::JZ as u8, Tardis::EQ as u8, 90,],);
+    program.resize(90, 0,);
 
     // Calculation to test this is reached
-    program.extend_from_slice(&[OpCode::LOADU8 as u8, 35, 9]);
-    program.extend_from_slice(&[OpCode::LOADU8 as u8, 36, 14]);
+    program.extend_from_slice(&[OpCode::LOADU8 as u8, 35, 9,],);
+    program.extend_from_slice(&[OpCode::LOADU8 as u8, 36, 14,],);
 
     // Halt
-    program.extend_from_slice(&[0]);
+    program.extend_from_slice(&[0,],);
 
-    vm.load(program);
+    vm.load(program,);
     vm.run();
 
     assert_eq!(vm.registers[35], 9);
@@ -750,64 +749,64 @@ mod test {
     let mut program = Vec::new();
 
     // Load int 5 into R32
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 35, 0, 0, 0, 5]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 35, 0, 0, 0, 5,],);
 
     // Load int 7 into R32
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 7]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 7,],);
 
     // Add R32 and R33
-    program.extend_from_slice(&[OpCode::ADD as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::ADD as u8, 35, 36,],);
 
     // Move the addition from EAX into R32
-    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8,],);
 
     // TEST: MULT
 
     // Load int 5 into R33
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 5]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 5,],);
 
     // Mult R32 and R33
-    program.extend_from_slice(&[OpCode::MULT as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::MULT as u8, 35, 36,],);
 
     // Move the multiplication from EAX into R32
-    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8,],);
 
     // TEST: DIV
 
     // Load int 10 into R33
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 10]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 10,],);
 
     // Div R32 and R33
-    program.extend_from_slice(&[OpCode::DIV as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::DIV as u8, 35, 36,],);
 
     // Move the division from EAX into R32
-    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8,],);
 
     // TEST: SUB
 
     // Load int 3 into R33
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 3]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 3,],);
 
     // Sub R32 and R33
-    program.extend_from_slice(&[OpCode::SUB as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::SUB as u8, 35, 36,],);
 
     // Move the multiplication from EAX into R32
-    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8,],);
 
     // TEST: POW
 
     // Load int 3 into R33
-    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 3]);
+    program.extend_from_slice(&[OpCode::LOAD_INT as u8, 36, 0, 0, 0, 3,],);
 
     // Power R32 by R33
-    program.extend_from_slice(&[OpCode::POW as u8, 35, 36]);
+    program.extend_from_slice(&[OpCode::POW as u8, 35, 36,],);
 
     // Move the cube from EAX into R32
-    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 35, Tardis::EAX as u8,],);
 
-    program.extend_from_slice(&[0]);
+    program.extend_from_slice(&[0,],);
 
-    vm.load(program);
+    vm.load(program,);
 
     vm.run();
 
@@ -823,71 +822,71 @@ mod test {
     // TEST: F_ADD
 
     // Load float 12.5 into R0
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 0]);
-    program.extend_from_slice(&12.5_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 0,],);
+    program.extend_from_slice(&12.5_f32.to_be_bytes(),);
 
     // Load float 7.5 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1]);
-    program.extend_from_slice(&7.5_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
+    program.extend_from_slice(&7.5_f32.to_be_bytes(),);
 
     // Add R0 and R1
-    program.extend_from_slice(&[OpCode::F_ADD as u8, 0, 1]);
+    program.extend_from_slice(&[OpCode::F_ADD as u8, 0, 1,],);
 
     // Move the addition from EAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8,],);
 
     // TEST: F_MULT
 
     // Load float 5.0 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1]);
-    program.extend_from_slice(&5.0_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
+    program.extend_from_slice(&5.0_f32.to_be_bytes(),);
 
     // Mult R0 and R0
-    program.extend_from_slice(&[OpCode::F_MULT as u8, 0, 1]);
+    program.extend_from_slice(&[OpCode::F_MULT as u8, 0, 1,],);
 
     // Move the addition from EAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8,],);
 
     // TEST: F_DIV
 
     // Load float 2.5 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1]);
-    program.extend_from_slice(&2.5_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
+    program.extend_from_slice(&2.5_f32.to_be_bytes(),);
 
     // Div R0 and R1
-    program.extend_from_slice(&[OpCode::F_DIV as u8, 0, 1]);
+    program.extend_from_slice(&[OpCode::F_DIV as u8, 0, 1,],);
 
     // Move the addition from EAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8,],);
 
     // TEST: F_SUB
 
     // Load int 30.335 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1]);
-    program.extend_from_slice(&30.335_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
+    program.extend_from_slice(&30.335_f32.to_be_bytes(),);
 
     // Sub R0 and R1
-    program.extend_from_slice(&[OpCode::F_SUB as u8, 0, 1]);
+    program.extend_from_slice(&[OpCode::F_SUB as u8, 0, 1,],);
 
     // Move the addition from EAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8,],);
 
     // TEST: F_POW
 
     // Load float 2.3 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1]);
-    program.extend_from_slice(&2.3_f32.to_be_bytes());
+    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
+    program.extend_from_slice(&2.3_f32.to_be_bytes(),);
 
     // Power R0 by R1
-    program.extend_from_slice(&[OpCode::F_POW as u8, 0, 1]);
+    program.extend_from_slice(&[OpCode::F_POW as u8, 0, 1,],);
 
     // Move the addition from EAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8]);
+    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::EAX as u8,],);
 
     // Halt
-    program.extend_from_slice(&[0]);
+    program.extend_from_slice(&[0,],);
 
-    vm.load(program);
+    vm.load(program,);
 
     vm.run();
 
@@ -903,29 +902,29 @@ fn function_calling_works() {
   let mut program = vec![];
 
   // Load 2 into R32 as the number to be cubed
-  program.extend_from_slice(&[OpCode::LOAD_INT as u8, 35, 0, 0, 0, 2]);
+  program.extend_from_slice(&[OpCode::LOAD_INT as u8, 35, 0, 0, 0, 2,],);
   // Call the cube function
-  program.extend_from_slice(&[OpCode::CALL as u8, 50, 250, 35, 1, 1]);
-  program.extend_from_slice(&[OpCode::RETURN as u8]);
-  program.resize(50, 0);
+  program.extend_from_slice(&[OpCode::CALL as u8, 50, 250, 35, 1, 1,],);
+  program.extend_from_slice(&[OpCode::RETURN as u8,],);
+  program.resize(50, 0,);
 
   // Cube Function Def:
   // A fancy cube function which uses a while loop to cube
   // a number and return the result
 
   // Load the int into the register
-  program.extend_from_slice(&[OpCode::MOVE as u8, 251, 250]);
-  program.extend_from_slice(&[OpCode::LOADU8 as u8, Tardis::ECX as u8, 2]);
+  program.extend_from_slice(&[OpCode::MOVE as u8, 251, 250,],);
+  program.extend_from_slice(&[OpCode::LOADU8 as u8, Tardis::ECX as u8, 2,],);
   //Beginng of the loop
-  program.extend_from_slice(&[OpCode::MULT as u8, 250, 251]);
-  program.extend_from_slice(&[OpCode::MOVE as u8, 250, Tardis::EAX as u8]);
-  program.extend_from_slice(&[OpCode::LOAD_INT as u8, 252, 0, 0, 0, 1]);
-  program.extend_from_slice(&[OpCode::SUB as u8, Tardis::ECX as u8, 252]);
-  program.extend_from_slice(&[OpCode::MOVE as u8, Tardis::ECX as u8, Tardis::EAX as u8]);
-  program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::ECX as u8, 56]); // End of the loop
-  program.extend_from_slice(&[OpCode::RETURN as u8, OpCode::NOOP as u8, OpCode::NOOP as u8]);
+  program.extend_from_slice(&[OpCode::MULT as u8, 250, 251,],);
+  program.extend_from_slice(&[OpCode::MOVE as u8, 250, Tardis::EAX as u8,],);
+  program.extend_from_slice(&[OpCode::LOAD_INT as u8, 252, 0, 0, 0, 1,],);
+  program.extend_from_slice(&[OpCode::SUB as u8, Tardis::ECX as u8, 252,],);
+  program.extend_from_slice(&[OpCode::MOVE as u8, Tardis::ECX as u8, Tardis::EAX as u8,],);
+  program.extend_from_slice(&[OpCode::JNZ as u8, Tardis::ECX as u8, 56,],); // End of the loop
+  program.extend_from_slice(&[OpCode::RETURN as u8, OpCode::NOOP as u8, OpCode::NOOP as u8,],);
 
-  vm.load(program);
+  vm.load(program,);
   vm.run();
 
   assert_eq!(vm.registers[35], 8);

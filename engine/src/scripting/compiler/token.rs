@@ -1,3 +1,5 @@
+use winapi::shared::winerror::NOERROR;
+
 use super::errors::ParsingError;
 
 // TODO:
@@ -5,6 +7,8 @@ use super::errors::ParsingError;
 //   using floats only
 // - Not sure I need the double colon operator
 // - How do tokenizers actually handle type declarations
+// - Add other assingment operators
+// - Add not equal
 
 #[derive(Debug, Clone, Copy,)]
 pub(super) struct Location {
@@ -45,14 +49,16 @@ pub(super) enum TokenKind {
   TOKEN_COMMA, TOKEN_DOT, TOKEN_SEMICOLON,TOKEN_COLON, TOKEN_DOUBLE_COLON,
   // Math
   TOKEN_MINUS, TOKEN_PLUS, TOKEN_SLASH, TOKEN_STAR,
+  // Assignment
+  TOKEN_EQUAL, TOKEN_MINUS_EQUAL, TOKEN_PLUS_EQUAL, TOKEN_SLASH_EQUAL, TOKEN_STAR_EQUAL,
   // Equality
-  TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
-  TOKEN_BANG, TOKEN_BANG_EQUAL,
+  TOKEN_EQUAL_EQUAL,
+  TOKEN_NOT, TOKEN_NOT_EQUAL,
   TOKEN_GREATER, TOKEN_GREATER_EQUAL,
-  TOKEN_LESS, TOKEN_LESS_EQUAL,
+  TOKEN_LESS, TOKEN_LESS_EQUAL, 
   // Literals
   TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INT, TOKEN_FLOAT,
-  TOKEN_TYPE,
+  TOKEN_TYPE, TOKEN_BOOL,
 
   // Keywords
   TOKEN_AND, TOKEN_OR, 
@@ -96,6 +102,11 @@ impl TokenKind {
       return TokenKind::TOKEN_TYPE;
     }
 
+    //If the token is "true" or "false" it is a boolean
+    if value == "true" || value == "false" {
+      return TokenKind::TOKEN_BOOL;
+    }
+
     match value.as_str() {
       // Single-character tokens
       "(" => TokenKind::TOKEN_LEFT_PAREN,
@@ -112,13 +123,18 @@ impl TokenKind {
       // Math
       "-" => TokenKind::TOKEN_MINUS,
       "+" => TokenKind::TOKEN_PLUS,
-      "*" => TokenKind::TOKEN_STAR,
       "/" => TokenKind::TOKEN_SLASH,
-      // Equality
+      "*" => TokenKind::TOKEN_STAR,
+      // Assignment
       "=" => TokenKind::TOKEN_EQUAL,
+      "-=" => TokenKind::TOKEN_MINUS_EQUAL,
+      "+=" => TokenKind::TOKEN_PLUS_EQUAL,
+      "/=" => TokenKind::TOKEN_SLASH_EQUAL,
+      "*=" => TokenKind::TOKEN_STAR_EQUAL,
+      // Equality
       "==" => TokenKind::TOKEN_EQUAL_EQUAL,
-      "!" => TokenKind::TOKEN_BANG,
-      "!=" => TokenKind::TOKEN_BANG_EQUAL,
+      "!" => TokenKind::TOKEN_NOT,
+      "!=" => TokenKind::TOKEN_NOT_EQUAL,
       ">" => TokenKind::TOKEN_GREATER,
       ">=" => TokenKind::TOKEN_GREATER_EQUAL,
       "<" => TokenKind::TOKEN_LESS,
@@ -266,6 +282,25 @@ impl Token {
       else {
         self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(self.value.clone().unwrap().to_string(),),);
       }
+    }
+  }
+
+  pub fn precedence(&self,) -> u32 {
+    match self.kind {
+      // Math
+      TokenKind::TOKEN_STAR | TokenKind::TOKEN_SLASH => 10,
+      TokenKind::TOKEN_MINUS | TokenKind::TOKEN_PLUS => 20,
+      // Comparison
+      TokenKind::TOKEN_EQUAL_EQUAL
+      | TokenKind::TOKEN_NOT_EQUAL
+      | TokenKind::TOKEN_GREATER
+      | TokenKind::TOKEN_GREATER_EQUAL
+      | TokenKind::TOKEN_LESS
+      | TokenKind::TOKEN_LESS_EQUAL => 30,
+      // Assign operators
+      TokenKind::TOKEN_EQUAL | TokenKind::TOKEN_MINUS_EQUAL | TokenKind::TOKEN_PLUS_EQUAL | TokenKind::TOKEN_SLASH_EQUAL | TokenKind::TOKEN_STAR_EQUAL => 4,
+      // Anything else should cause the expression parsing to terminate
+      _ => 0,
     }
   }
 
