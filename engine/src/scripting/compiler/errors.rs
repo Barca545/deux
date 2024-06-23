@@ -12,7 +12,7 @@ pub enum ParsingError {
   VarNotDeclared,
   #[error("{0:?} is not a valid variable name. Variable names must begin with a letter")]
   InvalidVarName(String,),
-  #[error("{0:?}")]
+  #[error("Unexpected {0:?} token.")]
   UnexpectedToken(String,),
   #[error("{0:?} is not a valid type. Accepted types are int, float, usize, and str or their corresponding arrays int[], float[], usize[], and str[]")]
   InvalidTpe(String,),

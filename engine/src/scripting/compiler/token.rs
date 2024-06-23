@@ -286,19 +286,32 @@ impl Token {
   }
 
   pub fn precedence(&self,) -> u32 {
+    // Need to add Or and And?
+
+    // pub const ASSIGNMENT: i32  = 1;
+    // pub const CONDITIONAL: i32 = 2;
+    // pub const SUM: i32         = 3;
+    // pub const PRODUCT: i32     = 4;
+    // pub const EXPONENT: i32    = 5;
+    // pub const PREFIX: i32      = 6;
+    // pub const POSTFIX: i32     = 7;
+    // pub const CALL: i32        = 8;
+
     match self.kind {
-      // Math
-      TokenKind::TOKEN_STAR | TokenKind::TOKEN_SLASH => 10,
-      TokenKind::TOKEN_MINUS | TokenKind::TOKEN_PLUS => 20,
-      // Comparison
+      // Assign expressions
+      TokenKind::TOKEN_EQUAL | TokenKind::TOKEN_MINUS_EQUAL | TokenKind::TOKEN_PLUS_EQUAL | TokenKind::TOKEN_SLASH_EQUAL | TokenKind::TOKEN_STAR_EQUAL => 10,
+      // Conditional expressions
+      TokenKind::TOKEN_IF | TokenKind::TOKEN_ELSE => 20,
+      // Math expressions
+      TokenKind::TOKEN_STAR | TokenKind::TOKEN_SLASH => 30,
+      TokenKind::TOKEN_MINUS | TokenKind::TOKEN_PLUS => 40,
+      // Comparison expressions
       TokenKind::TOKEN_EQUAL_EQUAL
       | TokenKind::TOKEN_NOT_EQUAL
       | TokenKind::TOKEN_GREATER
       | TokenKind::TOKEN_GREATER_EQUAL
       | TokenKind::TOKEN_LESS
-      | TokenKind::TOKEN_LESS_EQUAL => 30,
-      // Assign operators
-      TokenKind::TOKEN_EQUAL | TokenKind::TOKEN_MINUS_EQUAL | TokenKind::TOKEN_PLUS_EQUAL | TokenKind::TOKEN_SLASH_EQUAL | TokenKind::TOKEN_STAR_EQUAL => 4,
+      | TokenKind::TOKEN_LESS_EQUAL => 60,
       // Anything else should cause the expression parsing to terminate
       _ => 0,
     }

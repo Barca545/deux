@@ -11,9 +11,6 @@ use super::{
 //I think the AST also has to do with the symbol table
 
 // #[derive(Debug,)]
-// pub struct Literal;
-
-// #[derive(Debug,)]
 // pub struct FunctionCall;
 
 // #[derive(Debug,)]
@@ -37,7 +34,7 @@ use super::{
 // #[derive(Debug,)]
 // pub struct Return;
 
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone, PartialEq, Eq,)]
 ///Owned smart pointer on the heap.
 pub struct P<T,> {
   ptr:Box<T,>,
@@ -57,7 +54,7 @@ impl<T,> P<T,> {
   }
 }
 
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone, PartialEq, Eq,)]
 pub enum LiteralKind {
   Bool,
   Integer,
@@ -109,6 +106,10 @@ pub enum ExpressionKind {
   Literal(P<Literal,>,),
   ///A binary operation i.e.`true == false`
   BinOp(P<Expression,>, BinOpKind, P<Expression,>,),
+  /// An `if` block, with an optional `else` block.
+  ///
+  /// `if expr { Vec<Statement> } else { expr }`
+  If(P<Expression,>, P<Vec<Statement,>,>, Option<P<Expression,>,>,),
   // Call,
   // Array
 }
@@ -120,12 +121,12 @@ pub struct Expression {
   pub loc:Location,
 }
 
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone, PartialEq, Eq,)]
 pub enum Ty {
   Int,
   Float,
   Usize,
-  String,
+  Char,
   Array(P<Ty,>,),
 }
 
@@ -135,12 +136,37 @@ impl Ty {
       "int" => Some(Ty::Int,),
       "float" => Some(Ty::Float,),
       "usize" => Some(Ty::Usize,),
-      "string" => Some(Ty::String,),
+      "char" => Some(Ty::Char,),
+      "string" => Some(Ty::Array(P::new(Ty::Char,),),),
       "int[]" => Some(Ty::Array(P::new(Ty::Int,),),),
       "float[]" => Some(Ty::Array(P::new(Ty::Float,),),),
       "usize[]" => Some(Ty::Array(P::new(Ty::Usize,),),),
-      "string[]" => Some(Ty::Array(P::new(Ty::String,),),),
+      "string[]" => Some(Ty::Array(P::new(Ty::Array(P::new(Ty::Char,),),),),),
       _ => None,
+    }
+  }
+
+  ///Returns `true` if the [`Ty`] is a [`Ty::Int`].
+  pub fn is_int(&self,) -> bool {
+    &Ty::Int == self
+  }
+
+  ///Returns `true` if the [`Ty`] is a [`Ty::Float`].
+  pub fn is_float(&self,) -> bool {
+    &Ty::Float == self
+  }
+
+  ///Returns `true` if the [`Ty`] is a [`Ty::Char`].
+  pub fn is_char(&self,) -> bool {
+    &Ty::Char == self
+  }
+
+  ///Returns `true` if the [`Ty`] is a `String` ([`Ty::Array`] of
+  /// [`Ty::Char`]).
+  pub fn is_string(&self,) -> bool {
+    match self {
+      Ty::Array(inner,) => **inner == Ty::Char,
+      _ => false,
     }
   }
 }

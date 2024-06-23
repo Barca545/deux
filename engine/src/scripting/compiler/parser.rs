@@ -14,6 +14,11 @@ use eyre::Result;
 // - Switch to iter().peekable() instead of just a vec with methods. I think
 //   then all `current()`s become `next()`s
 // - next has higher precedence might need a less than sign
+// - BinOps should error if both sides are not the same type
+// - Panics need to be turned into actual errors
+// - I don't think I need an else if token since else takes an expression, the
+//   next expression can just be another if
+// - Should if statements error if they reach an EOF without another brace?
 
 // TO DO:
 // - Use ANSI escape codes to color the errors
@@ -73,24 +78,6 @@ impl Parser {
     &self.tokens[self.cursor + 1]
   }
 
-  // ///Loop through the [`TokenStream`] and read the [`Token`]s.
-  // fn advance(&mut self,) -> &Token {
-  //   // self.cursor += 1;
-
-  //   //Print an error if one is encountered
-  //   // if let TokenKind::TOKEN_ERROR(err,) = &token.kind {
-  //   //   self.err_detected(token.loc, err,);
-  //   // }
-  //   // for token in self.tokens.clone() {
-  //   //   //Scan forward in the TokenStream
-  //   //   self.cursor += 1;
-
-  //   //   if let TokenKind::TOKEN_ERROR(err,) = &token.kind {
-  //   //     self.err_detected(token.loc, err,);
-  //   //   }
-  //   // }
-  // }
-
   ///Consumes the next [`Token`].
   ///
   ///# Panics
@@ -122,6 +109,7 @@ impl Parser {
     }
   }
 
+  ///Consume a [`TokenStream`] and return an [`AbstractSyntaxTree`].
   fn parse(&mut self,) -> Result<AbstractSyntaxTree,> {
     let mut ast = AbstractSyntaxTree::new();
 
@@ -137,12 +125,7 @@ impl Parser {
 //Actual Parsing rules
 impl Parser {
   ///Returns an [`Expression`].
-  fn parse_expression(&mut self,) -> Expression {
-    //this next needs to happen before parse expression
-    self.parse_expression_precedence(0,)
-  }
-
-  fn parse_expression_precedence(&mut self, rbp:u32,) -> Expression {
+  fn parse_expression(&mut self, rbp:u32,) -> Expression {
     self.next();
     // Get the left hand expression
     let mut left = self.parse_expression_null_detonation();
@@ -159,15 +142,23 @@ impl Parser {
   fn parse_expression_null_detonation(&mut self,) -> Expression {
     // Should be some kind of literal
     let token = self.current();
+
     match token.kind {
       TokenKind::TOKEN_INT => self.parse_integer(token,),
       TokenKind::TOKEN_FLOAT => self.parse_float(token,),
       TokenKind::TOKEN_BOOL => self.parse_bool(token,),
-      // This should recur if it finds another expression beginning?
+      //If statement
+      TokenKind::TOKEN_IF => {
+        dbg!("reached 5");
+        self.parse_if_expression(&token,)
+      }
 
       // This should probably enter an error state
       // I think it should error that it was expecting some kind of literal
-      _ => panic!("{:?}", token.kind),
+      _ => {
+        self.err_detected(token.loc, &ParsingError::UnexpectedToken(token.value.unwrap(),),);
+        panic!();
+      }
     }
   }
 
@@ -191,10 +182,11 @@ impl Parser {
       | TokenKind::TOKEN_LESS_EQUAL => {
         let loc = left.loc;
         let binop_kind = BinOpKind::from(&token,);
-        let right = self.parse_expression_precedence(token.precedence(),);
+        let right = self.parse_expression(token.precedence(),);
         let kind = ExpressionKind::BinOp(P::new(left,), binop_kind, P::new(right,),);
         Expression { id:0, kind, loc, }
       }
+
       _ => panic!("{:?} {}", token.kind, token.value.unwrap()),
     }
   }
@@ -241,16 +233,55 @@ impl Parser {
     }
   }
 
-  ///Returns a [`Statement`].
-  fn parse_statement(&mut self,) -> Result<Statement,> {
-    let token = self.current();
-    match token.kind {
-      TokenKind::TOKEN_LET => Ok(self.parse_let(&token,),),
-      _ => Err(ParsingError::NoStatementMatch.into(),),
+  fn parse_if_expression(&mut self, token:&Token,) -> Expression {
+    dbg!("reached here 1");
+    // Parse the conditional expression
+    let condition = self.parse_expression(0,);
+    let loc = token.loc;
+
+    dbg!("reached here 2");
+
+    // Parse the statement making up its body
+    self
+      .eat_token_expect(TokenKind::TOKEN_LEFT_BRACE, "Must follow if statement with a brace `{`",)
+      .unwrap();
+
+    dbg!("reached here 3");
+
+    let mut if_body = Vec::new();
+
+    while self.current().kind != TokenKind::TOKEN_RIGHT_BRACE {
+      if_body.push(self.parse_statement().unwrap(),);
+    }
+
+    // Check for an else statment and parse it if so
+    let else_body = if self.eat_token_if_match(TokenKind::TOKEN_ELSE,) {
+      let else_expr = self.parse_expression(0,);
+      Some(P::new(else_expr,),)
+    }
+    else {
+      None
+    };
+
+    Expression {
+      id:0,
+      kind:ExpressionKind::If(P::new(condition,), P::new(if_body,), else_body,),
+      loc,
     }
   }
 
-  ///Parse a `let` statement (`let <pat>::<ty> = <expr>`)
+  ///Returns a [`Statement`].
+  fn parse_statement(&mut self,) -> Result<Statement,> {
+    let token = self.current();
+
+    match token.kind {
+      TokenKind::TOKEN_LET => Ok(self.parse_let(&token,),),
+      _ => Ok(self.parse_expression_statement(&token,),),
+      // Err(ParsingError::NoStatementMatch.into(),)
+    }
+  }
+
+  ///Parse a `let` [`Statement`] (`let <pat>::<ty> = <expr>`).
   fn parse_let(&mut self, token:&Token,) -> Statement {
     //Location of the first element in the statement
     let id = 0;
@@ -285,6 +316,20 @@ impl Parser {
     Statement::new(loc, stmt_kind,)
   }
 
+  ///Parse an [`Expression`] as a [`Statement`].
+  fn parse_expression_statement(&mut self, token:&Token,) -> Statement {
+    let loc = token.loc;
+    let expression = self.parse_expression(0,);
+    dbg!(token.value.clone());
+    dbg!(expression.clone());
+
+    Statement {
+      id:0,
+      loc,
+      kind:StatementKind::Expression(expression,),
+    }
+  }
+
   ///Checks if the next [`Token`] is mutable and consumes it if so.
   fn parse_mutability(&mut self,) -> bool {
     self.eat_token_if_match(TokenKind::TOKEN_MUT,)
@@ -309,7 +354,6 @@ impl Parser {
 
   fn parse_ident(&mut self,) -> Ident {
     // Eat the token expecting an ident
-
     self
       .eat_token_expect(TokenKind::TOKEN_IDENTIFIER, &ParsingError::VarNotDeclared.to_string(),)
       .unwrap();
@@ -322,7 +366,7 @@ impl Parser {
   fn parse_local_kind(&mut self,) -> LocalKind {
     // If equals sign, parse the output of the next statement, expect an Expression.
     if self.eat_token_if_match(TokenKind::TOKEN_EQUAL,) {
-      let expression = self.parse_expression();
+      let expression = self.parse_expression(0,);
       //Line must end after the expression so expect a semicolon
       self
         .eat_token_expect(TokenKind::TOKEN_SEMICOLON, "Must end Let statement with a semicolon",)
@@ -337,12 +381,6 @@ impl Parser {
     LocalKind::Decl
   }
 }
-
-// fn infix_precedence(infix:TokenKind,) -> u8 {
-//   match infix {
-//     TokenKind::TOKEN_EQUAL =>
-//   }
-// }
 
 //Error reporting
 impl Parser {
@@ -360,7 +398,6 @@ impl Parser {
       // reached
       self.erroring = true;
     }
-    todo!()
   }
 
   ///Reads through the whole source code until it locates the target line.
@@ -403,14 +440,35 @@ impl Parser {
 #[cfg(test)]
 mod tests {
   use super::Parser;
-  use crate::scripting::compiler::ast::{BinOpKind, ExpressionKind, LocalKind, StatementKind};
+  use crate::scripting::compiler::ast::{BinOpKind, ExpressionKind, LiteralKind, LocalKind, StatementKind};
 
   #[test]
   fn parse_works() {
     let source = String::from(
+      // erroring in the loop a few problems
+      // - Not ignoring comments -> ensure the tokenizer skips over everything between `//` and a linebreak
+      // -Seems to be expecting the inside of an if expression to be an expression and not a vec of statements
+      //  -> it tries to go into the rest of the expression parsing so it expects let to be an expression because it's treating it
+      // life the lefthand side
+
+      //Look into what the null detonation is supposed to be, because currently the if has to be there instead of the left
+
+      //might also just never be reaching the if branch for some reason
+      //seems like it thinks the { begins a new statement
+
+      //it skips past the if because of the next in the parse expressions function
+      // the problem is for *just* parsing expressions it needs the next()
+      // but for parsing  expression statements it can't have the next
+
+      //Still have a precedence problem with the if's inner
+
+      // let mut value_test = 5 + 10;
+      // let value = true != false == true;
       r#"
-      let mut value_test = 5 + 10;
-      let value = 3;
+
+      if true {
+        let a = 90;
+      }
     "#,
     );
 
@@ -423,7 +481,19 @@ mod tests {
         match &local.kind {
           LocalKind::Init(expr,) => match &expr.kind {
             ExpressionKind::BinOp(lhs, op, rhs,) => {
-              //check the value of the lhs and the rns and the op
+              //Check the value of the lhs
+              match &lhs.kind {
+                ExpressionKind::Literal(lit,) => assert_eq!(&lit.kind, &LiteralKind::Integer),
+                _ => panic!(),
+              }
+
+              //Check the value of the rhs
+              match &lhs.kind {
+                ExpressionKind::Literal(lit,) => assert_eq!(&lit.kind, &LiteralKind::Integer),
+                _ => panic!(),
+              }
+
+              //Check the value of the op
               assert_eq!(*op, BinOpKind::PLUS);
             }
             _ => panic!(),
@@ -433,6 +503,7 @@ mod tests {
       }
       _ => panic!(),
     }
-    // assert_eq!()
+
+    dbg!(ast.statements.clone()[1].kind.clone());
   }
 }
