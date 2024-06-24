@@ -1,7 +1,7 @@
 use super::{
   ast::{AbstractSyntaxTree, BinOpKind, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
   errors::ParsingError,
-  interner::Interner,
+  interner::{lookup, Interner},
   symbol_table::Symbol,
   token::{Location, Token, TokenKind},
   tokenizer::{tokenize, TokenStream},
@@ -10,8 +10,6 @@ use crate::scripting::compiler::ast::{StatementKind, P};
 use eyre::Result;
 
 // Refactor:
-// - Switch to using lifetimes for tokens and the parser (must be done before
-//   switching to peekable)
 // - Switch to iter().peekable() instead of just a vec with methods. I think
 //   then all `current()`s become `next()`s
 // - next has higher precedence might need a less than sign
@@ -24,16 +22,6 @@ use eyre::Result;
 // TO DO:
 // - Use ANSI escape codes to color the errors
 // - Roll the match statements in the parse function into a parse_rule() method
-
-//I think what he calls consume is the function that emits bytecode but I don't
-// want to do that yet, I just want to make an AST
-
-// right now I'm separating the AST generation and bytecode generation. This
-// might lead to duplicate code but should make adding IR steps later on a lot
-// easier.
-
-// I should finish up the parser first then do the symbol table based on that
-// paper I found
 
 ///Structure used to generate an AST from a [`TokenStream`].
 struct Parser {
@@ -48,7 +36,7 @@ impl Parser {
   ///Load a [`TokenStream`] into the [`Parser`].
   fn new(source:&str,) -> Self {
     let mut interner = Interner::new();
-    let tokens = tokenize(source, &mut interner,);
+    let tokens = tokenize(source,);
 
     Parser {
       cursor:0,
@@ -84,8 +72,11 @@ impl Parser {
 
   ///Consumes the next [`Token`].
   ///
+  /// For [`TokenKind`]s with fields, the comparison will ignore their fields'
+  /// value.
+  ///
   ///# Panics
-  /// - Panics if the `current` `Token` is not the expected [`TokenKind`].
+  /// - Panics if the current `Token` is not the expected `TokenKind`.
   fn eat_token_expect(&mut self, token:TokenKind, msg:&str,) -> Result<(),> {
     if self.next().kind != token {
       self.had_err = true;
@@ -102,8 +93,12 @@ impl Parser {
 
   /// If the next [`Token`] is the given keyword, eats it and returns `true`.
   ///
+  /// For [`TokenKind`]s with fields, the comparison will ignore their fields'
+  /// value.
+  ///
   /// An expectation is added for diagnostics purposes.
   pub fn eat_token_if_match(&mut self, token:TokenKind,) -> bool {
+    // make this take in a closure that spits our a bool
     if self.check_keyword(token,) {
       self.next();
       true
@@ -189,7 +184,7 @@ impl Parser {
 
       _ => {
         let token = self.next();
-        panic!("{:?} {}", token.kind, token.value.unwrap())
+        panic!("{:?}", token.kind)
       }
     }
   }
@@ -329,7 +324,6 @@ impl Parser {
     let token = self.next();
     let loc = token.loc;
     let expression = self.parse_expression(0,);
-    dbg!(token.value.clone());
     dbg!(expression.clone());
 
     Statement {
@@ -349,16 +343,18 @@ impl Parser {
     //Check for a colon if a colon is found continue otherwise return false
     if self.eat_token_if_match(TokenKind::TOKEN_COLON,) {
       //Check for a type if no type is found print an error
-      self.eat_token_expect(TokenKind::TOKEN_TYPE, "Expected type declaration",).unwrap();
+      self.eat_token_expect(TokenKind::TOKEN_TYPE(0,), "Expected type declaration",).unwrap();
 
       let token = self.next();
 
       //If the type is not a valid type, error
-      if let Some(ty,) = Ty::new(token.value.clone().unwrap(),) {
-        return Some(P::new(ty,),);
-      };
-
-      self.err_detected(token.loc, &ParsingError::InvalidTpe(token.value.clone().unwrap(),),)
+      if let TokenKind::TOKEN_TYPE(idx,) = token.kind {
+        let val = lookup(idx,);
+        match Ty::new(val,) {
+          Some(ty,) => return Some(P::new(ty,),),
+          None => self.err_detected(token.loc, &ParsingError::InvalidType(idx,),),
+        };
+      }
     }
     None
   }
@@ -367,7 +363,7 @@ impl Parser {
     // Eat the token expecting an ident
     let token = self.next();
     self
-      .eat_token_expect(TokenKind::TOKEN_IDENTIFIER, &ParsingError::VarNotDeclared.to_string(),)
+      .eat_token_expect(TokenKind::TOKEN_IDENTIFIER(0,), &ParsingError::VarNotDeclared.to_string(),)
       .unwrap();
     Ident {
       name:token.value.clone().unwrap(),
@@ -456,33 +452,34 @@ mod tests {
 
   #[test]
   fn parse_works() {
-    let source = String::from(
-      // erroring in the loop a few problems
-      // - Not ignoring comments -> ensure the tokenizer skips over everything between `//` and a linebreak
-      // -Seems to be expecting the inside of an if expression to be an expression and not a vec of statements
-      //  -> it tries to go into the rest of the expression parsing so it expects let to be an expression because it's treating it
-      // life the lefthand side
+    let source = r#"
+    //Check the binops work with nums
+    let mut value_test = 5 + 10;
 
-      //Look into what the null detonation is supposed to be, because currently the if has to be there instead of the left
+    //Check the binops work with boolean statements
+    let value = true != false == true;
+    
+    //Check if expressions work
+    if true {
+      let a = 90;
+    }
+  "#;
+    // erroring in the loop a few problems
+    // -Seems to be expecting the inside of an if expression to be an expression and
+    // not a vec of statements  -> it tries to go into the rest of the
+    // expression parsing so it expects let to be an expression because it's
+    // treating it life the lefthand side
+    // - Still have a precedence problem with the if's inner
 
-      //might also just never be reaching the if branch for some reason
-      //seems like it thinks the { begins a new statement
+    //Look into what the null detonation is supposed to be, because currently the
+    // if has to be there instead of the left
 
-      //it skips past the if because of the next in the parse expressions function
-      // the problem is for *just* parsing expressions it needs the next()
-      // but for parsing  expression statements it can't have the next
+    //might also just never be reaching the if branch for some reason
+    //seems like it thinks the { begins a new statement
 
-      //Still have a precedence problem with the if's inner
-
-      // let mut value_test = 5 + 10;
-      // let value = true != false == true;
-      r#"
-
-      if true {
-        let a = 90;
-      }
-    "#,
-    );
+    //it skips past the if because of the next in the parse expressions function
+    // the problem is for *just* parsing expressions it needs the next()
+    // but for parsing  expression statements it can't have the next
 
     let mut parser = Parser::new(source,);
     let ast = parser.parse();

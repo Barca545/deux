@@ -1,12 +1,15 @@
 use super::{
   errors::ParsingError,
-  interner::Interner,
+  interner::intern,
   token::{Chunk, Token, TokenKind},
 };
 // TODO:
 // - Update so it takes a &str. Will probably require changes to the tokens as
 //   well.
-//
+
+// Refactor:
+// - Add catching types to the filter pass and move it out of the token
+//   formation. This will make it easier to add types later if desired.
 
 pub type TokenStream = Vec<Token,>;
 
@@ -30,14 +33,17 @@ fn filter(tokens:&mut TokenStream,) {
         TokenKind::TOKEN_MUT => continue,
         // If the token is anything other than a mut or a ChunkNotRecognized convert the
         // Token to a VarNotDeclared
-        _ => token.kind = TokenKind::TOKEN_ERROR(ParsingError::VarNotDeclared,),
+        _ => {
+          let idx_err = intern(&ParsingError::VarNotDeclared.to_string(),);
+          token.kind = TokenKind::TOKEN_ERROR(idx_err,)
+        }
       }
       expect_ident = !expect_ident
     }
   }
 }
 
-pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
+pub fn tokenize(source:&str,) -> TokenStream {
   let mut tokens = Vec::new();
   let mut chunk = Chunk::new();
   let mut is_string = false;
@@ -65,7 +71,7 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
         '\"' => {
           if is_string {
             chunk.push('\"',);
-            tokens.push(chunk.to_token(interner,),)
+            tokens.push(chunk.to_token(),)
           }
           else {
             chunk.push('\"',)
@@ -77,7 +83,7 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
             chunk.push(' ',);
           }
           else if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),)
+            tokens.push(chunk.to_token(),)
           }
         }
         '\r' => {
@@ -85,7 +91,7 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
             chunk.push('\r',);
           }
           else if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),)
+            tokens.push(chunk.to_token(),)
           }
         }
         '\t' => {
@@ -93,7 +99,7 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
             chunk.push('\t',);
           }
           else if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),)
+            tokens.push(chunk.to_token(),)
           }
         }
         '\n' => {
@@ -102,50 +108,50 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
             chunk.push('\n',);
           }
           else if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
         }
         ';' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token(";", interner,),);
+          tokens.push(chunk.new_token(";",),);
         }
         '(' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token("(", interner,),);
+          tokens.push(chunk.new_token("(",),);
         }
         ')' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token(")", interner,),);
+          tokens.push(chunk.new_token(")",),);
         }
         '{' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token("{", interner,),);
+          tokens.push(chunk.new_token("{",),);
         }
         '}' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token("}", interner,),);
+          tokens.push(chunk.new_token("}",),);
         }
         '[' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token("[", interner,),);
+          tokens.push(chunk.new_token("[",),);
         }
         ']' => {
           if chunk.len() > 0 {
-            tokens.push(chunk.to_token(interner,),);
+            tokens.push(chunk.to_token(),);
           }
-          tokens.push(chunk.new_token("]", interner,),);
+          tokens.push(chunk.new_token("]",),);
         }
         _ => chunk.push(ch,),
       }
@@ -153,7 +159,7 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
     chunk.next()
   }
   //Add the EOF token
-  tokens.push(Token::new(None, chunk.loc(), interner,),);
+  tokens.push(Token::new(None, chunk.loc(),),);
 
   filter(&mut tokens,);
   tokens
@@ -162,20 +168,18 @@ pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
 #[cfg(test)]
 mod test {
   use super::tokenize;
-  use crate::scripting::compiler::{interner::Interner, token::TokenKind};
+  use crate::scripting::compiler::{interner::lookup, token::TokenKind};
 
   #[test]
   fn tokens_are_generated() {
-    let source = r#"//Confirming the comments are ignored 
+    let source = r#"//Confirming the comments are ignored
 
-    ()  [] {} 
+    ()  [] {}
     let mut a = "test string"
     //Confirm it catches number literals
     let b = 4.5
     "#;
-
-    let mut interner = Interner::new();
-    let tokens = tokenize(source, &mut interner,);
+    let tokens = tokenize(source,);
 
     // Check the token kinds
     assert_eq!(tokens[0].kind, TokenKind::TOKEN_LEFT_PAREN);
@@ -187,7 +191,7 @@ mod test {
     assert_eq!(tokens[6].kind, TokenKind::TOKEN_LET);
     assert_eq!(tokens[7].kind, TokenKind::TOKEN_MUT);
     if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[8].kind {
-      let str = interner.lookup(idx,);
+      let str = lookup(idx,);
       assert_eq!("a", str)
     }
     else {
@@ -195,7 +199,7 @@ mod test {
     };
     assert_eq!(tokens[9].kind, TokenKind::TOKEN_EQUAL);
     if let TokenKind::TOKEN_STRING(idx,) = tokens[10].kind {
-      let str = interner.lookup(idx,);
+      let str = lookup(idx,);
       assert_eq!("\"test string\"", str)
     }
     else {
@@ -203,7 +207,7 @@ mod test {
     };
     assert_eq!(tokens[11].kind, TokenKind::TOKEN_LET);
     if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[12].kind {
-      let str = interner.lookup(idx,);
+      let str = lookup(idx,);
       assert_eq!("b", str)
     }
     else {
@@ -211,7 +215,7 @@ mod test {
     };
     assert_eq!(tokens[13].kind, TokenKind::TOKEN_EQUAL);
     if let TokenKind::TOKEN_FLOAT(idx,) = tokens[14].kind {
-      let str = interner.lookup(idx,);
+      let str = lookup(idx,);
       assert_eq!("4.5", str)
     }
     else {

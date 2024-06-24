@@ -140,6 +140,7 @@ impl Ty {
       "float[]" => Some(Ty::Array(P::new(Ty::Float,),),),
       "usize[]" => Some(Ty::Array(P::new(Ty::Usize,),),),
       "string[]" => Some(Ty::Array(P::new(Ty::Array(P::new(Ty::Char,),),),),),
+      //shouldn't return none should return an error that it is not a valid type?
       _ => None,
     }
   }

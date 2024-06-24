@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use super::token::TokenKind;
+
 //separate lexing and parsing errors
 
 #[derive(Debug, Clone, Copy, Error, PartialEq, Eq,)]
@@ -15,9 +17,9 @@ pub enum ParsingError {
   #[error("{0:?} is not a valid variable name. Variable names must begin with a letter")]
   InvalidVarName(u32,),
   #[error("Unexpected {0:?} token.")]
-  UnexpectedToken(u32,),
+  UnexpectedToken(TokenKind,),
   #[error("{0:?} is not a valid type. Accepted types are int, float, usize, and str or their corresponding arrays int[], float[], usize[], and str[]")]
-  InvalidTpe(u32,),
+  InvalidType(u32,),
   #[error("No statement match")]
   NoStatementMatch,
 }

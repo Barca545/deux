@@ -1,6 +1,7 @@
 use std::{collections::HashMap, mem::size_of};
 
 //should data type be shared with the parser
+//Symbol should be a u32 maybe make it an struct in the Interner
 
 enum SymanticType {}
 
