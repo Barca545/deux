@@ -1,6 +1,7 @@
 use super::{
   ast::{AbstractSyntaxTree, BinOpKind, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
   errors::ParsingError,
+  interner::Interner,
   symbol_table::Symbol,
   token::{Location, Token, TokenKind},
   tokenizer::{tokenize, TokenStream},
@@ -45,12 +46,13 @@ struct Parser {
 
 impl Parser {
   ///Load a [`TokenStream`] into the [`Parser`].
-  fn new(source:String,) -> Self {
-    let tokens = tokenize(source.clone(),);
+  fn new(source:&str,) -> Self {
+    let mut interner = Interner::new();
+    let tokens = tokenize(source, &mut interner,);
 
     Parser {
       cursor:0,
-      source,
+      source:source.to_string(),
       tokens,
       had_err:false,
       erroring:false,
@@ -63,15 +65,17 @@ impl Parser {
     self.peek().precedence() > rbp
   }
 
-  ///Increments the `cursor`.
-  fn next(&mut self,) {
+  ///Increments the `cursor` and returns the [`Token`] the cursor now points
+  /// to.
+  fn next(&mut self,) -> &Token {
     self.cursor += 1;
+    &self.tokens[self.cursor]
   }
 
-  ///Returns a reference to the current [`Token`].
-  fn current(&self,) -> Token {
-    self.tokens[self.cursor].clone()
-  }
+  // ///Returns a reference to the current [`Token`].
+  // fn current(&self,) -> Token {
+  //   self.tokens[self.cursor].clone()
+  // }
 
   ///Returns a reference to the next [`Token`].
   fn peek(&self,) -> &Token {
@@ -83,10 +87,10 @@ impl Parser {
   ///# Panics
   /// - Panics if the `current` `Token` is not the expected [`TokenKind`].
   fn eat_token_expect(&mut self, token:TokenKind, msg:&str,) -> Result<(),> {
-    self.next();
-    if self.current().kind != token {
+    if self.next().kind != token {
       self.had_err = true;
-      return Err(ParsingError::UnexpectedToken(msg.to_string(),).into(),);
+      // return Err(ParsingError::UnexpectedToken(msg.to_string(),).into(),);
+      todo!()
     }
     Ok((),)
   }
@@ -96,9 +100,9 @@ impl Parser {
     self.tokens[self.cursor + 1].kind == token
   }
 
-  /// If the next token is the given keyword, eats it and returns `true`.
-  /// Otherwise, returns `false`. An expectation is also added for diagnostics
-  /// purposes.
+  /// If the next [`Token`] is the given keyword, eats it and returns `true`.
+  ///
+  /// An expectation is added for diagnostics purposes.
   pub fn eat_token_if_match(&mut self, token:TokenKind,) -> bool {
     if self.check_keyword(token,) {
       self.next();
@@ -110,15 +114,14 @@ impl Parser {
   }
 
   ///Consume a [`TokenStream`] and return an [`AbstractSyntaxTree`].
-  fn parse(&mut self,) -> Result<AbstractSyntaxTree,> {
+  fn parse(&mut self,) -> AbstractSyntaxTree {
     let mut ast = AbstractSyntaxTree::new();
 
-    while self.tokens.len() > 0 && self.current().kind != TokenKind::TOKEN_EOF {
+    while self.tokens.len() > 0 && self.peek().kind != TokenKind::TOKEN_EOF {
       ast.push(self.parse_statement().unwrap(),);
-      self.next();
     }
 
-    Ok(ast,)
+    ast
   }
 }
 
@@ -126,7 +129,6 @@ impl Parser {
 impl Parser {
   ///Returns an [`Expression`].
   fn parse_expression(&mut self, rbp:u32,) -> Expression {
-    self.next();
     // Get the left hand expression
     let mut left = self.parse_expression_null_detonation();
 
@@ -141,12 +143,12 @@ impl Parser {
   ///Returns an [`Expression`] consisting of the current [`Token`].
   fn parse_expression_null_detonation(&mut self,) -> Expression {
     // Should be some kind of literal
-    let token = self.current();
+    let token = self.peek();
 
     match token.kind {
-      TokenKind::TOKEN_INT => self.parse_integer(token,),
-      TokenKind::TOKEN_FLOAT => self.parse_float(token,),
-      TokenKind::TOKEN_BOOL => self.parse_bool(token,),
+      TokenKind::TOKEN_INT(_,) => self.parse_integer(),
+      TokenKind::TOKEN_FLOAT(_,) => self.parse_float(),
+      TokenKind::TOKEN_BOOL(_,) => self.parse_bool(),
       //If statement
       TokenKind::TOKEN_IF => {
         dbg!("reached 5");
@@ -165,10 +167,7 @@ impl Parser {
   ///Returns an [`Expression`] consisting of the currently parsed [`Token`]s
   /// and the next `Token`.
   fn parse_expression_left_denotation(&mut self, left:Expression,) -> Expression {
-    self.next();
-    //Should be some kind of operator
-    let token = self.current();
-    match token.kind {
+    match self.peek().kind {
       //BinOps
       TokenKind::TOKEN_MINUS
       | TokenKind::TOKEN_PLUS
@@ -181,18 +180,24 @@ impl Parser {
       | TokenKind::TOKEN_LESS
       | TokenKind::TOKEN_LESS_EQUAL => {
         let loc = left.loc;
-        let binop_kind = BinOpKind::from(&token,);
+        let token = self.next();
+        let binop_kind = BinOpKind::from(token,);
         let right = self.parse_expression(token.precedence(),);
         let kind = ExpressionKind::BinOp(P::new(left,), binop_kind, P::new(right,),);
         Expression { id:0, kind, loc, }
       }
 
-      _ => panic!("{:?} {}", token.kind, token.value.unwrap()),
+      _ => {
+        let token = self.next();
+        panic!("{:?} {}", token.kind, token.value.unwrap())
+      }
     }
   }
 
   ///Return an expression containing an integer [`Literal`].
-  fn parse_integer(&mut self, token:Token,) -> Expression {
+  fn parse_integer(&mut self,) -> Expression {
+    let token = self.next();
+
     let val = Literal {
       kind:LiteralKind::Integer,
       symbol:Symbol,
@@ -206,7 +211,9 @@ impl Parser {
   }
 
   ///Return an expression containing a float [`Literal`].
-  fn parse_float(&mut self, token:Token,) -> Expression {
+  fn parse_float(&mut self,) -> Expression {
+    let token = self.next();
+
     let val = Literal {
       kind:LiteralKind::Float,
       symbol:Symbol,
@@ -220,7 +227,9 @@ impl Parser {
   }
 
   ///Return an expression containing a boolean [`Literal`].
-  fn parse_bool(&mut self, token:Token,) -> Expression {
+  fn parse_bool(&mut self,) -> Expression {
+    let token = self.next();
+
     let val = Literal {
       kind:LiteralKind::Bool,
       symbol:Symbol,
@@ -250,7 +259,7 @@ impl Parser {
 
     let mut if_body = Vec::new();
 
-    while self.current().kind != TokenKind::TOKEN_RIGHT_BRACE {
+    while self.peek().kind != TokenKind::TOKEN_RIGHT_BRACE {
       if_body.push(self.parse_statement().unwrap(),);
     }
 
@@ -272,17 +281,16 @@ impl Parser {
 
   ///Returns a [`Statement`].
   fn parse_statement(&mut self,) -> Result<Statement,> {
-    let token = self.current();
-
-    match token.kind {
-      TokenKind::TOKEN_LET => Ok(self.parse_let(&token,),),
-      _ => Ok(self.parse_expression_statement(&token,),),
+    match self.peek().kind {
+      TokenKind::TOKEN_LET => Ok(self.parse_let(),),
+      _ => Ok(self.parse_expression_statement(),),
       // Err(ParsingError::NoStatementMatch.into(),)
     }
   }
 
   ///Parse a `let` [`Statement`] (`let <pat>::<ty> = <expr>`).
-  fn parse_let(&mut self, token:&Token,) -> Statement {
+  fn parse_let(&mut self,) -> Statement {
+    let token = self.next();
     //Location of the first element in the statement
     let id = 0;
     let loc = token.loc;
@@ -317,7 +325,8 @@ impl Parser {
   }
 
   ///Parse an [`Expression`] as a [`Statement`].
-  fn parse_expression_statement(&mut self, token:&Token,) -> Statement {
+  fn parse_expression_statement(&mut self,) -> Statement {
+    let token = self.next();
     let loc = token.loc;
     let expression = self.parse_expression(0,);
     dbg!(token.value.clone());
@@ -342,24 +351,27 @@ impl Parser {
       //Check for a type if no type is found print an error
       self.eat_token_expect(TokenKind::TOKEN_TYPE, "Expected type declaration",).unwrap();
 
+      let token = self.next();
+
       //If the type is not a valid type, error
-      if let Some(ty,) = Ty::new(self.current().value.clone().unwrap(),) {
+      if let Some(ty,) = Ty::new(token.value.clone().unwrap(),) {
         return Some(P::new(ty,),);
       };
 
-      self.err_detected(self.current().loc, &ParsingError::InvalidTpe(self.current().value.clone().unwrap(),),)
+      self.err_detected(token.loc, &ParsingError::InvalidTpe(token.value.clone().unwrap(),),)
     }
     None
   }
 
   fn parse_ident(&mut self,) -> Ident {
     // Eat the token expecting an ident
+    let token = self.next();
     self
       .eat_token_expect(TokenKind::TOKEN_IDENTIFIER, &ParsingError::VarNotDeclared.to_string(),)
       .unwrap();
     Ident {
-      name:self.current().value.clone().unwrap(),
-      loc:self.current().loc,
+      name:token.value.clone().unwrap(),
+      loc:token.loc,
     }
   }
 
@@ -473,7 +485,7 @@ mod tests {
     );
 
     let mut parser = Parser::new(source,);
-    let ast = parser.parse().unwrap();
+    let ast = parser.parse();
 
     //Check the AST is correct
     match ast.statements.clone()[0].kind.clone() {

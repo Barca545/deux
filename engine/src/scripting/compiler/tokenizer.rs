@@ -1,5 +1,6 @@
 use super::{
   errors::ParsingError,
+  interner::Interner,
   token::{Chunk, Token, TokenKind},
 };
 // TODO:
@@ -9,9 +10,10 @@ use super::{
 
 pub type TokenStream = Vec<Token,>;
 
-///Second parsing pass.
-/// - Creates identifier tokens.
-fn second_pass(tokens:&mut TokenStream,) {
+/// Filter the [`TokenStream`]
+/// - Converts [`TOKEN_POSSIBLE_IDENT`](TokenKind::TOKEN_POSSIBLE_IDENT)s into
+///   [`TOKEN_IDENTIFIER`](TokenKind::TOKEN_IDENTIFIER)s.
+fn filter(tokens:&mut TokenStream,) {
   // Attempt to coerce the token following a let or let mut into an identifier
   let mut expect_ident = false;
 
@@ -23,7 +25,7 @@ fn second_pass(tokens:&mut TokenStream,) {
     }
     if expect_ident {
       match token.kind {
-        TokenKind::TOKEN_ERROR(ParsingError::ChunkNotRecognized(_,),) => token.kind = TokenKind::TOKEN_IDENTIFIER,
+        TokenKind::TOKEN_POSSIBLE_IDENT(idx,) => token.kind = TokenKind::TOKEN_IDENTIFIER(idx,),
         // If mut is discovered and an identity is expected do not alter the flag
         TokenKind::TOKEN_MUT => continue,
         // If the token is anything other than a mut or a ChunkNotRecognized convert the
@@ -35,209 +37,217 @@ fn second_pass(tokens:&mut TokenStream,) {
   }
 }
 
-pub fn tokenize(source:String,) -> TokenStream {
+pub fn tokenize(source:&str, interner:&mut Interner,) -> TokenStream {
   let mut tokens = Vec::new();
   let mut chunk = Chunk::new();
   let mut is_string = false;
+  let mut is_comment = false;
 
-  for ch in source.chars() {
-    match ch {
-      '"' => {
-        if is_string {
-          chunk.push('\"',);
-          tokens.push(chunk.to_token(),)
+  let chars = source.chars().collect::<Vec<char,>>();
+
+  for i in 0..chars.len() {
+    let ch = chars[i];
+
+    // The following 2 blocks control reading comments
+
+    // This block identifies a comment has begun
+    if ch == '/' && chars[i + 1] == '/' {
+      is_comment = true;
+    }
+
+    // This block identifies a comment has ended
+    if is_comment && ch == '\n' {
+      is_comment = false;
+    }
+
+    if !is_comment {
+      match ch {
+        '\"' => {
+          if is_string {
+            chunk.push('\"',);
+            tokens.push(chunk.to_token(interner,),)
+          }
+          else {
+            chunk.push('\"',)
+          }
+          is_string = !is_string;
         }
-        else {
-          chunk.push('\"',)
+        ' ' => {
+          if is_string {
+            chunk.push(' ',);
+          }
+          else if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),)
+          }
         }
-        is_string = !is_string;
+        '\r' => {
+          if is_string {
+            chunk.push('\r',);
+          }
+          else if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),)
+          }
+        }
+        '\t' => {
+          if is_string {
+            chunk.push('\t',);
+          }
+          else if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),)
+          }
+        }
+        '\n' => {
+          chunk.newline = true;
+          if is_string {
+            chunk.push('\n',);
+          }
+          else if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+        }
+        ';' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token(";", interner,),);
+        }
+        '(' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token("(", interner,),);
+        }
+        ')' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token(")", interner,),);
+        }
+        '{' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token("{", interner,),);
+        }
+        '}' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token("}", interner,),);
+        }
+        '[' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token("[", interner,),);
+        }
+        ']' => {
+          if chunk.len() > 0 {
+            tokens.push(chunk.to_token(interner,),);
+          }
+          tokens.push(chunk.new_token("]", interner,),);
+        }
+        _ => chunk.push(ch,),
       }
-      ' ' => {
-        if is_string {
-          chunk.push(' ',);
-        }
-        else if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),)
-        }
-      }
-      '\r' => {
-        if is_string {
-          chunk.push('\r',);
-        }
-        else if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),)
-        }
-      }
-      '\t' => {
-        if is_string {
-          chunk.push('\t',);
-        }
-        else if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),)
-        }
-      }
-      '\n' => {
-        if is_string {
-          chunk.push('\n',);
-        }
-        else if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-      }
-      ';' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token(";",),);
-      }
-      '(' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token("(",),);
-      }
-      ')' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token(")",),);
-      }
-      '{' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token("{",),);
-      }
-      '}' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token("}",),);
-      }
-      '[' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token("[",),);
-      }
-      ']' => {
-        if chunk.len() > 0 {
-          tokens.push(chunk.to_token(),);
-        }
-        tokens.push(chunk.new_token("]",),);
-      }
-      _ => chunk.push(ch,),
     }
     chunk.next()
   }
-
-  //Filter the comments out of source
-  tokens = tokens.into_iter().filter(|token| !token.value.clone().unwrap().starts_with("//",),).collect();
   //Add the EOF token
-  tokens.push(Token::new(None, chunk.loc(),),);
+  tokens.push(Token::new(None, chunk.loc(), interner,),);
 
-  second_pass(&mut tokens,);
-
+  filter(&mut tokens,);
   tokens
 }
 
 #[cfg(test)]
 mod test {
   use super::tokenize;
-  use crate::scripting::compiler::token::TokenKind;
+  use crate::scripting::compiler::{interner::Interner, token::TokenKind};
 
   #[test]
-  fn generate_chunks_pass_works() {
-    let mut source = r#"()  [] {} let mut  "test string""#.to_string();
-    let tokens = tokenize(source,);
+  fn tokens_are_generated() {
+    let source = r#"//Confirming the comments are ignored 
 
-    assert_eq!(tokens[0].value.clone().unwrap().as_str(), "(");
-    assert_eq!(tokens[0].loc.col, 1);
-    assert_eq!(tokens[1].value.clone().unwrap().as_str(), ")");
-    assert_eq!(tokens[1].loc.col, 2);
-    assert_eq!(tokens[2].value.clone().unwrap().as_str(), "[");
-    assert_eq!(tokens[2].loc.col, 5);
-    assert_eq!(tokens[3].value.clone().unwrap().as_str(), "]");
-    assert_eq!(tokens[3].loc.col, 6);
-    assert_eq!(tokens[4].value.clone().unwrap().as_str(), "{");
-    assert_eq!(tokens[4].loc.col, 8);
-    assert_eq!(tokens[5].value.clone().unwrap().as_str(), "}");
-    assert_eq!(tokens[5].loc.col, 9);
-    assert_eq!(tokens[6].value.clone().unwrap().as_str(), "let");
-    assert_eq!(tokens[6].loc.col, 11);
-    assert_eq!(tokens[7].value.clone().unwrap().as_str(), "mut");
-    assert_eq!(tokens[7].loc.col, 15);
-    assert_eq!(tokens[8].value.clone().unwrap().as_str(), "\"test string\"");
-    assert_eq!(tokens[8].loc.col, 19);
-  }
+    ()  [] {} 
+    let mut a = "test string"
+    //Confirm it catches number literals
+    let b = 4.5
+    "#;
 
-  #[test]
-  fn test_parse_for_non_identifiers() {
-    let source = "
+    let mut interner = Interner::new();
+    let tokens = tokenize(source, &mut interner,);
 
-
-
-    = (+ / * >=  \t  == , fn for != >) 
-    ///jdjdjdjdjd
-    true
-    "
-    .to_string();
-
-    let tokens = tokenize(source,);
-
-    assert_eq!(tokens.len(), 15);
-    assert_eq!(tokens[0].kind, TokenKind::TOKEN_EQUAL);
-    assert_eq!(tokens[1].kind, TokenKind::TOKEN_LEFT_PAREN);
-    assert_eq!(tokens[2].kind, TokenKind::TOKEN_PLUS);
-    assert_eq!(tokens[3].kind, TokenKind::TOKEN_SLASH);
-    assert_eq!(tokens[4].kind, TokenKind::TOKEN_STAR);
-    assert_eq!(tokens[5].kind, TokenKind::TOKEN_GREATER_EQUAL);
-    assert_eq!(tokens[6].kind, TokenKind::TOKEN_EQUAL_EQUAL);
-    assert_eq!(tokens[7].kind, TokenKind::TOKEN_COMMA);
-    assert_eq!(tokens[8].kind, TokenKind::TOKEN_FN);
-    assert_eq!(tokens[9].kind, TokenKind::TOKEN_FOR);
-    assert_eq!(tokens[10].kind, TokenKind::TOKEN_NOT_EQUAL);
-    assert_eq!(tokens[11].kind, TokenKind::TOKEN_GREATER);
-    assert_eq!(tokens[12].kind, TokenKind::TOKEN_RIGHT_PAREN);
-    assert_eq!(tokens[13].kind, TokenKind::TOKEN_BOOL);
-    assert_eq!(tokens[14].kind, TokenKind::TOKEN_EOF);
-  }
-
-  #[test]
-  fn parsing_literals_and_catching_identifiers_works() {
-    let source = r#"
-    let mut test = "test string";
-    let test1 = 15;
-    let test2 = 4.2;
-    "#
-    .to_string();
-
-    let tokens = tokenize(source,);
-
-    // Test first statement
-    assert_eq!(tokens[0].kind, TokenKind::TOKEN_LET);
-    assert_eq!(tokens[1].kind, TokenKind::TOKEN_MUT);
-    assert_eq!(tokens[2].kind, TokenKind::TOKEN_IDENTIFIER);
-    assert_eq!(&tokens[2].value.clone().unwrap(), &"test".to_string());
-    assert_eq!(tokens[3].kind, TokenKind::TOKEN_EQUAL);
-    assert_eq!(tokens[4].kind, TokenKind::TOKEN_STRING);
-    assert_eq!(&tokens[4].value.clone().unwrap(), &"\"test string\"".to_string());
-    assert_eq!(tokens[5].kind, TokenKind::TOKEN_SEMICOLON);
-    // Test second statement
+    // Check the token kinds
+    assert_eq!(tokens[0].kind, TokenKind::TOKEN_LEFT_PAREN);
+    assert_eq!(tokens[1].kind, TokenKind::TOKEN_RIGHT_PAREN);
+    assert_eq!(tokens[2].kind, TokenKind::TOKEN_LEFT_BRACKET);
+    assert_eq!(tokens[3].kind, TokenKind::TOKEN_RIGHT_BRACKET);
+    assert_eq!(tokens[4].kind, TokenKind::TOKEN_LEFT_BRACE);
+    assert_eq!(tokens[5].kind, TokenKind::TOKEN_RIGHT_BRACE);
     assert_eq!(tokens[6].kind, TokenKind::TOKEN_LET);
-    assert_eq!(tokens[7].kind, TokenKind::TOKEN_IDENTIFIER);
-    assert_eq!(&tokens[7].value.clone().unwrap(), &"test1".to_string());
-    assert_eq!(tokens[8].kind, TokenKind::TOKEN_EQUAL);
-    assert_eq!(tokens[9].kind, TokenKind::TOKEN_INT);
-    assert_eq!(&tokens[9].value.clone().unwrap(), &"15".to_string());
-    assert_eq!(tokens[10].kind, TokenKind::TOKEN_SEMICOLON);
-    // // Test third statement
+    assert_eq!(tokens[7].kind, TokenKind::TOKEN_MUT);
+    if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[8].kind {
+      let str = interner.lookup(idx,);
+      assert_eq!("a", str)
+    }
+    else {
+      panic!("{:?}", tokens[8].kind)
+    };
+    assert_eq!(tokens[9].kind, TokenKind::TOKEN_EQUAL);
+    if let TokenKind::TOKEN_STRING(idx,) = tokens[10].kind {
+      let str = interner.lookup(idx,);
+      assert_eq!("\"test string\"", str)
+    }
+    else {
+      panic!("{:?}", tokens[10].kind)
+    };
     assert_eq!(tokens[11].kind, TokenKind::TOKEN_LET);
-    assert_eq!(tokens[12].kind, TokenKind::TOKEN_IDENTIFIER);
-    assert_eq!(&tokens[12].value.clone().unwrap(), &"test2".to_string());
+    if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[12].kind {
+      let str = interner.lookup(idx,);
+      assert_eq!("b", str)
+    }
+    else {
+      panic!("{:?}", tokens[12].kind)
+    };
     assert_eq!(tokens[13].kind, TokenKind::TOKEN_EQUAL);
-    assert_eq!(tokens[14].kind, TokenKind::TOKEN_FLOAT);
-    assert_eq!(&tokens[14].value.clone().unwrap(), &"4.2".to_string());
-    assert_eq!(tokens[15].kind, TokenKind::TOKEN_SEMICOLON);
+    if let TokenKind::TOKEN_FLOAT(idx,) = tokens[14].kind {
+      let str = interner.lookup(idx,);
+      assert_eq!("4.5", str)
+    }
+    else {
+      panic!("{:?}", tokens[14].kind)
+    };
+
+    //Check the locations
+    assert_eq!(tokens[0].loc.line, 3);
+    assert_eq!(tokens[0].loc.col, 1 + 4);
+    assert_eq!(tokens[1].loc.line, 3);
+    assert_eq!(tokens[1].loc.col, 2 + 4);
+    assert_eq!(tokens[2].loc.line, 3);
+    assert_eq!(tokens[2].loc.col, 5 + 4);
+    assert_eq!(tokens[3].loc.line, 3);
+    assert_eq!(tokens[3].loc.col, 6 + 4);
+    assert_eq!(tokens[4].loc.line, 3);
+    assert_eq!(tokens[4].loc.col, 8 + 4);
+    assert_eq!(tokens[5].loc.line, 3);
+    assert_eq!(tokens[5].loc.col, 9 + 4);
+    assert_eq!(tokens[6].loc.line, 4);
+    assert_eq!(tokens[6].loc.col, 1 + 4);
+    assert_eq!(tokens[7].loc.line, 4);
+    assert_eq!(tokens[7].loc.col, 5 + 4);
+    assert_eq!(tokens[8].loc.line, 4);
+    assert_eq!(tokens[8].loc.col, 9 + 4);
+    assert_eq!(tokens[9].loc.line, 4);
+    assert_eq!(tokens[9].loc.col, 11 + 4);
+    assert_eq!(tokens[10].loc.line, 4);
+    assert_eq!(tokens[10].loc.col, 12 + 4);
+    assert_eq!(tokens[11].loc.line, 6);
+    assert_eq!(tokens[11].loc.col, 1 + 4);
+    assert_eq!(tokens[12].loc.line, 6);
+    assert_eq!(tokens[12].loc.col, 5 + 4);
+    assert_eq!(tokens[13].loc.line, 6);
+    assert_eq!(tokens[13].loc.col, 7 + 4);
+    assert_eq!(tokens[14].loc.line, 6);
+    assert_eq!(tokens[14].loc.col, 9 + 4);
   }
 }

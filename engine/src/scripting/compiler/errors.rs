@@ -1,21 +1,23 @@
 use thiserror::Error;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq,)]
+//separate lexing and parsing errors
+
+#[derive(Debug, Clone, Copy, Error, PartialEq, Eq,)]
 pub enum ParsingError {
   #[error("{0:?} is not recognized as a token.")]
-  ChunkNotRecognized(String,),
+  ChunkNotRecognized(u32,),
   #[error("Strings must be closed with \"\" ")]
   StringNotTerminated,
   #[error("{0:?} is not an integer or a float.")]
-  NotValidNumber(String,),
+  NotValidNumber(u32,),
   #[error("Expected variable declaration.")]
   VarNotDeclared,
   #[error("{0:?} is not a valid variable name. Variable names must begin with a letter")]
-  InvalidVarName(String,),
+  InvalidVarName(u32,),
   #[error("Unexpected {0:?} token.")]
-  UnexpectedToken(String,),
+  UnexpectedToken(u32,),
   #[error("{0:?} is not a valid type. Accepted types are int, float, usize, and str or their corresponding arrays int[], float[], usize[], and str[]")]
-  InvalidTpe(String,),
+  InvalidTpe(u32,),
   #[error("No statement match")]
   NoStatementMatch,
 }

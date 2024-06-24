@@ -1,12 +1,10 @@
-use std::ops::Deref;
-
 use super::{
   symbol_table::Symbol,
   token::{Location, Token, TokenKind},
 };
+use std::ops::Deref;
 
-//Will still need to handle arrays
-//I think I do need strings after all
+// Convert the Strings into u32s
 
 //I think the AST also has to do with the symbol table
 

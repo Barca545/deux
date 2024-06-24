@@ -1,6 +1,4 @@
-use winapi::shared::winerror::NOERROR;
-
-use super::errors::ParsingError;
+use super::{errors::ParsingError, interner::Interner};
 
 // TODO:
 // - Debating getting rid of the difference between floats and ints and just
@@ -20,13 +18,14 @@ pub(super) struct Location {
 impl Location {
   /// Create a new [`Location`].
   pub fn new() -> Self {
-    Location { line:0, col:0, index:0, }
+    Location { line:1, col:1, index:0, }
   }
 
   pub fn next(&mut self, newline:bool,) {
     match newline {
       true => {
         self.line += 1;
+        self.col = 1;
         self.index += 1;
       }
       false => {
@@ -38,7 +37,7 @@ impl Location {
 }
 
 #[non_exhaustive]
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[rustfmt::skip]
 #[allow(non_camel_case_types)]
 pub(super) enum TokenKind {
@@ -57,8 +56,8 @@ pub(super) enum TokenKind {
   TOKEN_GREATER, TOKEN_GREATER_EQUAL,
   TOKEN_LESS, TOKEN_LESS_EQUAL, 
   // Literals
-  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INT, TOKEN_FLOAT,
-  TOKEN_TYPE, TOKEN_BOOL,
+  TOKEN_IDENTIFIER(u32), TOKEN_STRING(u32), TOKEN_INT(u32), TOKEN_FLOAT(u32),
+  TOKEN_TYPE, TOKEN_BOOL(u32),
 
   // Keywords
   TOKEN_AND, TOKEN_OR, 
@@ -68,32 +67,37 @@ pub(super) enum TokenKind {
   TOKEN_FN, TOKEN_RETURN, TOKEN_PRINT, 
   TOKEN_LET, TOKEN_MUT, 
   // Terminators
-  TOKEN_ERROR(ParsingError), TOKEN_EOF
+  TOKEN_ERROR(ParsingError), TOKEN_EOF,
+  // Intermediary Tokens
+  TOKEN_POSSIBLE_IDENT(u32),
+
 }
 
 impl TokenKind {
   ///Create a new token type.
-  fn new(value:&String,) -> Self {
+  fn new(value:&str, interner:&mut Interner,) -> Self {
     // Return early if the token kind is a string
-    if value.starts_with('"',) {
+    if value.starts_with('\"',) {
       // Check if the string terminates, return a TOKEN_ERROR if it does not
+      let idx = interner.intern(value,);
       return match value.chars().last().unwrap() == '"' {
-        true => TokenKind::TOKEN_STRING,
+        true => TokenKind::TOKEN_STRING(idx,),
         false => TokenKind::TOKEN_ERROR(ParsingError::StringNotTerminated,),
       };
     }
 
     // Return early if the token kind is a number
     if value.chars().nth(0,).unwrap().is_numeric() {
+      let idx = interner.intern(value,);
       // Check if the token is an int or a float
       if is_float(&value,) {
-        return TokenKind::TOKEN_FLOAT;
+        return TokenKind::TOKEN_FLOAT(idx,);
       }
       else if value.parse::<u32>().is_ok() {
-        return TokenKind::TOKEN_INT;
+        return TokenKind::TOKEN_INT(idx,);
       }
       else {
-        return TokenKind::TOKEN_ERROR(ParsingError::NotValidNumber(value.to_string(),),);
+        return TokenKind::TOKEN_ERROR(ParsingError::NotValidNumber(idx,),);
       }
     }
 
@@ -104,10 +108,11 @@ impl TokenKind {
 
     //If the token is "true" or "false" it is a boolean
     if value == "true" || value == "false" {
-      return TokenKind::TOKEN_BOOL;
+      let idx = interner.intern(value,);
+      return TokenKind::TOKEN_BOOL(idx,);
     }
 
-    match value.as_str() {
+    match value {
       // Single-character tokens
       "(" => TokenKind::TOKEN_LEFT_PAREN,
       ")" => TokenKind::TOKEN_RIGHT_PAREN,
@@ -155,7 +160,7 @@ impl TokenKind {
       "print" => TokenKind::TOKEN_PRINT,
       "let" => TokenKind::TOKEN_LET,
       "mut" => TokenKind::TOKEN_MUT,
-      _ => TokenKind::TOKEN_ERROR(ParsingError::ChunkNotRecognized(value.to_string(),),),
+      _ => TokenKind::TOKEN_POSSIBLE_IDENT(interner.intern(value,),),
     }
   }
 }
@@ -189,7 +194,7 @@ fn is_float(val:&str,) -> bool {
 pub struct Chunk {
   loc:Location,
   val:String,
-  newline:bool,
+  pub newline:bool,
 }
 
 impl Chunk {
@@ -217,23 +222,23 @@ impl Chunk {
   }
 
   ///Emit a [`Token`] and ready a new [`Chunk`].
-  pub fn to_token(&mut self,) -> Token {
+  pub fn to_token(&mut self, interner:&mut Interner,) -> Token {
     //Ensure the pointer is to the front of the token.
     let mut loc = self.loc;
     loc.col -= self.val.chars().count() as u32;
     loc.index -= self.val.chars().count();
-    let token = Token::new(Some(&self.val,), loc,);
+    let token = Token::new(Some(self.val.clone().as_str(),), loc, interner,);
     self.val = String::new();
     token
   }
 
   ///Create a new [`Token`] from a [`String`].
-  pub fn new_token(&mut self, val:&str,) -> Token {
+  pub fn new_token(&mut self, val:&str, interner:&mut Interner,) -> Token {
     //Ensure the pointer is to the front of the token.
     let mut loc = self.loc;
     loc.col -= self.val.chars().count() as u32;
     loc.index -= self.val.chars().count();
-    let token = Token::new(Some(&String::from(val,),), loc,);
+    let token = Token::new(Some(&String::from(val,),), loc, interner,);
     token
   }
 
@@ -248,24 +253,21 @@ impl Chunk {
   }
 }
 
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone, Copy,)]
 pub(super) struct Token {
-  pub value:Option<String,>,
   pub kind:TokenKind,
   pub loc:Location,
 }
 
 impl Token {
   /// Create a [`Token`] from a [`String`].
-  pub fn new(value:Option<&String,>, loc:Location,) -> Token {
+  pub fn new(value:Option<&str,>, loc:Location, interner:&mut Interner,) -> Token {
     match value {
       Some(str,) => Token {
-        value:Some(str.to_string(),),
-        kind:TokenKind::new(str,),
+        kind:TokenKind::new(str, interner,),
         loc,
       },
       None => Token {
-        value:None,
         kind:TokenKind::TOKEN_EOF,
         loc,
       },
@@ -273,14 +275,15 @@ impl Token {
   }
 
   /// Convert a [`Token`]'s `kind`into `TOKEN_IDENTIFIER`.
-  pub fn to_ident(&mut self,) {
-    // Confirm the token is a valid identifier
-    if let Some(val,) = &self.value {
+  pub fn to_ident(&mut self, interner:&Interner,) {
+    //Get the value stored in the
+    if let TokenKind::TOKEN_POSSIBLE_IDENT(idx,) = self.kind {
+      let val = interner.lookup(idx,);
       if val.chars().nth(0,).unwrap().is_alphabetic() {
-        self.kind = TokenKind::TOKEN_IDENTIFIER;
+        self.kind = TokenKind::TOKEN_IDENTIFIER(idx,);
       }
       else {
-        self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(self.value.clone().unwrap().to_string(),),);
+        self.kind = TokenKind::TOKEN_ERROR(ParsingError::InvalidVarName(idx,),);
       }
     }
   }
@@ -320,7 +323,6 @@ impl Token {
   ///Create a`TOKEN_ERROR(ParsingError::VarNotDeclared)` [`Token`].
   pub fn var_not_declared_token(value:Option<&str,>, loc:Location,) -> Token {
     Token {
-      value:Some(value.unwrap().to_string(),),
       kind:TokenKind::TOKEN_ERROR(ParsingError::VarNotDeclared,),
       loc,
     }
