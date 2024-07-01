@@ -75,19 +75,19 @@ pub enum BinOpKind {
   LESS_EQUAL,
 }
 
-impl From<&Token,> for BinOpKind {
-  fn from(token:&Token,) -> Self {
+impl From<Token,> for BinOpKind {
+  fn from(token:Token,) -> Self {
     match token.kind {
-      TokenKind::TOKEN_MINUS => BinOpKind::MINUS,
-      TokenKind::TOKEN_PLUS => BinOpKind::PLUS,
-      TokenKind::TOKEN_SLASH => BinOpKind::SLASH,
-      TokenKind::TOKEN_STAR => BinOpKind::STAR,
-      TokenKind::TOKEN_EQUAL_EQUAL => BinOpKind::EQUAL_EQUAL,
-      TokenKind::TOKEN_NOT_EQUAL => BinOpKind::NOT_EQUAL,
-      TokenKind::TOKEN_GREATER => BinOpKind::GREATER,
-      TokenKind::TOKEN_GREATER_EQUAL => BinOpKind::GREATER_EQUAL,
-      TokenKind::TOKEN_LESS => BinOpKind::LESS,
-      TokenKind::TOKEN_LESS_EQUAL => BinOpKind::LESS_EQUAL,
+      TokenKind::MINUS => BinOpKind::MINUS,
+      TokenKind::PLUS => BinOpKind::PLUS,
+      TokenKind::SLASH => BinOpKind::SLASH,
+      TokenKind::STAR => BinOpKind::STAR,
+      TokenKind::EQUAL_EQUAL => BinOpKind::EQUAL_EQUAL,
+      TokenKind::NOT_EQUAL => BinOpKind::NOT_EQUAL,
+      TokenKind::GREATER => BinOpKind::GREATER,
+      TokenKind::GREATER_EQUAL => BinOpKind::GREATER_EQUAL,
+      TokenKind::LESS => BinOpKind::LESS,
+      TokenKind::LESS_EQUAL => BinOpKind::LESS_EQUAL,
       _ => todo!(),
     }
   }
@@ -172,7 +172,7 @@ impl Ty {
 
 #[derive(Debug, Clone,)]
 pub struct Ident {
-  pub name:String,
+  pub name:u32,
   pub loc:Location,
 }
 

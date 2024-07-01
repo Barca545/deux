@@ -1,12 +1,10 @@
-use super::{
-  errors::ParsingError,
-  interner::{intern, lookup},
-};
+use super::{errors::ParsingError, interner::intern};
 
 // TODO:
 // - Not sure I need the double colon operator
 // - How do tokenizers actually handle type declarations
 // - switch from passing in an interner to using the INTERNER directly
+// - Remove the
 
 // Refactor:
 // - Debating getting rid of the difference between floats and ints and just
@@ -46,35 +44,32 @@ impl Location {
 #[allow(non_camel_case_types)]
 pub(super) enum TokenKind {
   // Single-character tokens
-  TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
-  TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
-  TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET,
-  TOKEN_COMMA, TOKEN_DOT, TOKEN_SEMICOLON,TOKEN_COLON, TOKEN_DOUBLE_COLON,
+  LEFT_PAREN, RIGHT_PAREN,
+  LEFT_BRACE, RIGHT_BRACE,
+  LEFT_BRACKET, RIGHT_BRACKET,
+  COMMA, DOT, SEMICOLON,COLON, DOUBLE_COLON,
   // Math
-  TOKEN_MINUS, TOKEN_PLUS, TOKEN_SLASH, TOKEN_STAR,
+  MINUS, PLUS, SLASH, STAR,
   // Assignment
-  TOKEN_EQUAL, TOKEN_MINUS_EQUAL, TOKEN_PLUS_EQUAL, TOKEN_SLASH_EQUAL, TOKEN_STAR_EQUAL,
+  EQUAL, MINUS_EQUAL, PLUS_EQUAL, SLASH_EQUAL, STAR_EQUAL,
   // Equality
-  TOKEN_EQUAL_EQUAL,
-  TOKEN_NOT, TOKEN_NOT_EQUAL,
-  TOKEN_GREATER, TOKEN_GREATER_EQUAL,
-  TOKEN_LESS, TOKEN_LESS_EQUAL, 
+  EQUAL_EQUAL,
+  NOT, NOT_EQUAL,
+  GREATER, GREATER_EQUAL,
+  LESS, LESS_EQUAL, 
   // Literals
-  TOKEN_IDENTIFIER(u32), TOKEN_STRING(u32), TOKEN_INT(u32), TOKEN_FLOAT(u32),
-  TOKEN_TYPE(u32), TOKEN_BOOL(u32),
+  IDENTIFIER(u32), STRING(u32), INT(u32), FLOAT(u32),
+  TYPE(u32), BOOL(u32),
 
   // Keywords
-  TOKEN_AND, TOKEN_OR, 
-  TOKEN_TRUE, TOKEN_FALSE,
-  TOKEN_FOR, TOKEN_WHILE, TOKEN_LOOP,
-  TOKEN_IF, TOKEN_ELSE, TOKEN_ELSE_IF,
-  TOKEN_FN, TOKEN_RETURN, TOKEN_PRINT, 
-  TOKEN_LET, TOKEN_MUT, 
+  AND, OR, 
+  TRUE, FALSE,
+  FOR, WHILE, LOOP,
+  IF, ELSE, ELSE_IF,
+  FN, RETURN, PRINT, 
+  LET, MUT, 
   // Terminators
-  TOKEN_ERROR(u32), TOKEN_EOF,
-  // Intermediary Tokens
-  TOKEN_POSSIBLE_IDENT(u32),
-
+  EOF,
 }
 
 impl TokenKind {
@@ -82,14 +77,11 @@ impl TokenKind {
   fn new(value:&str,) -> Self {
     // Return early if the token kind is a string
     if value.starts_with('\"',) {
-      // Check if the string terminates, return a TOKEN_ERROR if it does not
+      // Check if the string terminates, return a ERROR if it does not
       let idx = intern(value,);
       return match value.chars().last().unwrap() == '"' {
-        true => TokenKind::TOKEN_STRING(idx,),
-        false => {
-          let idx_err = intern(&ParsingError::StringNotTerminated.to_string(),);
-          TokenKind::TOKEN_ERROR(idx_err,)
-        }
+        true => TokenKind::STRING(idx,),
+        false => panic!("{}", &ParsingError::StringNotTerminated.to_string()),
       };
     }
 
@@ -98,14 +90,13 @@ impl TokenKind {
       let idx = intern(value,);
       // Check if the token is an int or a float
       if is_float(&value,) {
-        return TokenKind::TOKEN_FLOAT(idx,);
+        return TokenKind::FLOAT(idx,);
       }
       else if value.parse::<u32>().is_ok() {
-        return TokenKind::TOKEN_INT(idx,);
+        return TokenKind::INT(idx,);
       }
       else {
-        let idx_err = intern(&ParsingError::NotValidNumber(idx,).to_string(),);
-        return TokenKind::TOKEN_ERROR(idx_err,);
+        panic!("{}", &ParsingError::NotValidNumber(value.to_string()).to_string())
       }
     }
 
@@ -123,64 +114,64 @@ impl TokenKind {
       || value == "bool[]"
     {
       let idx = intern(value,);
-      return TokenKind::TOKEN_TYPE(idx,);
+      return TokenKind::TYPE(idx,);
     }
 
     //If the token is "true" or "false" it is a boolean
     if value == "true" || value == "false" {
       let idx = intern(value,);
-      return TokenKind::TOKEN_BOOL(idx,);
+      return TokenKind::BOOL(idx,);
     }
 
     match value {
       // Single-character tokens
-      "(" => TokenKind::TOKEN_LEFT_PAREN,
-      ")" => TokenKind::TOKEN_RIGHT_PAREN,
-      "{" => TokenKind::TOKEN_LEFT_BRACE,
-      "}" => TokenKind::TOKEN_RIGHT_BRACE,
-      "[" => TokenKind::TOKEN_LEFT_BRACKET,
-      "]" => TokenKind::TOKEN_RIGHT_BRACKET,
-      ";" => TokenKind::TOKEN_SEMICOLON,
-      ":" => TokenKind::TOKEN_COLON,
-      "::" => TokenKind::TOKEN_DOUBLE_COLON,
-      "," => TokenKind::TOKEN_COMMA,
-      "." => TokenKind::TOKEN_DOT,
+      "(" => TokenKind::LEFT_PAREN,
+      ")" => TokenKind::RIGHT_PAREN,
+      "{" => TokenKind::LEFT_BRACE,
+      "}" => TokenKind::RIGHT_BRACE,
+      "[" => TokenKind::LEFT_BRACKET,
+      "]" => TokenKind::RIGHT_BRACKET,
+      ";" => TokenKind::SEMICOLON,
+      ":" => TokenKind::COLON,
+      "::" => TokenKind::DOUBLE_COLON,
+      "," => TokenKind::COMMA,
+      "." => TokenKind::DOT,
       // Math
-      "-" => TokenKind::TOKEN_MINUS,
-      "+" => TokenKind::TOKEN_PLUS,
-      "/" => TokenKind::TOKEN_SLASH,
-      "*" => TokenKind::TOKEN_STAR,
+      "-" => TokenKind::MINUS,
+      "+" => TokenKind::PLUS,
+      "/" => TokenKind::SLASH,
+      "*" => TokenKind::STAR,
       // Assignment
-      "=" => TokenKind::TOKEN_EQUAL,
-      "-=" => TokenKind::TOKEN_MINUS_EQUAL,
-      "+=" => TokenKind::TOKEN_PLUS_EQUAL,
-      "/=" => TokenKind::TOKEN_SLASH_EQUAL,
-      "*=" => TokenKind::TOKEN_STAR_EQUAL,
+      "=" => TokenKind::EQUAL,
+      "-=" => TokenKind::MINUS_EQUAL,
+      "+=" => TokenKind::PLUS_EQUAL,
+      "/=" => TokenKind::SLASH_EQUAL,
+      "*=" => TokenKind::STAR_EQUAL,
       // Equality
-      "==" => TokenKind::TOKEN_EQUAL_EQUAL,
-      "!" => TokenKind::TOKEN_NOT,
-      "!=" => TokenKind::TOKEN_NOT_EQUAL,
-      ">" => TokenKind::TOKEN_GREATER,
-      ">=" => TokenKind::TOKEN_GREATER_EQUAL,
-      "<" => TokenKind::TOKEN_LESS,
-      "<=" => TokenKind::TOKEN_LESS_EQUAL,
+      "==" => TokenKind::EQUAL_EQUAL,
+      "!" => TokenKind::NOT,
+      "!=" => TokenKind::NOT_EQUAL,
+      ">" => TokenKind::GREATER,
+      ">=" => TokenKind::GREATER_EQUAL,
+      "<" => TokenKind::LESS,
+      "<=" => TokenKind::LESS_EQUAL,
       // Keywords
-      "and" => TokenKind::TOKEN_AND,
-      "or" => TokenKind::TOKEN_OR,
-      "true" => TokenKind::TOKEN_TRUE,
-      "false" => TokenKind::TOKEN_FALSE,
-      "for" => TokenKind::TOKEN_FOR,
-      "while" => TokenKind::TOKEN_WHILE,
-      "loop" => TokenKind::TOKEN_LOOP,
-      "if" => TokenKind::TOKEN_IF,
-      "else" => TokenKind::TOKEN_ELSE,
-      "else if" => TokenKind::TOKEN_ELSE_IF,
-      "fn" => TokenKind::TOKEN_FN,
-      "return" => TokenKind::TOKEN_RETURN,
-      "print" => TokenKind::TOKEN_PRINT,
-      "let" => TokenKind::TOKEN_LET,
-      "mut" => TokenKind::TOKEN_MUT,
-      _ => TokenKind::TOKEN_POSSIBLE_IDENT(intern(value,),),
+      "and" => TokenKind::AND,
+      "or" => TokenKind::OR,
+      "true" => TokenKind::TRUE,
+      "false" => TokenKind::FALSE,
+      "for" => TokenKind::FOR,
+      "while" => TokenKind::WHILE,
+      "loop" => TokenKind::LOOP,
+      "if" => TokenKind::IF,
+      "else" => TokenKind::ELSE,
+      "else if" => TokenKind::ELSE_IF,
+      "fn" => TokenKind::FN,
+      "return" => TokenKind::RETURN,
+      "print" => TokenKind::PRINT,
+      "let" => TokenKind::LET,
+      "mut" => TokenKind::MUT,
+      _ => TokenKind::IDENTIFIER(intern(value,),),
     }
   }
 }
@@ -188,13 +179,11 @@ impl TokenKind {
 impl PartialEq for TokenKind {
   fn eq(&self, other:&Self,) -> bool {
     match (self, other,) {
-      (Self::TOKEN_IDENTIFIER(_,), Self::TOKEN_IDENTIFIER(_,),) => true,
-      (Self::TOKEN_STRING(_,), Self::TOKEN_STRING(_,),) => true,
-      (Self::TOKEN_INT(_,), Self::TOKEN_INT(_,),) => true,
-      (Self::TOKEN_FLOAT(_,), Self::TOKEN_FLOAT(_,),) => true,
-      (Self::TOKEN_BOOL(_,), Self::TOKEN_BOOL(_,),) => true,
-      (Self::TOKEN_ERROR(_,), Self::TOKEN_ERROR(_,),) => true,
-      (Self::TOKEN_POSSIBLE_IDENT(_,), Self::TOKEN_POSSIBLE_IDENT(_,),) => true,
+      (Self::IDENTIFIER(_,), Self::IDENTIFIER(_,),) => true,
+      (Self::STRING(_,), Self::STRING(_,),) => true,
+      (Self::INT(_,), Self::INT(_,),) => true,
+      (Self::FLOAT(_,), Self::FLOAT(_,),) => true,
+      (Self::BOOL(_,), Self::BOOL(_,),) => true,
       _ => core::mem::discriminant(self,) == core::mem::discriminant(other,),
     }
   }
@@ -302,25 +291,7 @@ impl Token {
         kind:TokenKind::new(str,),
         loc,
       },
-      None => Token {
-        kind:TokenKind::TOKEN_EOF,
-        loc,
-      },
-    }
-  }
-
-  /// Convert a [`Token`]'s `kind`into `TOKEN_IDENTIFIER`.
-  pub fn to_ident(&mut self,) {
-    //Get the value stored in the
-    if let TokenKind::TOKEN_POSSIBLE_IDENT(idx,) = self.kind {
-      let val = lookup(idx,);
-      if val.chars().nth(0,).unwrap().is_alphabetic() {
-        self.kind = TokenKind::TOKEN_IDENTIFIER(idx,);
-      }
-      else {
-        let idx_err = intern(&ParsingError::InvalidVarName(idx,).to_string(),);
-        self.kind = TokenKind::TOKEN_ERROR(idx_err,);
-      }
+      None => Token { kind:TokenKind::EOF, loc, },
     }
   }
 
@@ -338,30 +309,16 @@ impl Token {
 
     match self.kind {
       // Assign expressions
-      TokenKind::TOKEN_EQUAL | TokenKind::TOKEN_MINUS_EQUAL | TokenKind::TOKEN_PLUS_EQUAL | TokenKind::TOKEN_SLASH_EQUAL | TokenKind::TOKEN_STAR_EQUAL => 10,
+      TokenKind::EQUAL | TokenKind::MINUS_EQUAL | TokenKind::PLUS_EQUAL | TokenKind::SLASH_EQUAL | TokenKind::STAR_EQUAL => 10,
       // Conditional expressions
-      TokenKind::TOKEN_IF | TokenKind::TOKEN_ELSE => 20,
+      TokenKind::IF | TokenKind::ELSE => 20,
       // Math expressions
-      TokenKind::TOKEN_STAR | TokenKind::TOKEN_SLASH => 30,
-      TokenKind::TOKEN_MINUS | TokenKind::TOKEN_PLUS => 40,
+      TokenKind::STAR | TokenKind::SLASH => 30,
+      TokenKind::MINUS | TokenKind::PLUS => 40,
       // Comparison expressions
-      TokenKind::TOKEN_EQUAL_EQUAL
-      | TokenKind::TOKEN_NOT_EQUAL
-      | TokenKind::TOKEN_GREATER
-      | TokenKind::TOKEN_GREATER_EQUAL
-      | TokenKind::TOKEN_LESS
-      | TokenKind::TOKEN_LESS_EQUAL => 60,
+      TokenKind::EQUAL_EQUAL | TokenKind::NOT_EQUAL | TokenKind::GREATER | TokenKind::GREATER_EQUAL | TokenKind::LESS | TokenKind::LESS_EQUAL => 60,
       // Anything else should cause the expression parsing to terminate
       _ => 0,
-    }
-  }
-
-  ///Create a`TOKEN_ERROR(ParsingError::VarNotDeclared)` [`Token`].
-  pub fn var_not_declared_token(value:Option<&str,>, loc:Location,) -> Token {
-    let idx_err = intern(&ParsingError::VarNotDeclared.to_string(),);
-    Token {
-      kind:TokenKind::TOKEN_ERROR(idx_err,),
-      loc,
     }
   }
 }

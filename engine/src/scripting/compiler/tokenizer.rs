@@ -1,8 +1,6 @@
-use super::{
-  errors::ParsingError,
-  interner::intern,
-  token::{Chunk, Token, TokenKind},
-};
+use std::iter::Peekable;
+
+use super::token::{Chunk, Token};
 // TODO:
 // - Update so it takes a &str. Will probably require changes to the tokens as
 //   well.
@@ -12,36 +10,6 @@ use super::{
 //   formation. This will make it easier to add types later if desired.
 
 pub type TokenStream = Vec<Token,>;
-
-/// Filter the [`TokenStream`]
-/// - Converts [`TOKEN_POSSIBLE_IDENT`](TokenKind::TOKEN_POSSIBLE_IDENT)s into
-///   [`TOKEN_IDENTIFIER`](TokenKind::TOKEN_IDENTIFIER)s.
-fn filter(tokens:&mut TokenStream,) {
-  // Attempt to coerce the token following a let or let mut into an identifier
-  let mut expect_ident = false;
-
-  // Iterate over the tokens, if a let token is encountered expect an identifier.
-  for token in tokens {
-    if token.kind == TokenKind::TOKEN_LET {
-      expect_ident = true;
-      continue;
-    }
-    if expect_ident {
-      match token.kind {
-        TokenKind::TOKEN_POSSIBLE_IDENT(idx,) => token.kind = TokenKind::TOKEN_IDENTIFIER(idx,),
-        // If mut is discovered and an identity is expected do not alter the flag
-        TokenKind::TOKEN_MUT => continue,
-        // If the token is anything other than a mut or a ChunkNotRecognized convert the
-        // Token to a VarNotDeclared
-        _ => {
-          let idx_err = intern(&ParsingError::VarNotDeclared.to_string(),);
-          token.kind = TokenKind::TOKEN_ERROR(idx_err,)
-        }
-      }
-      expect_ident = !expect_ident
-    }
-  }
-}
 
 pub fn tokenize(source:&str,) -> TokenStream {
   let mut tokens = Vec::new();
@@ -161,7 +129,7 @@ pub fn tokenize(source:&str,) -> TokenStream {
   //Add the EOF token
   tokens.push(Token::new(None, chunk.loc(),),);
 
-  filter(&mut tokens,);
+  // filter(&mut tokens,);
   tokens
 }
 
@@ -178,48 +146,56 @@ mod test {
     let mut a = "test string"
     //Confirm it catches number literals
     let b = 4.5
+    b = 5.0
     "#;
     let tokens = tokenize(source,);
 
     // Check the token kinds
-    assert_eq!(tokens[0].kind, TokenKind::TOKEN_LEFT_PAREN);
-    assert_eq!(tokens[1].kind, TokenKind::TOKEN_RIGHT_PAREN);
-    assert_eq!(tokens[2].kind, TokenKind::TOKEN_LEFT_BRACKET);
-    assert_eq!(tokens[3].kind, TokenKind::TOKEN_RIGHT_BRACKET);
-    assert_eq!(tokens[4].kind, TokenKind::TOKEN_LEFT_BRACE);
-    assert_eq!(tokens[5].kind, TokenKind::TOKEN_RIGHT_BRACE);
-    assert_eq!(tokens[6].kind, TokenKind::TOKEN_LET);
-    assert_eq!(tokens[7].kind, TokenKind::TOKEN_MUT);
-    if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[8].kind {
+    assert_eq!(tokens[0].kind, TokenKind::LEFT_PAREN);
+    assert_eq!(tokens[1].kind, TokenKind::RIGHT_PAREN);
+    assert_eq!(tokens[2].kind, TokenKind::LEFT_BRACKET);
+    assert_eq!(tokens[3].kind, TokenKind::RIGHT_BRACKET);
+    assert_eq!(tokens[4].kind, TokenKind::LEFT_BRACE);
+    assert_eq!(tokens[5].kind, TokenKind::RIGHT_BRACE);
+    assert_eq!(tokens[6].kind, TokenKind::LET);
+    assert_eq!(tokens[7].kind, TokenKind::MUT);
+    if let TokenKind::IDENTIFIER(idx,) = tokens[8].kind {
       let str = lookup(idx,);
       assert_eq!("a", str)
     }
     else {
       panic!("{:?}", tokens[8].kind)
     };
-    assert_eq!(tokens[9].kind, TokenKind::TOKEN_EQUAL);
-    if let TokenKind::TOKEN_STRING(idx,) = tokens[10].kind {
+    assert_eq!(tokens[9].kind, TokenKind::EQUAL);
+    if let TokenKind::STRING(idx,) = tokens[10].kind {
       let str = lookup(idx,);
       assert_eq!("\"test string\"", str)
     }
     else {
       panic!("{:?}", tokens[10].kind)
     };
-    assert_eq!(tokens[11].kind, TokenKind::TOKEN_LET);
-    if let TokenKind::TOKEN_IDENTIFIER(idx,) = tokens[12].kind {
+    assert_eq!(tokens[11].kind, TokenKind::LET);
+    if let TokenKind::IDENTIFIER(idx,) = tokens[12].kind {
       let str = lookup(idx,);
       assert_eq!("b", str)
     }
     else {
       panic!("{:?}", tokens[12].kind)
     };
-    assert_eq!(tokens[13].kind, TokenKind::TOKEN_EQUAL);
-    if let TokenKind::TOKEN_FLOAT(idx,) = tokens[14].kind {
+    assert_eq!(tokens[13].kind, TokenKind::EQUAL);
+    if let TokenKind::FLOAT(idx,) = tokens[14].kind {
       let str = lookup(idx,);
       assert_eq!("4.5", str)
     }
     else {
       panic!("{:?}", tokens[14].kind)
+    };
+    if let TokenKind::IDENTIFIER(idx,) = tokens[15].kind {
+      let str = lookup(idx,);
+      assert_eq!("b", str)
+    }
+    else {
+      panic!("{:?}", tokens[15].kind)
     };
 
     //Check the locations
@@ -253,5 +229,7 @@ mod test {
     assert_eq!(tokens[13].loc.col, 7 + 4);
     assert_eq!(tokens[14].loc.line, 6);
     assert_eq!(tokens[14].loc.col, 9 + 4);
+    assert_eq!(tokens[15].loc.line, 7);
+    assert_eq!(tokens[15].loc.col, 1 + 4);
   }
 }

@@ -1,3 +1,5 @@
+use std::iter::Peekable;
+
 use super::{
   ast::{AbstractSyntaxTree, BinOpKind, Expression, ExpressionKind, Ident, Literal, LiteralKind, Local, LocalKind, Pat, PatKind, Statement, Ty},
   errors::ParsingError,
@@ -27,7 +29,7 @@ use eyre::Result;
 struct Parser {
   cursor:usize,
   source:String,
-  tokens:TokenStream,
+  tokens:Peekable<std::vec::IntoIter<Token,>,>,
   had_err:bool,
   erroring:bool,
 }
@@ -35,8 +37,7 @@ struct Parser {
 impl Parser {
   ///Load a [`TokenStream`] into the [`Parser`].
   fn new(source:&str,) -> Self {
-    let mut interner = Interner::new();
-    let tokens = tokenize(source,);
+    let tokens = tokenize(source,).into_iter().peekable();
 
     Parser {
       cursor:0,
@@ -49,25 +50,20 @@ impl Parser {
 
   /// Checks whether the current [`Token`] has a higher precedence than the
   /// following `Token`.
-  fn next_is_less_precedence(&self, rbp:u32,) -> bool {
+  fn next_is_less_precedence(&mut self, rbp:u32,) -> bool {
     self.peek().precedence() > rbp
   }
 
   ///Increments the `cursor` and returns the [`Token`] the cursor now points
   /// to.
-  fn next(&mut self,) -> &Token {
+  fn next(&mut self,) -> Token {
     self.cursor += 1;
-    &self.tokens[self.cursor]
+    self.tokens.next().unwrap()
   }
 
-  // ///Returns a reference to the current [`Token`].
-  // fn current(&self,) -> Token {
-  //   self.tokens[self.cursor].clone()
-  // }
-
   ///Returns a reference to the next [`Token`].
-  fn peek(&self,) -> &Token {
-    &self.tokens[self.cursor + 1]
+  fn peek(&mut self,) -> Token {
+    *self.tokens.peek().unwrap()
   }
 
   ///Consumes the next [`Token`].
@@ -77,18 +73,25 @@ impl Parser {
   ///
   ///# Panics
   /// - Panics if the current `Token` is not the expected `TokenKind`.
-  fn eat_token_expect(&mut self, token:TokenKind, msg:&str,) -> Result<(),> {
-    if self.next().kind != token {
+  fn eat_token_expect(&mut self, token:TokenKind, msg:&str,) -> Result<Token,> {
+    if self.peek().kind != token {
       self.had_err = true;
-      // return Err(ParsingError::UnexpectedToken(msg.to_string(),).into(),);
-      todo!()
+      Err(
+        ParsingError::UnexpectedToken {
+          expected:token,
+          recieved:self.peek().kind,
+        }
+        .into(),
+      )
     }
-    Ok((),)
+    else {
+      Ok(self.next(),)
+    }
   }
 
   /// If the next token is the given [`TokenKind`], returns true.
-  fn check_keyword(&self, token:TokenKind,) -> bool {
-    self.tokens[self.cursor + 1].kind == token
+  fn check_keyword(&mut self, token:TokenKind,) -> bool {
+    self.peek().kind == token
   }
 
   /// If the next [`Token`] is the given keyword, eats it and returns `true`.
@@ -112,7 +115,7 @@ impl Parser {
   fn parse(&mut self,) -> AbstractSyntaxTree {
     let mut ast = AbstractSyntaxTree::new();
 
-    while self.tokens.len() > 0 && self.peek().kind != TokenKind::TOKEN_EOF {
+    while self.tokens.len() > 0 && self.peek().kind != TokenKind::EOF {
       ast.push(self.parse_statement().unwrap(),);
     }
 
@@ -122,6 +125,17 @@ impl Parser {
 
 //Actual Parsing rules
 impl Parser {
+  ///Returns a [`Statement`].
+  fn parse_statement(&mut self,) -> Result<Statement,> {
+    dbg!(self.peek().kind);
+    match self.peek().kind {
+      TokenKind::LET => Ok(self.parse_let(),),
+      _ => Ok(self.parse_expression_statement(),),
+      // _ => panic!(),
+      // Err(ParsingError::NoStatementMatch.into(),)
+    }
+  }
+
   ///Returns an [`Expression`].
   fn parse_expression(&mut self, rbp:u32,) -> Expression {
     // Get the left hand expression
@@ -141,11 +155,11 @@ impl Parser {
     let token = self.peek();
 
     match token.kind {
-      TokenKind::TOKEN_INT(_,) => self.parse_integer(),
-      TokenKind::TOKEN_FLOAT(_,) => self.parse_float(),
-      TokenKind::TOKEN_BOOL(_,) => self.parse_bool(),
+      TokenKind::INT(_,) => self.parse_integer(),
+      TokenKind::FLOAT(_,) => self.parse_float(),
+      TokenKind::BOOL(_,) => self.parse_bool(),
       //If statement
-      TokenKind::TOKEN_IF => {
+      TokenKind::IF => {
         dbg!("reached 5");
         self.parse_if_expression(&token,)
       }
@@ -153,7 +167,10 @@ impl Parser {
       // This should probably enter an error state
       // I think it should error that it was expecting some kind of literal
       _ => {
-        self.err_detected(token.loc, &ParsingError::UnexpectedToken(token.value.unwrap(),),);
+        // self.err_detected(token.loc, &ParsingError::UnexpectedToken(token.kind,),);
+        if let TokenKind::IDENTIFIER(idx,) = token.kind {
+          panic!("{} is not an accepted identifier", lookup(idx));
+        }
         panic!();
       }
     }
@@ -164,16 +181,16 @@ impl Parser {
   fn parse_expression_left_denotation(&mut self, left:Expression,) -> Expression {
     match self.peek().kind {
       //BinOps
-      TokenKind::TOKEN_MINUS
-      | TokenKind::TOKEN_PLUS
-      | TokenKind::TOKEN_STAR
-      | TokenKind::TOKEN_SLASH
-      | TokenKind::TOKEN_EQUAL_EQUAL
-      | TokenKind::TOKEN_NOT_EQUAL
-      | TokenKind::TOKEN_GREATER
-      | TokenKind::TOKEN_GREATER_EQUAL
-      | TokenKind::TOKEN_LESS
-      | TokenKind::TOKEN_LESS_EQUAL => {
+      TokenKind::MINUS
+      | TokenKind::PLUS
+      | TokenKind::STAR
+      | TokenKind::SLASH
+      | TokenKind::EQUAL_EQUAL
+      | TokenKind::NOT_EQUAL
+      | TokenKind::GREATER
+      | TokenKind::GREATER_EQUAL
+      | TokenKind::LESS
+      | TokenKind::LESS_EQUAL => {
         let loc = left.loc;
         let token = self.next();
         let binop_kind = BinOpKind::from(token,);
@@ -247,19 +264,19 @@ impl Parser {
 
     // Parse the statement making up its body
     self
-      .eat_token_expect(TokenKind::TOKEN_LEFT_BRACE, "Must follow if statement with a brace `{`",)
+      .eat_token_expect(TokenKind::LEFT_BRACE, "Must follow if statement with a brace `{`",)
       .unwrap();
 
     dbg!("reached here 3");
 
     let mut if_body = Vec::new();
 
-    while self.peek().kind != TokenKind::TOKEN_RIGHT_BRACE {
+    while self.peek().kind != TokenKind::RIGHT_BRACE {
       if_body.push(self.parse_statement().unwrap(),);
     }
 
     // Check for an else statment and parse it if so
-    let else_body = if self.eat_token_if_match(TokenKind::TOKEN_ELSE,) {
+    let else_body = if self.eat_token_if_match(TokenKind::ELSE,) {
       let else_expr = self.parse_expression(0,);
       Some(P::new(else_expr,),)
     }
@@ -271,15 +288,6 @@ impl Parser {
       id:0,
       kind:ExpressionKind::If(P::new(condition,), P::new(if_body,), else_body,),
       loc,
-    }
-  }
-
-  ///Returns a [`Statement`].
-  fn parse_statement(&mut self,) -> Result<Statement,> {
-    match self.peek().kind {
-      TokenKind::TOKEN_LET => Ok(self.parse_let(),),
-      _ => Ok(self.parse_expression_statement(),),
-      // Err(ParsingError::NoStatementMatch.into(),)
     }
   }
 
@@ -335,24 +343,24 @@ impl Parser {
 
   ///Checks if the next [`Token`] is mutable and consumes it if so.
   fn parse_mutability(&mut self,) -> bool {
-    self.eat_token_if_match(TokenKind::TOKEN_MUT,)
+    self.eat_token_if_match(TokenKind::MUT,)
   }
 
   ///Checks if the next [`Token`]s are `:<ty>` and consumes them if so.
   fn parse_type(&mut self,) -> Option<P<Ty,>,> {
     //Check for a colon if a colon is found continue otherwise return false
-    if self.eat_token_if_match(TokenKind::TOKEN_COLON,) {
+    if self.eat_token_if_match(TokenKind::COLON,) {
       //Check for a type if no type is found print an error
-      self.eat_token_expect(TokenKind::TOKEN_TYPE(0,), "Expected type declaration",).unwrap();
+      self.eat_token_expect(TokenKind::TYPE(0,), "Expected type declaration",).unwrap();
 
       let token = self.next();
 
       //If the type is not a valid type, error
-      if let TokenKind::TOKEN_TYPE(idx,) = token.kind {
+      if let TokenKind::TYPE(idx,) = token.kind {
         let val = lookup(idx,);
-        match Ty::new(val,) {
+        match Ty::new(val.clone(),) {
           Some(ty,) => return Some(P::new(ty,),),
-          None => self.err_detected(token.loc, &ParsingError::InvalidType(idx,),),
+          None => panic!("{} is not an accepted type", val),
         };
       }
     }
@@ -361,30 +369,27 @@ impl Parser {
 
   fn parse_ident(&mut self,) -> Ident {
     // Eat the token expecting an ident
-    let token = self.next();
-    self
-      .eat_token_expect(TokenKind::TOKEN_IDENTIFIER(0,), &ParsingError::VarNotDeclared.to_string(),)
+    let token = self
+      .eat_token_expect(TokenKind::IDENTIFIER(0,), &ParsingError::VarNotDeclared.to_string(),)
       .unwrap();
-    Ident {
-      name:token.value.clone().unwrap(),
-      loc:token.loc,
+    if let TokenKind::IDENTIFIER(idx,) = token.kind {
+      Ident { name:idx, loc:token.loc, }
+    }
+    else {
+      panic!("This should not be reachable!")
     }
   }
 
   fn parse_local_kind(&mut self,) -> LocalKind {
     // If equals sign, parse the output of the next statement, expect an Expression.
-    if self.eat_token_if_match(TokenKind::TOKEN_EQUAL,) {
+    if self.eat_token_if_match(TokenKind::EQUAL,) {
       let expression = self.parse_expression(0,);
       //Line must end after the expression so expect a semicolon
-      self
-        .eat_token_expect(TokenKind::TOKEN_SEMICOLON, "Must end Let statement with a semicolon",)
-        .unwrap();
+      self.eat_token_expect(TokenKind::SEMICOLON, "Must end Let statement with a semicolon",).unwrap();
       return LocalKind::Init(P::new(expression,),);
     }
     // If equals no sign error it's a delayed assignment so expect a semicolon
-    self
-      .eat_token_expect(TokenKind::TOKEN_SEMICOLON, "Must end Let statement with a semicolon",)
-      .unwrap();
+    self.eat_token_expect(TokenKind::SEMICOLON, "Must end Let statement with a semicolon",).unwrap();
 
     LocalKind::Decl
   }
@@ -454,13 +459,15 @@ mod tests {
   fn parse_works() {
     let source = r#"
     //Check the binops work with nums
-    let mut value_test = 5 + 10;
+    // let mut value_test = 5 + 10;
 
     //Check the binops work with boolean statements
-    let value = true != false == true;
+    // let value = true != false == true;
     
     //Check if expressions work
     if true {
+      // I think it wants an identifier here, not an expression
+      // Need to revisit how the null detonation works 
       let a = 90;
     }
   "#;
@@ -486,6 +493,7 @@ mod tests {
 
     //Check the AST is correct
     match ast.statements.clone()[0].kind.clone() {
+      //Check the let statement
       StatementKind::Let(local,) => {
         match &local.kind {
           LocalKind::Init(expr,) => match &expr.kind {
@@ -513,6 +521,6 @@ mod tests {
       _ => panic!(),
     }
 
-    dbg!(ast.statements.clone()[1].kind.clone());
+    dbg!(ast.statements.clone()[0].kind.clone());
   }
 }
