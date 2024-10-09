@@ -8,6 +8,8 @@ use num_traits::FromPrimitive;
 // To Do:
 // - Add support for arrays -> this means the ability to read from the heap
 // - Tail call optimization in the compiler?
+// - Implement div and pow with wrapping?
+// - Add PUSH/POP instructions
 
 // Refactor:
 // - Instead of to/from bits just use direct transmutes since compilation should
@@ -65,13 +67,13 @@ pub enum OpCode {
   /// - Immediate i32 value.
   ///
   /// Store a * b in the [`RAX`](Tardis::RAX).
-  MULTRI,
+  MULT_RI,
   /// Takes 2 arguments:
   /// - Immediate i32 value.
   /// - Immediate i32 value.
   ///
   /// Store a * b in the [`RAX`](Tardis::RAX).
-  MULTII,
+  MULT_II,
   /// Takes 2 arguments:
   /// - Integer stored in the register of index a.
   /// - Integer stored in the register of index b.
@@ -83,13 +85,13 @@ pub enum OpCode {
   /// - Immediate i32 value.
   ///
   /// Store a + b in the [`RAX`](Tardis::RAX).
-  DIVRI,
+  DIV_RI,
   /// Takes 2 arguments:
   /// - Immediate i32 value.
   /// - Immediate i32 value.
   ///
   /// Store a + b in the [`RAX`](Tardis::RAX).
-  DIVII,
+  DIV_II,
   /// Takes 2 arguments:
   /// - Integer stored in the register of index a.
   /// - Integer stored in the register of index b.
@@ -101,13 +103,13 @@ pub enum OpCode {
   /// - Immediate i32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  ADDRI,
+  ADD_RI,
   /// Takes 2 arguments:
   /// - Immediate i32 value.
   /// - Immediate i32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  ADDII,
+  ADD_II,
   /// Takes 2 arguments:
   /// - Integer stored in the register of index a.
   /// - Integer stored in the register of index b.
@@ -119,13 +121,13 @@ pub enum OpCode {
   /// - Immediate i32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  SUBRI,
+  SUB_RI,
   /// Takes 2 arguments:
   /// - Immediate i32 value.
   /// - Immediate i32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  SUBII,
+  SUB_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -136,14 +138,14 @@ pub enum OpCode {
   /// - Float stored in the register of index a.
   /// - Immediate i32 value.
   ///
-  /// Store a * b in the [`RAX`](Tardis::RAX).
-  POWRI,
+  /// Store a^b in the [`RAX`](Tardis::RAX).
+  POW_RI,
   /// Takes 2 arguments:
   /// - Immediate i32 value.
   /// - Immediate i32 value.
   ///
-  /// Store a * b in the [`RAX`](Tardis::RAX).
-  POWII,
+  /// Store a^b in the [`RAX`](Tardis::RAX).
+  POW_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -155,13 +157,13 @@ pub enum OpCode {
   /// - Immediate f32 value.
   ///
   /// Store a / b in the [`RAX`](Tardis::RAX).
-  F_MULTRI,
+  F_MULT_RI,
   /// Takes 2 arguments:
   /// - Immediate f32 value.
   /// - Immediate f32 value.
   ///
   /// Store a / b in the [`RAX`](Tardis::RAX).
-  F_MULTII,
+  F_MULT_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -173,13 +175,13 @@ pub enum OpCode {
   /// - Immediate f32 value.
   ///
   /// Store a / b in the [`RAX`](Tardis::RAX).
-  F_DIVRI,
+  F_DIV_RI,
   /// Takes 2 arguments:
   /// - Immediate f32 value.
   /// - Immediate f32 value.
   ///
   /// Store a / b in the [`RAX`](Tardis::RAX).
-  F_DIVII,
+  F_DIV_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -191,13 +193,13 @@ pub enum OpCode {
   /// - Immediate f32 value.
   ///
   /// Store a + b in the [`RAX`](Tardis::RAX).
-  F_ADDRI,
+  F_ADD_RI,
   /// Takes 2 arguments:
   /// - Immediate f32 value.
   /// - Immediate f32 value.
   ///
   /// Store a + b in the [`RAX`](Tardis::RAX).
-  F_ADDII,
+  F_ADD_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -209,13 +211,13 @@ pub enum OpCode {
   /// - Immediate f32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  F_SUBRI,
+  F_SUB_RI,
   /// Takes 2 arguments:
   /// - Immediate f32 value.
   /// - Immediate f32 value.
   ///
   /// Store a - b in the [`RAX`](Tardis::RAX).
-  F_SUBII,
+  F_SUB_II,
   /// Takes 2 arguments:
   /// - Float stored in the register of index a.
   /// - Float stored in the register of index b.
@@ -227,19 +229,19 @@ pub enum OpCode {
   /// - Immediate f32 value.
   ///
   /// Store the result of a == b in the [`REQ`](Tardis::REQ).
-  F_POWRI,
+  F_POW_RI,
   /// Takes 2 arguments:
   /// - Immediate f32 value.
   /// - Immediate f32 value.
   ///
   /// Store the result of a == b in the [`REQ`](Tardis::REQ).
-  F_POWII,
-  // /// Takes 2 arguments:
-  // /// - Float stored in the register of index a.
-  // /// - Float stored in the register of index b.
-  // ///
-  // /// Store the result of a == b in the [`REQ`](Tardis::REQ).
-  // REQUAL,
+  F_POW_II,
+  /// Takes 2 arguments:
+  /// - Float stored in the register of index a.
+  /// - Float stored in the register of index b.
+  ///
+  /// Store the result of a == b in the [`REQ`](Tardis::REQ).
+  EQUAL,
   /// Takes 2 arguments:
   /// - First register.
   /// - Second register.
@@ -273,10 +275,10 @@ pub enum OpCode {
   /// Takes 1 argmumet:
   /// - New `pc`value.
   JUMP,
-  // /// Takes 2 arguments:
-  // /// - Register to check.
-  // /// - New `pc`value if a == 0.
-  // JZ,
+  /// Takes 2 arguments:
+  /// - Register to check.
+  /// - New `pc`value if a == 0.
+  JZ,
   /// Takes 2 arguments:
   /// - Register to check.
   /// - New `pc`value if a != 0.
@@ -314,7 +316,7 @@ pub enum LoopControl {
 ///
 /// Tardis is big endian.
 #[allow(unused)]
-struct Tardis<'w,> {
+pub struct Tardis<'w,> {
   ///World Ref
   world:&'w World,
   /// The program counter indicates the next instruction to execute.
@@ -322,8 +324,8 @@ struct Tardis<'w,> {
   /// Program bytecode.
   program:Vec<u8,>,
   /// The VM's registers:
-  /// - R0-R3 function arguments. If a function has more than three args, they
-  ///   go onto the stack.
+  /// - R0-R3 function arguments and returns. If a function has more than four
+  ///   args or returns, they go onto the stack.
   /// - REQ register is R4.
   /// - RAX is R5.
   /// - RCX is R6.
@@ -387,43 +389,43 @@ impl<'w,> Tardis<'w,> {
       OpCode::LOAD_FLOAT => self.LOAD_FLOAT(),
       OpCode::MOVE => self.MOVE(),
       OpCode::MULT => self.MULT(),
-      OpCode::MULTRI => self.MULTRI(),
-      OpCode::MULTII => self.MULTII(),
+      OpCode::MULT_RI => self.MULT_RI(),
+      OpCode::MULT_II => self.MULT_II(),
       OpCode::DIV => self.DIV(),
-      OpCode::DIVRI => self.DIVRI(),
-      OpCode::DIVII => self.DIVII(),
+      OpCode::DIV_RI => self.DIV_RI(),
+      OpCode::DIV_II => self.DIV_II(),
       OpCode::ADD => self.ADD(),
-      OpCode::ADDRI => self.ADDRI(),
-      OpCode::ADDII => self.ADDII(),
+      OpCode::ADD_RI => self.ADD_RI(),
+      OpCode::ADD_II => self.ADD_II(),
       OpCode::SUB => self.SUB(),
-      OpCode::SUBRI => self.SUBRI(),
-      OpCode::SUBII => self.SUBII(),
+      OpCode::SUB_RI => self.SUB_RI(),
+      OpCode::SUB_II => self.SUB_II(),
       OpCode::POW => self.POW(),
-      OpCode::POWRI => self.POWRI(),
-      OpCode::POWII => self.POWII(),
+      OpCode::POW_RI => self.POW_RI(),
+      OpCode::POW_II => self.POW_II(),
       OpCode::F_MULT => self.F_MULT(),
-      OpCode::F_MULTRI => todo!(),
-      OpCode::F_MULTII => todo!(),
+      OpCode::F_MULT_RI => self.F_MULT_RI(),
+      OpCode::F_MULT_II => self.F_MULT_II(),
       OpCode::F_DIV => self.F_DIV(),
-      OpCode::F_DIVRI => todo!(),
-      OpCode::F_DIVII => todo!(),
+      OpCode::F_DIV_RI => self.F_DIV_RI(),
+      OpCode::F_DIV_II => self.F_DIV_II(),
       OpCode::F_ADD => self.F_ADD(),
-      OpCode::F_ADDRI => todo!(),
-      OpCode::F_ADDII => todo!(),
+      OpCode::F_ADD_RI => self.F_ADD_RI(),
+      OpCode::F_ADD_II => self.F_ADD_II(),
       OpCode::F_SUB => self.F_SUB(),
-      OpCode::F_SUBRI => todo!(),
-      OpCode::F_SUBII => todo!(),
+      OpCode::F_SUB_RI => self.F_SUB_RI(),
+      OpCode::F_SUB_II => self.F_SUB_II(),
       OpCode::F_POW => self.F_POW(),
-      OpCode::F_POWRI => todo!(),
-      OpCode::F_POWII => todo!(),
-      // OpCode::REQUAL => self.REQUAL(),
+      OpCode::F_POW_RI => self.F_POW_RI(),
+      OpCode::F_POW_II => self.F_POW_II(),
+      OpCode::EQUAL => self.EQUAL(),
       OpCode::NOT_EQUAL => self.NOT_EQUAL(),
       OpCode::GREATER => self.GREATER(),
       OpCode::LESS => self.LESS(),
       OpCode::GREATER_REQUAL => self.GREATER_EQUAL(),
       OpCode::LESS_REQUAL => self.LESS_EQUAL(),
       OpCode::JUMP => self.JUMP(),
-      // OpCode::JZ => self.JZ(),
+      OpCode::JZ => self.JZ(),
       OpCode::JNZ => self.JNZ(),
       OpCode::CALL => self.CALL(),
       OpCode::RETURN => self.RETURN(),
@@ -455,7 +457,7 @@ impl<'w,> Tardis<'w,> {
   }
 
   /// Fetch the next byte from the `program`.
-  fn get_u8(&mut self,) -> u8 {
+  pub(super) fn get_u8(&mut self,) -> u8 {
     // Fetch the next byte in the program
     let num = self.program[self.pc];
     // Increment the pc
@@ -464,7 +466,7 @@ impl<'w,> Tardis<'w,> {
   }
 
   /// Fetch the next 4 bytes from the `program`as a u32.
-  fn get_u32(&mut self,) -> u32 {
+  pub(super) fn get_u32(&mut self,) -> u32 {
     // Fetch the next four bytes in the program as a [u8;4]
     // and convert them into a u32
     let num = u32::from_be_bytes([
@@ -551,31 +553,33 @@ impl<'w,> Tardis<'w,> {
 
   fn MULT(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.registers[self.get_u8() as usize] as i32;
+    // let a = self.registers[self.get_u8() as usize] as i32;
+    // let b = self.registers[self.get_u8() as usize] as i32;
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.registers[self.get_u8() as usize];
 
     // Perform the operation
-    self.registers[Self::RAX] = (a * b) as u32;
+    self.registers[Self::RAX] = a.wrapping_mul(b,);
     LoopControl::Continue
   }
 
-  fn MULTRI(&mut self,) -> LoopControl {
+  fn MULT_RI(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.get_i32();
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a * b) as u32;
+    self.registers[Self::RAX] = a.wrapping_mul(b,);
     LoopControl::Continue
   }
 
-  fn MULTII(&mut self,) -> LoopControl {
+  fn MULT_II(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.get_i32();
-    let b = self.get_i32();
+    let a = self.get_u32();
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a * b) as u32;
+    self.registers[Self::RAX] = a.wrapping_mul(b,);
     LoopControl::Continue
   }
 
@@ -589,7 +593,7 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
-  fn DIVRI(&mut self,) -> LoopControl {
+  fn DIV_RI(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.registers[self.get_u8() as usize] as i32;
     let b = self.get_i32();
@@ -599,7 +603,7 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
-  fn DIVII(&mut self,) -> LoopControl {
+  fn DIV_II(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.get_i32();
     let b = self.get_i32();
@@ -611,96 +615,99 @@ impl<'w,> Tardis<'w,> {
 
   fn ADD(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.registers[self.get_u8() as usize] as i32;
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.registers[self.get_u8() as usize];
 
     // Perform the operation
-    self.registers[Self::RAX] = (a + b) as u32;
+    self.registers[Self::RAX] = a.wrapping_add(b,);
     LoopControl::Continue
   }
 
-  fn ADDRI(&mut self,) -> LoopControl {
+  fn ADD_RI(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.get_i32();
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a + b) as u32;
+    self.registers[Self::RAX] = a.wrapping_add(b,);
     LoopControl::Continue
   }
 
-  fn ADDII(&mut self,) -> LoopControl {
+  fn ADD_II(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.get_i32();
-    let b = self.get_i32();
+    let a = self.get_u32();
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a + b) as u32;
+    self.registers[Self::RAX] = a.wrapping_add(b,);
     LoopControl::Continue
   }
 
   fn SUB(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.registers[self.get_u8() as usize] as i32;
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.registers[self.get_u8() as usize];
 
     // Perform the operation
-    self.registers[Self::RAX] = (a - b) as u32;
+    self.registers[Self::RAX] = a.wrapping_sub(b,);
     LoopControl::Continue
   }
 
-  fn SUBRI(&mut self,) -> LoopControl {
+  fn SUB_RI(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize] as i32;
-    let b = self.get_i32();
+    let a = self.registers[self.get_u8() as usize];
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a - b) as u32;
+    self.registers[Self::RAX] = a.wrapping_sub(b,);
     LoopControl::Continue
   }
 
-  fn SUBII(&mut self,) -> LoopControl {
+  fn SUB_II(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.get_i32();
-    let b = self.get_i32();
+    let a = self.get_u32();
+    let b = self.get_u32();
 
     // Perform the operation
-    self.registers[Self::RAX] = (a - b) as u32;
+    self.registers[Self::RAX] = a.wrapping_sub(b,);
     LoopControl::Continue
   }
 
   fn POW(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize];
+    let a = self.registers[self.get_u8() as usize] as i32;
     let b = self.registers[self.get_u8() as usize] as i32;
 
     // Perform the operation
     if b > 0 {
-      self.registers[Self::RAX] = a.pow(b as u32,);
+      self.registers[Self::RAX] = a.pow(b as u32,) as u32;
     }
     else {
-      self.registers[Self::RAX] = (a as f32).powi(b,) as u32;
+      // a^-b=1/a^b < 0 which rounds to 0
+      self.registers[Self::RAX] = 0;
     }
+
     LoopControl::Continue
   }
 
-  fn POWRI(&mut self,) -> LoopControl {
+  fn POW_RI(&mut self,) -> LoopControl {
     // Get the arguments
-    let a = self.registers[self.get_u8() as usize];
+    let a = self.registers[self.get_u8() as usize] as i32;
     let b = self.get_i32();
 
     // Perform the operation
     if b > 0 {
-      self.registers[Self::RAX] = a.pow(b as u32,);
+      self.registers[Self::RAX] = a.pow(b as u32,) as u32;
     }
     else {
-      self.registers[Self::RAX] = (a as f32).powi(b,) as u32;
+      // a^-b=1/a^b < 0 which rounds to 0
+      self.registers[Self::RAX] = 0;
     }
 
     LoopControl::Continue
   }
 
-  fn POWII(&mut self,) -> LoopControl {
+  fn POW_II(&mut self,) -> LoopControl {
     // Get the arguments
     let a = self.get_i32();
     let b = self.get_i32();
@@ -710,7 +717,8 @@ impl<'w,> Tardis<'w,> {
       self.registers[Self::RAX] = a.pow(b as u32,) as u32;
     }
     else {
-      self.registers[Self::RAX] = (a as f32).powi(b,) as u32;
+      // a^-b=1/a^b < 0 which rounds to 0
+      self.registers[Self::RAX] = 0;
     }
 
     LoopControl::Continue
@@ -720,6 +728,26 @@ impl<'w,> Tardis<'w,> {
     // Get the arguments
     let a = f32::from_bits(self.registers[self.get_u8() as usize],);
     let b = f32::from_bits(self.registers[self.get_u8() as usize],);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a * b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_MULT_RI(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a * b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_MULT_II(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.get_u32(),);
+    let b = f32::from_bits(self.get_u32(),);
 
     // Perform the operation
     self.registers[Self::RAX] = (a * b).to_bits();
@@ -736,10 +764,50 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
+  fn F_DIV_RI(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a / b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_DIV_II(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.get_u32(),);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a / b).to_bits();
+    LoopControl::Continue
+  }
+
   fn F_ADD(&mut self,) -> LoopControl {
     // Get the arguments
     let a = f32::from_bits(self.registers[self.get_u8() as usize],);
     let b = f32::from_bits(self.registers[self.get_u8() as usize],);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a + b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_ADD_RI(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a + b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_ADD_II(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.get_u32(),);
+    let b = f32::from_bits(self.get_u32(),);
 
     // Perform the operation
     self.registers[Self::RAX] = (a + b).to_bits();
@@ -756,6 +824,26 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
+  fn F_SUB_RI(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a - b).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_SUB_II(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.get_u32(),);
+    let b = f32::from_bits(self.get_u32(),);
+
+    // Perform the operation
+    self.registers[Self::RAX] = (a - b).to_bits();
+    LoopControl::Continue
+  }
+
   fn F_POW(&mut self,) -> LoopControl {
     // Get the arguments
     let a = f32::from_bits(self.registers[self.get_u8() as usize],);
@@ -766,15 +854,39 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
-  // fn EQUAL(&mut self,) -> LoopControl {
-  //   // Get the arguments
-  //   let a = f32::from_bits(self.registers[self.get_u8() as usize],);
-  //   let b = f32::from_bits(self.registers[self.get_u8() as usize],);
+  fn F_POW_RI(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = self.get_f32();
 
-  //   // Perform the operation and store it in the registers as a u32
-  //   self.registers[Self::REQ] = (a == b) as u32;
-  //   LoopControl::Continue
-  // }
+    dbg!(a);
+    dbg!(b);
+    dbg!(a.powf(b,));
+
+    // Perform the operation
+    self.registers[Self::RAX] = a.powf(b,).to_bits();
+    LoopControl::Continue
+  }
+
+  fn F_POW_II(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.get_u32(),);
+    let b = self.get_f32();
+
+    // Perform the operation
+    self.registers[Self::RAX] = a.powf(b,).to_bits();
+    LoopControl::Continue
+  }
+
+  fn EQUAL(&mut self,) -> LoopControl {
+    // Get the arguments
+    let a = f32::from_bits(self.registers[self.get_u8() as usize],);
+    let b = f32::from_bits(self.registers[self.get_u8() as usize],);
+
+    // Perform the operation and store it in the registers as a u32
+    self.registers[Self::REQ] = (a == b) as u32;
+    LoopControl::Continue
+  }
 
   fn NOT_EQUAL(&mut self,) -> LoopControl {
     // Get the arguments
@@ -831,15 +943,15 @@ impl<'w,> Tardis<'w,> {
     LoopControl::Continue
   }
 
-  // fn JZ(&mut self,) -> LoopControl {
-  //   let test = self.registers[self.get_u8() as usize];
-  //   let pc = self.get_u8() as usize;
+  fn JZ(&mut self,) -> LoopControl {
+    let test = self.registers[self.get_u8() as usize];
+    let pc = self.get_u8() as usize;
 
-  //   if test == 0 {
-  //     self.pc = pc;
-  //   }
-  //   LoopControl::Continue
-  // }
+    if test == 0 {
+      self.pc = pc;
+    }
+    LoopControl::Continue
+  }
 
   fn JNZ(&mut self,) -> LoopControl {
     let test = self.registers[self.get_u8() as usize];
@@ -869,30 +981,11 @@ impl<'w,> Tardis<'w,> {
   }
 
   fn SYS_CALL(&mut self,) -> LoopControl {
-    // // Get the function by ID
-    // let id:usize = self.get_u8() as usize;
+    // Get the function by ID
+    let id = self.get_u8() as usize;
 
-    // // Get the number of args
-    // let num_args = self.get_u8() as usize;
-
-    // // Get the number of returns and the base register to begin placing them in
-    // let num_returns = self.get_u8() as usize;
-    // let base_reg = self.get_u8() as usize;
-
-    // // Push the args onto the stack
-    // for _ in 0..num_args {
-    //   //This will probably need to vary depending on arg size
-    //   self.varstack.push(self.program[self.pc],);
-    //   self.pc += 1;
-    // }
-
-    // let func = *self.functions.get(&id,).unwrap();
-    // func(self,);
-
-    // //Push them into registers starting from the base register
-    // for i in 0..num_returns {
-    //   self.registers[base_reg + i] = self.varstack.pop().unwrap() as u32;
-    // }
+    let func = *self.functions.get(&id,).unwrap();
+    func(self,);
 
     LoopControl::Continue
   }
@@ -903,8 +996,6 @@ mod test {
   use super::Tardis;
   use crate::scripting::vm::galaxy::OpCode;
   use nina::world::World;
-
-  // Should test all the math for negative ints as well as positive ints
 
   #[test]
   fn get_u8_and_get_u32_work() {
@@ -929,7 +1020,7 @@ mod test {
   #[test]
   // TESTS: EQUAL, NOT_EQUAL, LESS, GREATER, GREATER_EQUAL, LESS_EQUAL, JUMP,
   // JZ, JNZ, LOADU8
-  fn equality_jumps_and_loadu8_work() {
+  fn test_equality_jumps_and_loadu8() {
     // let world = World::new();
     // let mut vm = Tardis::new(&world,);
     // let mut program = vec![OpCode::LOAD_INT as u8, 35, 0, 0, 0, 15,
@@ -1053,7 +1144,7 @@ mod test {
     // Test positive ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 3, 
-      OpCode::MULTRI as u8, 16, 0, 0, 0, 7, 
+      OpCode::MULT_RI as u8, 16, 0, 0, 0, 7, 
       OpCode::HLT as u8
     ];
 
@@ -1067,7 +1158,7 @@ mod test {
     // Test negative ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 255, 255, 255, 253,
-      OpCode::MULTRI as u8, 16, 0, 0, 0, 7,
+      OpCode::MULT_RI as u8, 16, 0, 0, 0, 7,
       OpCode::HLT as u8,
     ];
 
@@ -1082,7 +1173,7 @@ mod test {
     let world = World::new();
     let mut vm = Tardis::new(&world,);
     let program = vec![
-      OpCode::MULTII as u8, 0, 0, 0, 3, 0, 0, 0, 7, 
+      OpCode::MULT_II as u8, 0, 0, 0, 3, 0, 0, 0, 7, 
       OpCode::HLT as u8
     ];
 
@@ -1095,7 +1186,7 @@ mod test {
 
     // Test negative ints
     let program = vec![
-      OpCode::MULTII as u8, 255, 255, 255, 253, 0, 0, 0, 7,
+      OpCode::MULT_II as u8, 255, 255, 255, 253, 0, 0, 0, 7,
       OpCode::HLT as u8
     ];
 
@@ -1146,7 +1237,7 @@ mod test {
     // Test positive ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38, 
-      OpCode::DIVRI as u8, 16, 0, 0, 0, 2, 
+      OpCode::DIV_RI as u8, 16, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1160,7 +1251,7 @@ mod test {
     // Test negative ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
-      OpCode::DIVRI as u8, 16, 255, 255, 255, 254,
+      OpCode::DIV_RI as u8, 16, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1176,7 +1267,7 @@ mod test {
     
     // Test positive ints
     let program = vec![
-      OpCode::DIVII as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
+      OpCode::DIV_II as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1189,7 +1280,7 @@ mod test {
 
     // Test negative ints
     let program = vec![
-      OpCode::DIVII as u8, 0, 0, 0, 38, 255, 255, 255, 254,
+      OpCode::DIV_II as u8, 0, 0, 0, 38, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1239,7 +1330,7 @@ mod test {
     // Test positive ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38, 
-      OpCode::ADDRI as u8, 16, 0, 0, 0, 2, 
+      OpCode::ADD_RI as u8, 16, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1253,7 +1344,7 @@ mod test {
     // Test negative ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
-      OpCode::ADDRI as u8, 16, 255, 255, 255, 254,
+      OpCode::ADD_RI as u8, 16, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1269,7 +1360,7 @@ mod test {
     
     // Test positive ints
     let program = vec![
-      OpCode::ADDII as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
+      OpCode::ADD_II as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1282,7 +1373,7 @@ mod test {
 
     // Test negative ints
     let program = vec![
-      OpCode::ADDII as u8, 0, 0, 0, 38, 255, 255, 255, 254,
+      OpCode::ADD_II as u8, 0, 0, 0, 38, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1332,7 +1423,7 @@ mod test {
     // Test positive ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38, 
-      OpCode::SUBRI as u8, 16, 0, 0, 0, 2, 
+      OpCode::SUB_RI as u8, 16, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1346,7 +1437,7 @@ mod test {
     // Test negative ints
     let program = vec![
       OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
-      OpCode::SUBRI as u8, 16, 255, 255, 255, 254,
+      OpCode::SUB_RI as u8, 16, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1362,7 +1453,7 @@ mod test {
     
     // Test positive ints
     let program = vec![
-      OpCode::SUBII as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
+      OpCode::SUB_II as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
       OpCode::HLT as u8
     ];
 
@@ -1375,7 +1466,7 @@ mod test {
 
     // Test negative ints
     let program = vec![
-      OpCode::SUBII as u8, 0, 0, 0, 38, 255, 255, 255, 254,
+      OpCode::SUB_II as u8, 0, 0, 0, 38, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
@@ -1383,372 +1474,547 @@ mod test {
     assert_eq!(vm.registers[Tardis::RAX] as i32, 40);
   }
 
-  //
-
   #[test]
   #[rustfmt::skip]
-  fn test_opcode_sub() {
+  fn test_opcode_pow() {
     let world = World::new();
     let mut vm = Tardis::new(&world,);
     
     // Test positive ints
     let program = vec![
-      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
-      OpCode::LOAD_INT as u8, 17, 0, 0, 0, 2,
-      OpCode::SUB as u8, 16, 17,
+      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 2,
+      OpCode::LOAD_INT as u8, 17, 0, 0, 0, 4,
+      OpCode::POW as u8, 16, 17,
       OpCode::HLT as u8,
     ];
 
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX], 36);
+    assert_eq!(vm.registers[Tardis::RAX], 16);
 
     // Reset the vm
     vm.clear();
 
     // Test negative ints
     let program = vec![
-      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
+      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 4,
       OpCode::LOAD_INT as u8, 17, 255, 255, 255, 254,
-      OpCode::SUB as u8, 16, 17,
+      OpCode::POW as u8, 16, 17,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX] as i32, 40);
+    assert_eq!(vm.registers[Tardis::RAX] as i32, 0);
   }
 
   #[test]
   #[rustfmt::skip]
-  fn test_opcode_sub_ri() {
+  fn test_opcode_pow_ri() {   
     let world = World::new();
     let mut vm = Tardis::new(&world,);
     
     // Test positive ints
     let program = vec![
-      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38, 
-      OpCode::SUBRI as u8, 16, 0, 0, 0, 2, 
+      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 2, 
+      OpCode::POW_RI as u8, 16, 0, 0, 0, 4, 
       OpCode::HLT as u8
     ];
 
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX], 36);
+    assert_eq!(vm.registers[Tardis::RAX], 16);
 
     // Reset the vm
     vm.clear();
 
     // Test negative ints
     let program = vec![
-      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 38,
-      OpCode::SUBRI as u8, 16, 255, 255, 255, 254,
+      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 4,
+      OpCode::POW_RI as u8, 16, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX] as i32, 40);
+    assert_eq!(vm.registers[Tardis::RAX] as i32, 0);
   }
 
   #[test]
   #[rustfmt::skip]
-  fn test_opcode_sub_ii() {
+  fn test_opcode_pow_ii() {
     let world = World::new();
     let mut vm = Tardis::new(&world,);
     
     // Test positive ints
     let program = vec![
-      OpCode::SUBII as u8, 0, 0, 0, 38, 0, 0, 0, 2, 
+      OpCode::POW_II as u8, 0, 0, 0, 2, 0, 0, 0, 4, 
       OpCode::HLT as u8
     ];
 
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX], 36);
+    assert_eq!(vm.registers[Tardis::RAX], 16);
 
     // Reset the vm
     vm.clear();
 
     // Test negative ints
     let program = vec![
-      OpCode::SUBII as u8, 0, 0, 0, 38, 255, 255, 255, 254,
+      OpCode::POW_II as u8, 0, 0, 0, 38, 255, 255, 255, 254,
       OpCode::HLT as u8,
     ];
     vm.load(program,);
     vm.run();
-    assert_eq!(vm.registers[Tardis::RAX] as i32, 40);
+    assert_eq!(vm.registers[Tardis::RAX] as i32, 0);
   }
 
   #[test]
-  // TESTS: LOAD_INT, ADD, MULT, DIV, SUB, and POW, MOVE
-  fn int_arithmetic_operations_work() {
-    // Test POW
-    // Test POWRI
-    // Test POWII
-  }
-
-  #[test]
-  // TESTS: LOAD_FLOAT, F_ADD, F_MULT, F_DIV, F_SUB, and F_POW, MOVE
-  fn float_arithmetic_operations_work() {
+  #[rustfmt::skip]
+  fn test_opcode_f_mult() {
     let world = World::new();
     let mut vm = Tardis::new(&world,);
-    let mut program = Vec::new();
-
-    // TEST: F_ADD
-
-    // Load float 12.5 into R0
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 0,],);
-    program.extend_from_slice(&12.5_f32.to_be_bytes(),);
-
-    // Load float 7.5 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
-    program.extend_from_slice(&7.5_f32.to_be_bytes(),);
-
-    // Add R0 and R1
-    program.extend_from_slice(&[OpCode::F_ADD as u8, 0, 1,],);
-
-    // Move the addition from RAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::RAX as u8,],);
-
-    // TEST: F_MULT
-
-    // Load float 5.0 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
-    program.extend_from_slice(&5.0_f32.to_be_bytes(),);
-
-    // Mult R0 and R0
-    program.extend_from_slice(&[OpCode::F_MULT as u8, 0, 1,],);
-
-    // Move the addition from RAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::RAX as u8,],);
-
-    // TEST: F_DIV
-
-    // Load float 2.5 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
-    program.extend_from_slice(&2.5_f32.to_be_bytes(),);
-
-    // Div R0 and R1
-    program.extend_from_slice(&[OpCode::F_DIV as u8, 0, 1,],);
-
-    // Move the addition from RAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::RAX as u8,],);
-
-    // TEST: F_SUB
-
-    // Load int 30.335 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
-    program.extend_from_slice(&30.335_f32.to_be_bytes(),);
-
-    // Sub R0 and R1
-    program.extend_from_slice(&[OpCode::F_SUB as u8, 0, 1,],);
-
-    // Move the addition from RAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::RAX as u8,],);
-
-    // TEST: F_POW
-
-    // Load float 2.3 into R1
-    program.extend_from_slice(&[OpCode::LOAD_FLOAT as u8, 1,],);
-    program.extend_from_slice(&2.3_f32.to_be_bytes(),);
-
-    // Power R0 by R1
-    program.extend_from_slice(&[OpCode::F_POW as u8, 0, 1,],);
-
-    // Move the addition from RAX into R0
-    program.extend_from_slice(&[OpCode::MOVE as u8, 0, Tardis::RAX as u8,],);
-
-    // Halt
-    program.extend_from_slice(&[0,],);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 64, 240, 0, 0,
+      OpCode::F_MULT as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
 
     vm.load(program,);
-
     vm.run();
-
-    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 184.48639);
-    assert_eq!(f32::from_bits(vm.registers[0]), 184.48639);
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 * 7.5);
   }
-}
 
-#[test]
-#[rustfmt::skip]
-// TESTS: CALL and RETURN
-fn function_calling_works() {
-  let world = World::new();
-  let mut vm = Tardis::new(&world,);
-  let mut program = vec![] ;
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_mult_ri() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_MULT_RI as u8, 16, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
 
-  program.extend_from_slice(&[
-    // Load 2 into R16 as the number to be cubed
-    OpCode::LOAD_INT as u8, 16, 0, 0, 0, 3,
-    // Move the value into the argument registers
-    OpCode::MOVE as u8, 0, 16,
-    // Call the cube function
-    OpCode::CALL as u8, 50,
-    // End the program after the cube function returns
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 * 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_mult_ii() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::F_MULT_II as u8, 65, 72, 0, 0, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 * 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_div() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 64, 240, 0, 0,
+      OpCode::F_DIV as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 / 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_div_ri() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_DIV_RI as u8, 16, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 / 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_div_ii() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::F_DIV_II as u8, 65, 72, 0, 0, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 / 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_add() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 64, 240, 0, 0,
+      OpCode::F_ADD as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 + 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_add_ri() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_ADD_RI as u8, 16, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 + 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_add_ii() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::F_ADD_II as u8, 65, 72, 0, 0, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 + 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_sub() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 64, 240, 0, 0,
+      OpCode::F_SUB as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 - 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_sub_ri() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_SUB_RI as u8, 16, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5 - 7.5);
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_sub_ii() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let program = vec![
+      OpCode::F_POW_II as u8, 65, 72, 0, 0, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(7.5));
+  }
+
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_pow() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    
+    // Test positive exponentials
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 64, 240, 0, 0,
+      OpCode::F_POW as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(7.5));
+
+    // Reset the vm
+    vm.clear();
+
+    // Test negative exponentials
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::LOAD_FLOAT as u8, 17, 192, 240, 0, 0,
+      OpCode::F_POW as u8, 16, 17,
+      OpCode::HLT as u8,
+    ];
+
+    
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(-7.5));
+
+    // Reset the vm
+    vm.clear();
+
+    // Test fractional exponentials
+    let program = vec![
+    OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+    OpCode::LOAD_FLOAT as u8, 17, 63, 0, 0, 0,
+    OpCode::F_POW as u8, 16, 17,
     OpCode::HLT as u8,
-  ],);
-
-  // Pad the program so the function def is at R50
-  program.resize(50, 0,);
-
-  // Cube Function Def:
-  // A fancy cube function which uses a while loop to cube
-  // a number and return the result
-  program.extend_from_slice(&[
-    // Set the number of loops
-    OpCode::LOAD_U8 as u8, Tardis::RCX as u8, 2,
-    
-    //LOOP
-
-    // Copy the number into R1
-    OpCode::MOVE as u8, 1, 0,
-    // Multiply R0 by R1
-    OpCode::MULT as u8, 0, 1,
-    // Move the result of the multiplication into R0
-    OpCode::MOVE as u8, 0, Tardis::RAX as u8,
-    // Decrement the number of remaining loops and move the result into RCS
-    OpCode::SUBRI as u8, Tardis::RCX as u8, 0, 0, 0, 1,
-    OpCode::MOVE as u8, Tardis::RCX as u8, Tardis::RAX as u8,
-    // If the number of remaining loops is not 0, loop again
-    OpCode::JNZ as u8, Tardis::RCX as u8, 56,
-    // If the number of remaining loops is 0, return
-    OpCode::RETURN as u8,
-  ],);
+  ];
 
   vm.load(program,);
   vm.run();
+  assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(0.5));
+  }
 
-  assert_eq!(vm.registers[0], 27);
-}
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_pow_ri() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    
+    // Test positive exponentials
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_POW_RI as u8, 16, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
 
-#[test]
-// TESTS: SYS_CALL
-fn function_syscalling_works() {
-  // fn add(a:i32, b:i32,) -> i32 {
-  //   // perform a calculation
-  //   a + b
-  // }
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(7.5));
 
-  // fn add_wrapper(t:&mut Tardis,) {
-  //   // Get the vars
-  //   let var_1 = t.varstack.pop().unwrap() as i32;
-  //   let var_2 = t.varstack.pop().unwrap() as i32;
+    // Reset the vm
+    vm.clear();
 
-  //   let result = add(var_1, var_2,) as u8;
+    // Test negative exponentials
+    let program = vec![
+      OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+      OpCode::F_POW_RI as u8, 16, 192, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
 
-  //   assert_eq!(result, 10);
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(-7.5));
 
-  //   //Value to return
-  //   t.varstack.push(result,);
-  // }
+    // Reset the vm
+    vm.clear();
 
-  // fn do_nothing() {
-  //   dbg!("Doing nothing!");
-  // }
+    // Test fractional exponentials
+    let program = vec![
+    OpCode::LOAD_FLOAT as u8, 16, 65, 72, 0, 0,
+    OpCode::F_POW_RI as u8, 16, 63, 0, 0, 0,
+    OpCode::HLT as u8,
+  ];
 
-  // fn do_nothing_wrapper(t:&mut Tardis,) {
-  //   do_nothing()
-  // }
+  vm.load(program,);
+  vm.run();
+  assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(0.5));
+  }
 
-  // let world = World::new();
-  // let mut vm = Tardis::new(&world,);
-  // vm.register_external_function(add_wrapper,);
-  // vm.register_external_function(do_nothing_wrapper,);
+  #[test]
+  #[rustfmt::skip]
+  fn test_opcode_f_pow_ii() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    
+    // Test positive exponentials
+    let program = vec![
+      OpCode::F_POW_II as u8, 65, 72, 0, 0, 64, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
 
-  // let program = vec![
-  //   OpCode::SYS_CALL as u8,
-  //   0,
-  //   2,
-  //   1,
-  //   33,
-  //   4,
-  //   6,
-  //   OpCode::SYS_CALL as u8,
-  //   1,
-  //   0,
-  //   0,
-  //   33,
-  //   OpCode::HLT as u8,
-  // ];
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(7.5));
 
-  // vm.load(program,);
-  // vm.run();
+    // Reset the vm
+    vm.clear();
 
-  // assert_eq!(10, vm.registers[33]);
-}
+    // Test negative exponentials
+    let program = vec![
+      OpCode::F_POW_II as u8, 65, 72, 0, 0, 192, 240, 0, 0,
+      OpCode::HLT as u8,
+    ];
 
-#[test]
-// TESTS: SYS_CALL
-fn function_syscall_with_world() {
-  // // Figure out why I can't use larger values in the VM
+    vm.load(program,);
+    vm.run();
+    assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(-7.5));
 
-  // //Maybe try doing something like taking size of the return and converting
-  // it to // bits then popping all those bits into the stack
-  // // but I still don't know how to let the VM know how many bytes to expect
-  // each // return to be
+    // Reset the vm
+    vm.clear();
 
-  // // Consider making registers 64 bits
+    // Test fractional exponentials
+    let program = vec![
+    OpCode::F_POW_II as u8, 65, 72, 0, 0, 63, 0, 0, 0,
+    OpCode::HLT as u8,
+  ];
 
-  // struct Health {
-  //   max:u32,
-  //   current:u32,
-  // }
+  vm.load(program,);
+  vm.run();
+  assert_eq!(f32::from_bits(vm.registers[Tardis::RAX]), 12.5_f32.powf(0.5));
+  }
 
-  // let mut world = World::new();
-  // world.register_component::<Health>();
-  // world.create_entity().with_component(Health { max:200, current:200,
-  // },).unwrap();
+  #[test]
+  #[rustfmt::skip]
+  // TESTS: CALL and RETURN
+  fn test_function_calling() {
+    let world = World::new();
+    let mut vm = Tardis::new(&world,);
+    let mut program = vec![
+      // Load 2 into R16 as the number to be cubed
+      OpCode::LOAD_INT as u8, 16, 0, 0, 0, 3,
+      // Move the value into the argument registers
+      OpCode::MOVE as u8, 0, 16,
+      // Call the cube function
+      OpCode::CALL as u8, 50,
+      // End the program after the cube function returns
+      OpCode::HLT as u8,
+    ];
 
-  // let program = vec![
-  //   OpCode::SYS_CALL as u8,
-  //   0,
-  //   2,
-  //   0,
-  //   33,
-  //   0,
-  //   100,
-  //   OpCode::SYS_CALL as u8,
-  //   1,
-  //   1,
-  //   1,
-  //   33,
-  //   0,
-  //   OpCode::HLT as u8,
-  // ];
+    // Pad the program so the function def is at R50
+    program.resize(50, 0,);
 
-  // fn get_current_health(world:&World, target:usize,) -> u32 {
-  //   let health = world.get_component::<Health>(target,).unwrap();
-  //   health.current
-  // }
+    // Cube Function Def:
+    // A fancy cube function which uses a while loop to cube
+    // a number and return the result
+    program.extend_from_slice(&[
+      // Set the number of loops
+      OpCode::LOAD_U8 as u8, Tardis::RCX as u8, 2,
+      
+      //LOOP
 
-  // fn get_current_health_wrapper(t:&mut Tardis,) {
-  //   let world = t.world;
-  //   let target = t.varstack.pop().unwrap() as usize;
-  //   t.varstack.push(get_current_health(world, target,) as u8,);
-  // }
+      // Copy the number into R1
+      OpCode::MOVE as u8, 1, 0,
+      // Multiply R0 by R1
+      OpCode::MULT as u8, 0, 1,
+      // Move the result of the multiplication into R0
+      OpCode::MOVE as u8, 0, Tardis::RAX as u8,
+      // Decrement the number of remaining loops and move the result into RCS
+      OpCode::SUB_RI as u8, Tardis::RCX as u8, 0, 0, 0, 1,
+      OpCode::MOVE as u8, Tardis::RCX as u8, Tardis::RAX as u8,
+      // If the number of remaining loops is not 0, loop again
+      OpCode::JNZ as u8, Tardis::RCX as u8, 56,
+      // If the number of remaining loops is 0, return
+      OpCode::RETURN as u8,
+    ],);
 
-  // fn deal_true_damage(world:&World, target:usize, amount:u32,) {
-  //   let health = world.get_component_mut::<Health>(target,).unwrap();
-  //   health.current -= amount;
-  // }
+    vm.load(program,);
+    vm.run();
 
-  // fn deal_true_damage_wrapper(t:&mut Tardis,) {
-  //   let world = t.world;
-  //   let amount = t.varstack.pop().unwrap() as u32;
-  //   let target = t.varstack.pop().unwrap() as usize;
-  //   deal_true_damage(world, target, amount,);
-  // }
+    assert_eq!(vm.registers[0], 27);
+  }
 
-  // let mut vm = Tardis::new(&world,);
-  // vm.register_external_function(deal_true_damage_wrapper,);
-  // vm.register_external_function(get_current_health_wrapper,);
+  #[test]
+  #[rustfmt::skip]
+  // TESTS: SYS_CALL
+  fn test_syscalling() {
+    // Define the external methods
+    struct Health {
+      max:i32,
+      current:i32,
+    }
 
-  // vm.load(program,);
-  // vm.run();
+    fn get_max_health_inner(world:&World, target:usize,) -> i32 {
+      world.get_component::<Health>(target,).unwrap().max
+    }
 
-  // //Check the final health is accurate in the VM
-  // assert_eq!(100, vm.registers[33]);
+    fn get_max_health(vm:&mut Tardis,) {
+      let target = vm.registers[0] as usize;
+      vm.registers[0] = get_max_health_inner(vm.world, target,) as u32;
+    }
 
-  // //Check the final health is accurate in the world
-  // assert_eq!(100, world.get_component::<Health>(0,).unwrap().current)
+    fn deal_true_damage_inner(world:&World, target:usize, amount:i32){
+      let health = world.get_component_mut::<Health>(target,).unwrap();
+      health.current -= amount;
+    }
+    
+    fn deal_true_damage(vm:&mut Tardis,){
+      let target = vm.registers[0] as usize;
+      let amount = vm.registers[1] as i32;
+      deal_true_damage_inner(vm.world, target, amount,)
+    }
+
+    // Set up the world
+    let mut world = World::new();
+    world.register_component::<Health>();
+    world.create_entity().with_component(Health{ max: 1005, current: 74 }).unwrap();
+
+
+    // Create the vm and register the external function
+    let mut vm = Tardis::new(&world,);
+    vm.register_external_function(get_max_health,);
+    vm.register_external_function(deal_true_damage,);
+
+    // Get the health
+    let program = vec![
+      OpCode::LOAD_INT as u8, 0, 0, 0, 0, 0,
+      OpCode::SYS_CALL as u8, 0,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+
+    assert_eq!(vm.registers[0], 1005);
+    
+    // Reset the vm
+    vm.clear();
+
+    // Deal damage
+    let program = vec![
+      OpCode::LOAD_INT as u8, 0, 0, 0, 0, 0,
+      OpCode::LOAD_INT as u8, 1, 0, 0, 0, 70,
+      OpCode::SYS_CALL as u8, 1,
+      OpCode::HLT as u8,
+    ];
+
+    vm.load(program,);
+    vm.run();
+
+    assert_eq!(world.get_component_mut::<Health>(0,).unwrap().current, 4);
+  }
 }
