@@ -3,7 +3,7 @@ use nina::world::World;
 use crate::{
   data_lib::{AbilityMap, BecsId},
   event::{GameEvent, GameEventQueue},
-  utility::run_scripts
+  // utility::run_scripts
 };
 
 //Refactor
@@ -20,7 +20,7 @@ use crate::{
 
 ///Processes all `AbilityHit` [`GameEvent`]s. If an entity is killed, creates
 /// an `EntityKilled` `GameEvent`.
-pub fn ability_hit_resolve(world:&mut World) {
+pub fn ability_hit_resolve(world:&mut World,) {
   let mut buffered_scripts = Vec::new();
   {
     //Process AbilityHit events.
@@ -29,23 +29,23 @@ pub fn ability_hit_resolve(world:&mut World) {
       if let GameEvent::AbilityHit {
         owner,
         ability_slot,
-        ability_id
+        ability_id,
       } = event
       {
         //Get the ability script
-        let map = world.get_component::<AbilityMap>(owner.id()).unwrap();
-        let ability = map.get(*ability_slot);
+        let map = world.get_component::<AbilityMap>(owner.id(),).unwrap();
+        let ability = map.get(*ability_slot,);
         let scripts = ability.scripts.clone();
-        if let Some(onhit) = scripts.onhit() {
+        if let Some(onhit,) = scripts.onhit() {
           //Buffer the scripts to be evaluated
-          buffered_scripts.push((owner.id(), *ability_id, onhit.0));
+          buffered_scripts.push((owner.id(), *ability_id, onhit.0,),);
         }
       }
-    });
+    },);
   }
   //Run the onhit field of the script and delete the ability
-  for (owner, ability_id, script) in &buffered_scripts {
-    run_scripts(world, owner, ability_id, script);
-    world.delete_entity(*ability_id).unwrap();
+  for (owner, ability_id, script,) in &buffered_scripts {
+    // run_scripts(world, owner, ability_id, script,);
+    world.delete_entity(*ability_id,).unwrap();
   }
 }

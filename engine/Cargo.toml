@@ -12,7 +12,6 @@ nalgebra-glm = {workspace=true}
 nalgebra = {workspace=true}
 image = {workspace=true}
 winapi = {workspace=true}
-mlua = {workspace=true}
 serde = { version = "1.0", features = ["derive"] }
 winit = {workspace=true}
 bytemuck = {workspace=true}

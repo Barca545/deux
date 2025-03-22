@@ -1,18 +1,15 @@
 use crate::{
   data_lib::{BecsId, Casting},
-  event::{GameEvent, GameEventQueue},
   time::Timer,
-  utility::eval_scripts_mouse
 };
 use nina::world::World;
 
 // Refactor:
-// -Should checking for the resources occur here or in the scripts
-// -Add logic to check targets to lua World Implementation.
+// - Should checking for the resources occur here or in the scripts
 
 ///Queries all entities with a [`Casting`] component.
 /// If the ability is ready to cast, cast the ability.
-pub fn cast_abilites(world:&mut World) {
+pub fn cast_abilites(world:&mut World,) {
   let mut buffered_scripts = Vec::new();
 
   let mut query = world.query();
@@ -32,24 +29,27 @@ pub fn cast_abilites(world:&mut World) {
         let mouse = cast.ability.mouse;
         let target = cast.ability.target;
         let start_script = cast.ability.scripts.start().unwrap();
-        buffered_scripts.push((mouse, owner.id(), start_script.0.clone(), cooldown, target));
+        buffered_scripts.push((mouse, owner.id(), start_script.0.clone(), cooldown, target,),);
       }
     }
   }
 
-  //Cast the buffered abilities
-  for (mouse, owner, script, cooldown, target) in &mut buffered_scripts {
-    //Execute the scripts
-    let did_cast = eval_scripts_mouse::<bool>(world, owner, target, mouse, script).unwrap();
+  // Cast the buffered abilities
+  for (_mouse, _owner, _script, _cooldown, _target,) in &mut buffered_scripts {
+    // Execute the scripts
+    // TODO: Move over to new scripting engine.
 
-    if did_cast {
-      //Reset the ability's cooldown
-      cooldown.reset();
+    // let did_cast = eval_scripts_mouse::<bool,>(world, owner, target, mouse,
+    // script,).unwrap();
 
-      //Emit an AbilityCast event
-      let events = world.get_resource_mut::<GameEventQueue>();
-      let event = GameEvent::AbilityCast;
-      events.push(event);
-    }
+    // if did_cast {
+    //   //Reset the ability's cooldown
+    //   cooldown.reset();
+
+    //   //Emit an AbilityCast event
+    //   let events = world.get_resource_mut::<GameEventQueue>();
+    //   let event = GameEvent::AbilityCast;
+    //   events.push(event,);
+    // }
   }
 }
