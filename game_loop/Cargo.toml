@@ -7,14 +7,13 @@ edition = "2021"
 
 [dependencies]
 engine = {workspace=true}
-
 eyre = {workspace=true}
 nina = {workspace=true}
 thiserror = {workspace=true}
 nalgebra-glm = {workspace=true}
 serde = {workspace=true}
 serde_json = {workspace=true}
-winit = {workspace=true}
+# winit = {workspace=true}
 
 pollster = "0.3"
 

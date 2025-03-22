@@ -126,136 +126,145 @@
 //   Ok(())
 // }
 
+mod update;
+
 use engine::{
   input::user_inputs::{FrameInputs, Keybinds},
   math::Transforms,
   systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
   time::ServerTime,
-  view::{camera::Camera, Renderer},
-  windowing::create_window
+  view::{camera::Camera, sdl2_helpers::Window, Renderer},
+  windowing::create_window,
 };
 use nina::world::World;
 use std::sync::Arc;
-use winit::{
-  event::{Event, KeyEvent, WindowEvent},
-  keyboard::{KeyCode, PhysicalKey}
-};
-mod update;
 use update::update;
 
 // Refactor:
-// -Re-add other systems
-// -Move the input handling to its own mod maybe the windowing mod/file
-// -Use a lazy static to get the config paths?
-// -Move the event loop into separate functions?
-// -Update the add resources method
-// -Organize the inputs using helper functions and move the control flow into
-// its own function -Renderer needs to interpolate I believe
+// - Re-add other systems
+// - Move the input handling to its own mod maybe the windowing mod/file
+// - Use a OnceLock to get the config paths?
+// - Update the add resources method
+// - Organize the inputs using helper functions and move the control flow into
+//   its own function
+// - Renderer needs to interpolate I believe
+// - Copy this example to make the keypressing stuff it's own file https://github.com/awwsmm/hello-rust-sdl2-wasm/blob/master/src/lib.rs
 
 fn main() {
   let mut world = World::new();
-  register_components(&mut world);
-  register_resources(&mut world);
+  // Register all the components and resources the game will need
+  register_components(&mut world,);
+  register_resources(&mut world,);
 
-  let (window, events) = create_window();
+  let (canvas, mut events,) = create_window();
 
   //Create the camera
   let mut camera = Camera::default();
-  let transforms = Transforms::from(window.inner_size());
-  camera.update_pv(&transforms);
+  let transforms = Transforms::from(canvas.window().inner_size(),);
+  camera.update_pv(&transforms,);
 
   //Spawn the renderer
-  let mut renderer = pollster::block_on(Renderer::new(Arc::new(window)));
+  let mut renderer = pollster::block_on(Renderer::new(Arc::new(canvas,),),);
 
   //Spawn the player
-  spawn_player(&mut world, "warrior", 1, &mut renderer);
+  spawn_player(&mut world, "warrior", 1, &mut renderer,);
 
   //Spawn the ground
-  spawn_enviroment(&mut world, "ground", &mut renderer);
+  spawn_enviroment(&mut world, "ground", &mut renderer,);
 
   //Spawn dummies
-  spawn_dummy(&mut world, [3.0, 0.0, -3.0], &mut renderer);
-  spawn_dummy(&mut world, [5.0, 0.0, 0.0], &mut renderer);
+  spawn_dummy(&mut world, [3.0, 0.0, -3.0,], &mut renderer,);
+  spawn_dummy(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
 
   //Add the resources to world
-  world.add_resource(camera);
-  world.add_resource(transforms);
+  world.add_resource(camera,);
+  world.add_resource(transforms,);
 
-  let mut mouse_pos = None;
+  // let mut mouse_pos = None;
 
-  events
-    .run(move |event, target| match event {
-      Event::AboutToWait => {
-        //UPDATE
-        {
-          let server_time = world.get_resource_mut::<ServerTime>();
-          server_time.tick();
-        }
+  // TODO: Copy the example to implement the function that takes those things as
+  // arguments. Also see if there is a way around having to multithread.
 
-        if world.get_resource_mut::<ServerTime>().should_update() {
-          update(&mut world);
+  //  From this example https://github.com/awwsmm/hello-rust-sdl2-wasm/blob/master/src/main.rs
+  for event in events.poll_iter() {}
 
-          //Update the delta timer
-          let server_time = world.get_resource_mut::<ServerTime>();
-          server_time.decrement_seconds_since_update()
-        }
+  // .run(move |event, target| match event {
+  //   Event::AboutToWait => {
+  //     //UPDATE
+  //     {
+  //       let server_time = world.get_resource_mut::<ServerTime>();
+  //       server_time.tick();
+  //     }
 
-        //RENDER
-        if world.get_resource_mut::<ServerTime>().should_render() {
-          renderer.window().request_redraw();
-        }
-      }
-      Event::WindowEvent { event, window_id, .. } => match event {
-        WindowEvent::CursorMoved { mut position, .. } => {
-          let dimensions = renderer.window().inner_size();
+  //     if world.get_resource_mut::<ServerTime>().should_update() {
+  //       update(&mut world,);
 
-          //Convert the mouse to ndc coords
-          position.x = 2.0 * position.x as f64 / dimensions.width as f64 - 1.0; //range [-1,1]
-          position.y = 1.0 - (2.0 * position.y as f64) / dimensions.height as f64; //range [-1,1]
+  //       //Update the delta timer
+  //       let server_time = world.get_resource_mut::<ServerTime>();
+  //       server_time.decrement_seconds_since_update()
+  //     }
 
-          mouse_pos = Some(position);
-        }
-        WindowEvent::MouseInput { button, .. } => {
-          if let Some(mouse_pos) = mouse_pos {
-            let keybinds = world.get_resource::<Keybinds>();
-            if let Ok(input) = keybinds.mouse_input(&world, &mouse_pos, &button) {
-              let inputs = world.get_resource_mut::<FrameInputs>();
-              inputs.push(input)
-            }
-          }
-        }
-        WindowEvent::KeyboardInput {
-          event: KeyEvent { physical_key: key, .. },
-          ..
-        } => {
-          if key == PhysicalKey::Code(KeyCode::Escape) {
-            target.exit();
-          }
-          let keybinds = world.get_resource::<Keybinds>();
-          if let Some(mouse_pos) = mouse_pos {
-            if let Ok(input) = keybinds.key_input(&world, &mouse_pos, key) {
-              let inputs = world.get_resource_mut::<FrameInputs>();
-              inputs.push(input);
-            }
-          }
-        }
-        WindowEvent::RedrawRequested => {
-          if window_id == renderer.window().id() {
-            renderer.update(&world);
-            renderer.render().unwrap();
-            let server_time = world.get_resource_mut::<ServerTime>();
-            server_time.decrement_seconds_since_render()
-          }
-        }
-        WindowEvent::Resized(size) => {
-          renderer.resize(size);
-          let transforms = world.get_resource_mut::<Transforms>();
-          *transforms = Transforms::from(size);
-        }
-        WindowEvent::CloseRequested => target.exit(),
-        _ => {}
-      },
-      _ => {}
-    })
-    .unwrap();
+  //     //RENDER
+  //     if world.get_resource_mut::<ServerTime>().should_render() {
+  //       renderer.window().request_redraw();
+  //     }
+  //   }
+  //   Event::WindowEvent {
+  //     event, window_id, ..
+  //   } => match event {
+  //     WindowEvent::CursorMoved { mut position, .. } => {
+  //       let dimensions = renderer.window().inner_size();
+
+  //       //Convert the mouse to ndc coords
+  //       position.x = 2.0 * position.x as f64 / dimensions.width as f64 - 1.0;
+  // //range [-1,1]       position.y = 1.0 - (2.0 * position.y as f64) /
+  // dimensions.height as f64; //range [-1,1]
+
+  //       mouse_pos = Some(position,);
+  //     }
+  //     WindowEvent::MouseInput { button, .. } => {
+  //       if let Some(mouse_pos,) = mouse_pos {
+  //         let keybinds = world.get_resource::<Keybinds>();
+  //         if let Ok(input,) = keybinds.mouse_input(&world, &mouse_pos,
+  // &button,) {           let inputs =
+  // world.get_resource_mut::<FrameInputs>();           inputs.push(input,)
+  //         }
+  //       }
+  //     }
+  //     WindowEvent::KeyboardInput {
+  //       event: KeyEvent {
+  //         physical_key: key, ..
+  //       },
+  //       ..
+  //     } => {
+  //       if key == PhysicalKey::Code(KeyCode::Escape,) {
+  //         target.exit();
+  //       }
+  //       let keybinds = world.get_resource::<Keybinds>();
+  //       if let Some(mouse_pos,) = mouse_pos {
+  //         if let Ok(input,) = keybinds.key_input(&world, &mouse_pos, key,) {
+  //           let inputs = world.get_resource_mut::<FrameInputs>();
+  //           inputs.push(input,);
+  //         }
+  //       }
+  //     }
+  //     WindowEvent::RedrawRequested => {
+  //       if window_id == renderer.window().id() {
+  //         renderer.update(&world,);
+  //         renderer.render().unwrap();
+  //         let server_time = world.get_resource_mut::<ServerTime>();
+  //         server_time.decrement_seconds_since_render()
+  //       }
+  //     }
+  //     WindowEvent::Resized(size,) => {
+  //       renderer.resize(size,);
+  //       let transforms = world.get_resource_mut::<Transforms>();
+  //       *transforms = Transforms::from(size,);
+  //     }
+  //     WindowEvent::CloseRequested => target.exit(),
+  //     _ => {}
+  //   },
+  //   _ => {}
+  // },)
+  // .unwrap();
 }

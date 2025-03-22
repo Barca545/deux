@@ -20,9 +20,11 @@ trailing_semicolon = true
 where_single_line = true
 
 #WRAPPING
-max_width = 160
+max_width = 100
 wrap_comments = true
 binop_separator = "Front"
+
+# Was this disabled for a reason?
 
 #IMPORTING
 #reorder_modules

@@ -12,9 +12,9 @@ nalgebra-glm = {workspace=true}
 nalgebra = {workspace=true}
 image = {workspace=true}
 winapi = {workspace=true}
-serde = { version = "1.0", features = ["derive"] }
-winit = {workspace=true}
-bytemuck = {workspace=true}
+serde = {workspace=true}
+bytemuck = { workspace=true }
+sdl2 = { workspace = true}
 serde_json = "1.0"
 tobj = "4.0.0"
 config = "0.14.0"
@@ -22,6 +22,7 @@ list-any = "0.2.1"
 lazy_static = "1.4.0"
 num-traits = "0.2"
 num-derive = "0.3"
+
 
 
 [features]

@@ -1,19 +1,30 @@
-use winit::{
-  dpi::LogicalSize,
-  event_loop::EventLoop,
-  window::{Window, WindowBuilder},
-};
+use crate::view::sdl2_helpers::{PhysicalSize, BLACK};
+use sdl2::{self, render::Canvas, video::Window, EventPump};
 
 ///Creates and returns a [winit](https://docs.rs/winit/latest/winit/index.html) [`Window`].
-pub fn create_window() -> (Window, EventLoop<()>) {
-  //Create the eventloop and window
-  let eventloop = EventLoop::new().unwrap();
+pub fn create_window() -> (Canvas<Window,>, EventPump,) {
+  // Create the window and canvas
+  let sdl2_context = sdl2::init().unwrap();
+  let video_subsystem = sdl2_context.video().unwrap();
 
-  //Create the window
-  let window = WindowBuilder::new().with_inner_size(LogicalSize::new(1280, 720)).build(&eventloop).unwrap();
+  // TODO: This actually might be the kind of thing that could be a static
+  // It exists the whole program, most things just need to reference it.
+  let size = PhysicalSize::new(1280, 720,);
 
-  //Set the loop polling state
-  eventloop.set_control_flow(winit::event_loop::ControlFlow::Poll);
+  let window = video_subsystem
+    .window("Deux 2 The Second", size.width, size.height,)
+    .position_centered()
+    .build()
+    .unwrap();
 
-  (window, eventloop)
+  // Convert the window into a canvas (this is what you can actually draw on)
+  let mut canvas = window.into_canvas().build().unwrap();
+  canvas.set_draw_color(BLACK,);
+  canvas.clear();
+  canvas.present();
+
+  // Create the event pump
+  let event_pump = sdl2_context.event_pump().unwrap();
+
+  (canvas, event_pump,)
 }

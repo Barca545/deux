@@ -6,24 +6,35 @@ members = [
 ]
 
 [workspace.dependencies]
-game_loop = {path ="game_loop"}
+game_loop = {path = "game_loop"}
 nina = {git = "https://github.com/Barca545/Nina.git"}
-engine = {path ="engine"}
+engine = {path = "engine"}
 eyre = "0.3.7"
 thiserror = "1.0.48"
 image = "0.24.7"
 nalgebra = "0.32.3"
 nalgebra-glm = "0.18.0"
-serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 wgpu = "0.19.3"
 winit = "0.29.15"
-bytemuck = {version = "1.15.0", features = [ "derive" ]}
 
-[workspace.dependencies.mlua]
-version = "0.9.4"
-default-features = false 
-features = ["lua54", "vendored"] 
+[workspace.dependencies.sdl2]
+version = "0.37"
+features = ["raw-window-handle"]
+
+[workspace.dependencies.serde]
+version = "1.0"
+features = ["derive"] 
+
+[workspace.dependencies.bytemuck]
+version = "1.15.0"
+features = [ "derive" ]
+
+
+# [workspace.dependencies.mlua]
+# version = "0.9.4"
+# default-features = false 
+# features = ["lua54", "vendored"] 
 
 [workspace.dependencies.winapi]
 version = "0.3.9"

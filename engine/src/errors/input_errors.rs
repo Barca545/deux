@@ -1,10 +1,10 @@
+use sdl2::{keyboard::Keycode, mouse::MouseButton};
 use thiserror::Error;
-use winit::{event::MouseButton, keyboard::PhysicalKey as Key};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error,)]
 pub enum InputErrors {
-  #[error("No Keybind registered for {key:?}")]
-  KeyNotRegistered { key: Key },
+  #[error("No Keybind registered for {:?}",key.name())]
+  KeyNotRegistered { key:Keycode, },
   #[error("No Keybind registered for {button:?}")]
-  ButtonNotRegistered { button: MouseButton },
+  ButtonNotRegistered { button:MouseButton, },
 }
