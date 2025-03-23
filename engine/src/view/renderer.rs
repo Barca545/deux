@@ -31,17 +31,18 @@ use wgpu::{
 };
 
 // Refactor:
-// - Delete the create_gl function from the create module
 // - Does the Adapter/Device need to be released at the end of the program?
 // - Swap the frame buffer?
 // - Create load functions for the shaders
 // - Do static meshes need a different pipeline?
+// - Create a safer way of generating model numbers which increment. Not a huge
+//   priority. This is single threaded so ultimately safe.
 
 pub static mut MODEL_NUM:usize = 0;
 
 pub struct Renderer {
-  //reference to the window
-  //I kinda think it might be able to take in the above info in render
+  // Reference to the window
+  // I kinda think it might be able to take in the above info in render
   canvas:Arc<Canvas<sdl2Window,>,>,
   surface:Surface<'static,>,
   device:Device,
@@ -60,23 +61,23 @@ impl Renderer {
   pub async fn new(canvas:Arc<Canvas<sdl2Window,>,>,) -> Self {
     let size = canvas.window().inner_size();
 
-    //Create the instance
+    // Create the instance
     let instance_desc = InstanceDescriptor::default();
     let instance = Instance::new(instance_desc,);
 
-    //Create the surface
+    // Create the surface
     let surface = unsafe {
       instance
         .create_surface_unsafe(SurfaceTargetUnsafe::from_window(canvas.window(),).unwrap(),)
         .unwrap()
     };
 
-    //Set the adaptor options and request an adapter
+    // Set the adaptor options and request an adapter
     let mut options = RequestAdapterOptions::default();
     options.power_preference = PowerPreference::HighPerformance;
     let adapter = instance.request_adapter(&options,).await.unwrap();
 
-    //Create the device and command_queue
+    // Create the device and command_queue
     let descriptor = DeviceDescriptor {
       label:None,
       required_features:Features::empty(),
@@ -84,7 +85,7 @@ impl Renderer {
     };
     let (device, queue,) = adapter.request_device(&descriptor, None,).await.unwrap();
 
-    //Set the texture format as sRGB
+    // Set the texture format as sRGB
     let surface_capabilities = surface.get_capabilities(&adapter,);
     let surface_format = surface_capabilities
       .formats
@@ -94,7 +95,7 @@ impl Renderer {
       .next()
       .unwrap_or(surface_capabilities.formats[0],);
 
-    //Configure the surface's texture
+    // Configure the surface's texture
     let config = SurfaceConfiguration {
       usage:TextureUsages::RENDER_ATTACHMENT,
       format:surface_format,
@@ -107,15 +108,15 @@ impl Renderer {
     };
     surface.configure(&device, &config,);
 
-    //Create the camera buffer
-    //Buffer will be empty until the first update call
+    // Create the camera buffer
+    // Buffer will be empty until the first update call
     let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
       label:Some("camera buffer",),
       contents:bytemuck::cast_slice(&[[[0; 4]; 4],],),
       usage:BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     },);
 
-    //Create the camera bindgroup layout
+    // Create the camera bindgroup layout
     let camera_bindgroup_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
       label:Some("camera_bind_group_layout",),
       entries:&[BindGroupLayoutEntry {
@@ -130,7 +131,7 @@ impl Renderer {
       },],
     },);
 
-    //Create the camera bindgroup
+    // Create the camera bindgroup
     let camera_bind_group = device.create_bind_group(&BindGroupDescriptor {
       label:Some("camera bind group",),
       layout:&camera_bindgroup_layout,
@@ -140,7 +141,7 @@ impl Renderer {
       },],
     },);
 
-    //Create the render pipeline layout
+    // Create the render pipeline layout
     let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
       label:Some("render pipeline layout",),
       bind_group_layouts:&[
@@ -150,7 +151,7 @@ impl Renderer {
       push_constant_ranges:&[],
     },);
 
-    //Load and instantiate the shaders
+    // Load and instantiate the shaders
     let model_shader = load_shader(&device, "ModelShader",).unwrap();
 
     let pipeline = Self::create_render_pipeline(
@@ -162,7 +163,7 @@ impl Renderer {
       model_shader,
     );
 
-    //Create the depth texture
+    // Create the depth texture
     let depth_texture = Texture::create_depth_texture(&device, &config,);
 
     Renderer {
@@ -181,7 +182,7 @@ impl Renderer {
     }
   }
 
-  ///Get the handle of the [`Renderer`]'s [`Window`].
+  /// Get the handle of the [`Renderer`]'s [`Window`].
   pub fn window(&self,) -> &sdl2Window {
     self.canvas.window()
   }
@@ -204,15 +205,15 @@ impl Renderer {
     let camera = world.get_resource_mut::<Camera>();
     camera.update_pv(&transforms,);
 
-    //Create a new frame
+    // Create a new frame
     let mut frame = Frame::new(&camera,);
 
     let server_time = world.get_resource::<ServerTime>();
 
-    //Render skinned models
+    // Render skinned models
     let mut query = world.query();
     let entities = query.with_component::<SkinnedRenderable>().unwrap().run();
-    //Add every instance of a model which needs to be rendered to the frame
+    // Add every instance of a model which needs to be rendered to the frame
     for entity in entities {
       let model_id = entity.get_component::<SkinnedRenderable>().unwrap();
       let position = entity.get_component::<Position>().unwrap();
@@ -226,10 +227,10 @@ impl Renderer {
       frame.add_instance(&model_id.0, &render_position,);
     }
 
-    //Render static models
+    // Render static models
     let mut query = world.query();
     let entities = query.with_component::<StaticRenderable>().unwrap().run();
-    //Add every instance of a model which needs to be rendered to the frame
+    // Add every instance of a model which needs to be rendered to the frame
     for entity in entities {
       let model_id = entity.get_component::<StaticRenderable>().unwrap();
       let position = entity.get_component::<Position>().unwrap();
@@ -240,29 +241,29 @@ impl Renderer {
   }
 
   pub fn render(&self,) -> Result<(),> {
-    //Buffer the camera matrix
+    // Buffer the camera matrix
     self.queue.write_buffer(
       &self.camera_buffer,
       0,
       bytemuck::cast_slice(&self.frame.pv_mat,),
     );
 
-    //Get a texture to render to from the surface
+    // Get a texture to render to from the surface
     let output = self.surface.get_current_texture()?;
 
-    //Create a texture view to control how the code renders to the texture
+    // Create a texture view to control how the code renders to the texture
     let view = output
       .texture
       .create_view(&TextureViewDescriptor::default(),);
 
-    //Create a command encoder for draw commands
+    // Create a command encoder for draw commands
     let mut encoder = self
       .device
       .create_command_encoder(&CommandEncoderDescriptor {
         label:Some("Render Encoder",),
       },);
 
-    //Create a render pass descriptor
+    // Create a render pass descriptor
     let descriptor = RenderPassDescriptor {
       label:Some("Render Pass Test",),
       color_attachments:&[Some(RenderPassColorAttachment {
@@ -278,7 +279,7 @@ impl Renderer {
           store:StoreOp::Store,
         },
       },),],
-      //Attach the depth stencil
+      // Attach the depth stencil
       depth_stencil_attachment:Some(RenderPassDepthStencilAttachment {
         view:&self.depth_texture.view,
         depth_ops:Some(Operations {
@@ -298,33 +299,32 @@ impl Renderer {
       .map(|instances| InstanceBuffer::new(&self.device, instances,),)
       .collect::<Vec<_,>>();
 
-    //Create a render pass
+    // Create a render pass
     {
       let mut render_pass = encoder.begin_render_pass(&descriptor,);
-      //Set the pipeline
+      // Set the pipeline
       render_pass.set_pipeline(&self.pipeline,);
 
-      //Set the texture and camera bindgroups
+      // Set the texture and camera bindgroups
       render_pass.set_bind_group(1, &self.camera_bind_group, &[],);
 
       for model in self.frame.models() {
-        //Buffer the instances
+        // Buffer the instances
         render_pass.set_vertex_buffer(1, instance_buffers[model].slice(..,),);
 
-        //Draw
+        // Draw
         render_pass.draw_model_instanced(&self.models[model], self.frame.instances[model].range(),)
       }
     }
 
-    //Submit the pass to the queue
+    // Submit the pass to the queue
     self.queue.submit(once(encoder.finish(),),);
+    // Swap the frame buffer
     output.present();
     Ok((),)
-
-    //Swap the frame buffer
   }
 
-  ///Adds a [`Model`] to the [`Renderer`] and returns it's [`ModelId`]
+  /// Adds a [`Model`] to the [`Renderer`] and returns it's [`ModelId`]
   pub fn add_model(&mut self, name:&str,) -> ModelId {
     let model = load_model(name, &self.device, &self.queue,);
     let model = self.models.alloc(model,);
@@ -334,13 +334,13 @@ impl Renderer {
     ModelId(model,)
   }
 
-  ///Add a new [`RenderPipeline`] to the [`Renderer`].
+  /// Add a new [`RenderPipeline`] to the [`Renderer`].
   pub fn add_render_pipeline(&mut self,) {
-    //Move the logic for adding a pipeline to the renderer here
+    // Move the logic for adding a pipeline to the renderer here
     todo!()
   }
 
-  ///Create a new [`RenderPipeline`].
+  /// Create a new [`RenderPipeline`].
   fn create_render_pipeline(
     device:&Device,
     pipeline_layout:PipelineLayout,
@@ -397,7 +397,7 @@ impl Renderer {
     },)
   }
 
-  ///Returns the [`BindGroupLayout`] for a [`Texture`].
+  /// Returns the [`BindGroupLayout`] for a [`Texture`].
   pub fn texture_bind_group_layout(device:&Device,) -> BindGroupLayout {
     device.create_bind_group_layout(&BindGroupLayoutDescriptor {
       label:Some("layout bindgroup layout",),

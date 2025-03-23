@@ -40,7 +40,7 @@ pub struct Keybinds {
 }
 
 impl Keybinds {
-  /// Create an [`Input`] from a [`Key`].
+  /// Create an [`Input`] from a [`Keycode`].
   pub fn key_input(
     &self,
     world:&World,
@@ -102,16 +102,16 @@ impl Default for Keybinds {
     };
     keybinds
       .buttons
-      .insert(Keycode::from_name("Q",).unwrap(), Keybind::AbilityOne,);
+      .insert(Keycode::from_name("W",).unwrap(), Keybind::Foward,);
     keybinds
       .buttons
-      .insert(Keycode::from_name("w",).unwrap(), Keybind::AbilityTwo,);
+      .insert(Keycode::from_name("A",).unwrap(), Keybind::Left,);
     keybinds
       .buttons
-      .insert(Keycode::from_name("E",).unwrap(), Keybind::AbilityThree,);
+      .insert(Keycode::from_name("S",).unwrap(), Keybind::Backwards,);
     keybinds
       .buttons
-      .insert(Keycode::from_name("Q",).unwrap(), Keybind::AbilityFour,);
+      .insert(Keycode::from_name("D",).unwrap(), Keybind::Right,);
 
     keybinds
       .mouse

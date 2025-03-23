@@ -30,16 +30,15 @@ features = ["derive"]
 version = "1.15.0"
 features = [ "derive" ]
 
+[workspace.dependencies.winapi]
+version = "0.3.9"
+default-features = false
+features = ["profileapi","sysinfoapi"]
 
 # [workspace.dependencies.mlua]
 # version = "0.9.4"
 # default-features = false 
 # features = ["lua54", "vendored"] 
-
-[workspace.dependencies.winapi]
-version = "0.3.9"
-default-features = false
-features = ["profileapi","sysinfoapi"]
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

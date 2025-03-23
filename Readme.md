@@ -1,0 +1,1 @@
+Built using `SDL2 20.32.2` for [GCC](https://www.libsdl.org/release/SDL2-devel-2.32.0-mingw.tar.gz) and [MSVC](https://www.libsdl.org/release/SDL2-devel-2.32.2-VC.zip) DLLs.
