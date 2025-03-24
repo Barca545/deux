@@ -1,3 +1,5 @@
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [workspace]
 resolver = "2"
 members = [
@@ -7,8 +9,8 @@ members = [
 
 [workspace.dependencies]
 game_loop = {path = "game_loop"}
-nina = {git = "https://github.com/Barca545/Nina.git"}
 engine = {path = "engine"}
+nina = {git = "https://github.com/Barca545/Nina.git"}
 eyre = "0.3.7"
 thiserror = "1.0.48"
 image = "0.24.7"
@@ -29,17 +31,3 @@ features = ["derive"]
 [workspace.dependencies.bytemuck]
 version = "1.15.0"
 features = [ "derive" ]
-
-# [workspace.dependencies.winapi]
-# version = "0.3.9"
-# default-features = false
-# features = ["profileapi","sysinfoapi"]
-
-# [workspace.dependencies.mlua]
-# version = "0.9.4"
-# default-features = false 
-# features = ["lua54", "vendored"] 
-
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-

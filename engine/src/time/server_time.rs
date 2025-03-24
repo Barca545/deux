@@ -50,31 +50,28 @@ impl ServerTime {
       previous_count:start,
       seconds_since_render:Duration::from_secs(0,),
       seconds_since_update:Duration::from_secs(0,),
-      tick_frequency:Duration::try_from_secs_f64(1.0 / 60.0,).unwrap(),
-      render_frequency:Duration::try_from_secs_f64(1.0 / 240.0,).unwrap(),
+      tick_frequency:Duration::from_secs_f64(1.0 / 60.0,),
+      render_frequency:Duration::from_secs_f64(1.0 / 240.0,),
       timermap:Vec::default(),
       timers:Vec::default(),
     }
   }
 
+  /// Updates the `seconds_since_last_update` and `seconds_since_render`.
+  /// Sets the `current_count` to the current [`Instant`].
+  ///
+  /// # Warning
+  /// Must execute first in a game loop.
   pub fn tick(&mut self,) {
     self.previous_count = self.current_count;
     self.current_count = Instant::now();
 
-    self.update_seconds_since_last_count();
-  }
+    // Subtract the previous count from the current count to get the time since the
+    // last tick
+    let seconds_since_last_tick:Duration = self.current_count - self.previous_count;
 
-  /// Updates the [`ServerTime`]'s `seconds_since_last_update` and
-  /// `unrendered_seconds` fields. Returns the "time" passed since this
-  /// `update_seconds_since_last_count()` was last called. Calculates time by
-  /// subtracting the previously registered count from the newly queried count
-  /// and dividing the result by the system's counts per second. Must execute
-  /// first in a game loop.
-  fn update_seconds_since_last_count(&mut self,) {
-    let seconds_since_last_count = self.current_count - self.previous_count;
-
-    self.seconds_since_update += seconds_since_last_count;
-    self.seconds_since_render += seconds_since_last_count;
+    self.seconds_since_update += seconds_since_last_tick;
+    self.seconds_since_render += seconds_since_last_tick;
   }
 
   /// Returns the game's [`Duration`] as `(Minutes:u64, Seconds:u64)`
@@ -240,27 +237,29 @@ impl ServerTime {
 mod tests {
   use super::ServerTime;
   use std::time::{Duration, Instant};
-  // use winapi::um::profileapi::{QueryPerformanceCounter,
-  // QueryPerformanceFrequency};
 
-  //adding the GameDuration struct broke this test
+  // Removing the GameDuration struct broke this test
+  // Something is happening that made the time longer than the time should be
+  // It's a scale thing I think something that should be in seconds is in
+  // miliseconds or vice versa
   #[test]
   fn updates_on_time() {
     let mut server_time = ServerTime::new();
-    let ticks_per_second = 1.0 / 60.0;
+    let ticks_per_second = Duration::from_secs_f64(1.0 / 60.0,);
     let mut number_of_ticks = 0;
 
     loop {
       server_time.tick();
-      let current_duration = server_time.start_count - Instant::now();
+      let current_duration = Instant::now() - server_time.start_count;
 
       if server_time.should_update() {
         number_of_ticks += 1;
 
-        assert!(server_time.seconds_since_update.as_secs_f64() >= ticks_per_second);
+        assert!(server_time.seconds_since_update >= ticks_per_second);
         server_time.decrement_seconds_since_update();
       }
 
+      dbg!(current_duration);
       if current_duration >= Duration::from_secs(5,) {
         assert!(number_of_ticks >= 300);
         break;
