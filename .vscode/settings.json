@@ -5,7 +5,6 @@
   "editor.indentSize": "tabSize",
   "rust-analyzer.linkedProjects": [
     "Cargo.toml",
-    ".\\engine\\Cargo.toml"
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "editor.formatOnSave": false,
