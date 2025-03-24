@@ -1,12 +1,9 @@
+mod aliases;
 mod server_time;
 mod timer;
-mod game_duration;
-mod aliases;
-
-pub(crate) use self::game_duration::GameDuration;
 
 pub use self::{
+  aliases::{Count, Miliseconds, Minutes, PerSecond, Seconds},
   server_time::ServerTime,
-  timer::{Timer, BasicTimer},
-  aliases::{Minutes, Count, Seconds, PerSecond, Miliseconds},
+  timer::{BasicTimer, Timer},
 };

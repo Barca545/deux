@@ -1,3 +1,4 @@
+#![feature(duration_millis_float)]
 extern crate nalgebra;
 extern crate nalgebra_glm as glm;
 

@@ -20,7 +20,7 @@ winit = "0.29.15"
 
 [workspace.dependencies.sdl2]
 version = "0.37"
-features = ["raw-window-handle"]
+features = ["raw-window-handle", "bundled"]
 
 [workspace.dependencies.serde]
 version = "1.0"
@@ -30,10 +30,10 @@ features = ["derive"]
 version = "1.15.0"
 features = [ "derive" ]
 
-[workspace.dependencies.winapi]
-version = "0.3.9"
-default-features = false
-features = ["profileapi","sysinfoapi"]
+# [workspace.dependencies.winapi]
+# version = "0.3.9"
+# default-features = false
+# features = ["profileapi","sysinfoapi"]
 
 # [workspace.dependencies.mlua]
 # version = "0.9.4"
