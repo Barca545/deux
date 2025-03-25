@@ -1,93 +1,100 @@
 use super::aliases::Miliseconds;
 use serde::{Deserialize, Serialize};
 
+// TODO: Should timers use Durations or something too?
+// TODO: Timers should not maintain their own internal clocks they should just
+// perform a function to check if their duration has passed from when they were
+// set. If this ever ends up being a performance hit it can be optimized but
+// having potentially thousands of clocks seems like a recipe for problems
 pub trait Timer {
   ///Returns the duration of the [`Timer`] in [`Miliseconds`].
-  fn duration(&self) -> Miliseconds;
+  fn duration(&self,) -> Miliseconds;
 
-  ///Returns the [`Timer`]'s remaining time. This is updated each game logic tick.
-  fn real_remaining(&self) -> Miliseconds;
+  ///Returns the [`Timer`]'s remaining time. This is updated each game logic
+  /// tick.
+  fn real_remaining(&self,) -> Miliseconds;
 
   ///Returns a `bool` indicating whether the timers real remaining time is 0.0.
-  fn is_zero(&self) -> bool;
+  fn is_zero(&self,) -> bool;
 
   ///Returns the [`Timer`]'s remaining time. This is updated each render tick.
-  fn display_remaining(&self) -> Miliseconds;
+  fn display_remaining(&self,) -> Miliseconds;
 
   ///Sets the [`Timer`]'s real remaining time to 0.0.
-  fn zero_real(&mut self);
+  fn zero_real(&mut self,);
 
   ///Sets the [`Timer`]'s display remaining time to 0.0.
-  fn zero_display(&mut self);
+  fn zero_display(&mut self,);
 
   ///Resets the [`Timer`]'s duration..
-  fn reset(&mut self);
+  fn reset(&mut self,);
 
   ///Updates the [`Timer`]'s duration.
-  fn update_duration(&mut self, new_duration: Miliseconds);
+  fn update_duration(&mut self, new_duration:Miliseconds,);
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-///Component for tracking time. Base structure all other timers in the game must use.
-/// To use, decremint the `remaining` field eack tick by the amount of time passed.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize,)]
+///Component for tracking time. Base structure all other timers in the game
+/// must use. To use, decremint the `remaining` field eack tick by the amount of
+/// time passed.
 pub struct BasicTimer {
-  duration: Miliseconds,
-  real_remaining: Miliseconds,
-  display_remaining: Miliseconds,
+  duration:Miliseconds,
+  real_remaining:Miliseconds,
+  display_remaining:Miliseconds,
 }
 
 impl Timer for BasicTimer {
-  fn duration(&self) -> Miliseconds {
+  fn duration(&self,) -> Miliseconds {
     self.duration
   }
 
-  fn real_remaining(&self) -> Miliseconds {
+  fn real_remaining(&self,) -> Miliseconds {
     self.real_remaining
   }
 
-  fn is_zero(&self) -> bool {
+  fn is_zero(&self,) -> bool {
     self.real_remaining == 0.0
   }
 
-  fn display_remaining(&self) -> Miliseconds {
+  fn display_remaining(&self,) -> Miliseconds {
     self.display_remaining
   }
 
-  fn zero_real(&mut self) {
+  fn zero_real(&mut self,) {
     self.real_remaining = 0.0;
   }
 
-  fn zero_display(&mut self) {
+  fn zero_display(&mut self,) {
     self.display_remaining = 0.0;
   }
 
-  fn reset(&mut self) {
+  fn reset(&mut self,) {
     self.real_remaining = self.duration;
     self.display_remaining = self.duration;
   }
 
-  fn update_duration(&mut self, new_duration: Miliseconds) {
+  fn update_duration(&mut self, new_duration:Miliseconds,) {
     self.duration = new_duration;
   }
 }
 
 impl BasicTimer {
   ///Creates a new [`BasicTimer`].
-  pub fn new(duration: Miliseconds) -> Self {
+  pub fn new(duration:Miliseconds,) -> Self {
     BasicTimer {
       duration,
-      real_remaining: duration,
-      display_remaining: duration,
+      real_remaining:duration,
+      display_remaining:duration,
     }
   }
 
   ///Decrements the [`Timer`]'s real remaining time by the time passed.
-  pub fn decrement_real_remaining(&mut self, passed: Miliseconds) {
+  pub fn decrement_real_remaining(&mut self, passed:Miliseconds,) {
     self.real_remaining -= passed;
   }
 
   ///Decrements the [`Timer`]'s display remaining time by the time passed.
-  pub fn decrement_display_remaining(&mut self, passed: Miliseconds) {
+  pub fn decrement_display_remaining(&mut self, passed:Miliseconds,) {
     self.display_remaining -= passed;
   }
 }
