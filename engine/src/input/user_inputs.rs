@@ -156,6 +156,10 @@ impl FrameInputs {
     self.inputs.push(input,)
   }
 
+  pub fn is_empty(&self,) -> bool {
+    self.inputs.is_empty()
+  }
+
   /// Run at the end of each tick to reset the input list.
   pub fn clear(&mut self,) {
     // TODO: This needs to do something like not clear the ones still being held

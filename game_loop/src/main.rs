@@ -196,9 +196,12 @@ fn main() {
   // Create the mouse input just outside the loop.
   // This basically needs to constantly update
   // TODO: This does not feel like the best way to do this
-  // Issue is we need to init the mouse outside the loop so it isn't recreated
-  // each iteration just updated but having to use an option seems inefficient?
-  let mut mouse_pos = None;
+  // TODO: But the fact you cant't borrow the event pump inside the loop is
+  // problematic
+  let mut mouse_pos = PhysicalPosition::new(
+    event_pump.mouse_state().x() as f64,
+    event_pump.mouse_state().y() as f64,
+  );
 
   'game: loop {
     for event in event_pump.poll_iter() {
@@ -214,7 +217,7 @@ fn main() {
         Event::MouseMotion { x, y, .. } => {
           let dimensions = renderer.window().inner_size();
 
-          mouse_pos = Some(PhysicalPosition::from_screen_coords(x, y, dimensions,),);
+          mouse_pos = PhysicalPosition::from_screen_coords(x, y, dimensions,);
         }
         // TODO: Unsure if using the mouse_pos variable or these directly is better. These directky
         // most likely since they will be the most up to date
@@ -241,27 +244,20 @@ fn main() {
           ..
         } => {
           // Generate an input for the keypress
-
           // TODO: Would it be better to get the position via
           // `event_pump.mouse_state().x()` insteaad of constantly tracking it? Could
           // maybe implement a function or trait on the pump to make a direct query for
           // mouse positon in NDC possible?
-          match mouse_pos {
-            Some(ref mouse_pos,) => {
-              let keybinds = world.get_resource::<Keybinds>();
-              let input = keybinds.key_input(&world, mouse_pos, key,);
-              match input {
-                // If the input is valid add it to the frame inputs
-                Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
-                Err(_,) => {
-                  // TODO: Could print the error message to the console or
-                  // something for debugging but not urgent
-                }
-              }
+          let keybinds = world.get_resource::<Keybinds>();
+          let input = keybinds.key_input(&world, &mouse_pos, key,);
+          match input {
+            // If the input is valid add it to the frame inputs
+            Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
+            Err(_,) => {
+              // TODO: Could print the error message to the console or
+              // something for debugging but not urgent
             }
-            // Mouse is unreacable here because it is always going to have a value
-            _ => unreachable!(),
-          };
+          }
         }
         _ => {}
       }

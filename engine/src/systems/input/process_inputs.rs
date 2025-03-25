@@ -55,11 +55,11 @@ pub fn update_target(world:&World, entity:usize, mouse:MouseRay,) {
   queue.push(GameEvent::UpdateDestination { owner, mouse, },);
 }
 
-///Converts [`FrameInputs`] into [`GameEvent`]s.
+/// Converts [`FrameInputs`] into [`GameEvent`]s.
 /// Places the created `GameEvent` into the `pending` field of the
 /// [`GameEventQueue`] with a wind up timer based on the event's cast time.
 pub fn process_inputs(world:&World,) {
-  //Get the Player's ID
+  // Get the Player's ID
   let mut query = world.query();
   let entities = query
     .with_component::<Player>()
@@ -71,21 +71,17 @@ pub fn process_inputs(world:&World,) {
   let player_id = entity.id;
 
   let inputs = world.get_resource_mut::<FrameInputs>();
-  inputs.process_inputs(|input| match input.keybind {
-    Keybind::MouseClick => update_target(world, player_id, input.mouse,),
-    Keybind::Foward | Keybind::Backwards | Keybind::Left | Keybind::Right => {
-      // TODO: Handle the directions to move. Will probable require updating how
-      // movement works...or not I suppose all I do is calculate a
-      // desination by finding the direction + speed in x and y
-    }
-    // keybind => {
-    //   let events = world.get_resource_mut::<GameEventQueue>();
-    //   let target = entity.get_component::<Target>().unwrap();
-    //   let ability_map = entity.get_component::<AbilityMap>().unwrap();
-    //   if let Some(buffered_cast) = ability_map.create_ability_cast(keybind as u32,
-    // Owner::new(player_id), input.mouse, *target) {     events.
-    // push(GameEvent::AbilityStart(buffered_cast));   }
-    // }
-    _ => todo!(),
-  },);
+  // Only update if there are inputs
+  if !inputs.is_empty() {
+    dbg!(&inputs);
+    let events = world.get_resource_mut::<GameEventQueue>();
+    inputs.process_inputs(|input| match input.keybind {
+      Keybind::MouseClick => update_target(world, player_id, input.mouse,),
+      Keybind::Foward => events.push(GameEvent::StartUp,),
+      Keybind::Backwards => events.push(GameEvent::StartDown,),
+      Keybind::Left => events.push(GameEvent::StartLeft,),
+      Keybind::Right => events.push(GameEvent::StartRight,),
+      _ => todo!(),
+    },);
+  }
 }
