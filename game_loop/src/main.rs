@@ -129,7 +129,7 @@
 mod update;
 
 use engine::{
-  input::user_inputs::{FrameInputs, Keybinds},
+  input::user_inputs::{FrameInputs, KeyAction, Keybinds},
   math::Transforms,
   systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
   time::ServerTime,
@@ -249,12 +249,32 @@ fn main() {
           // maybe implement a function or trait on the pump to make a direct query for
           // mouse positon in NDC possible?
           let keybinds = world.get_resource::<Keybinds>();
-          let input = keybinds.key_input(&world, &mouse_pos, key,);
+          let input = keybinds.key_input(&world, &mouse_pos, key, KeyAction::Press,);
           match input {
             // If the input is valid add it to the frame inputs
             Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
             Err(_,) => {
-              // TODO: Could print the error message to the console or
+              // TODO: Could print the error message to the a debug file or
+              // something for debugging but not urgent
+            }
+          }
+        }
+        Event::KeyUp {
+          keycode: Some(key,),
+          ..
+        } => {
+          // Generate an input for the keypress
+          // TODO: Would it be better to get the position via
+          // `event_pump.mouse_state().x()` insteaad of constantly tracking it? Could
+          // maybe implement a function or trait on the pump to make a direct query for
+          // mouse positon in NDC possible?
+          let keybinds = world.get_resource::<Keybinds>();
+          let input = keybinds.key_input(&world, &mouse_pos, key, KeyAction::Release,);
+          match input {
+            // If the input is valid add it to the frame inputs
+            Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
+            Err(_,) => {
+              // TODO: Could print the error message to the a debug file or
               // something for debugging but not urgent
             }
           }

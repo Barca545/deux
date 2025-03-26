@@ -1,7 +1,4 @@
-use super::{
-  move_attacks::move_attacks, update_destination, update_hitbox, update_path, update_position,
-  update_velocity,
-};
+use super::{update_position, update_velocity};
 use nina::world::World;
 
 // Refactor:
@@ -10,17 +7,10 @@ use nina::world::World;
 //  mouse ray is information both the selection and this system
 //  needs selection needs to run first and do the AABB test
 //  this should only run if the selection test says nothing is selected
-// - Merge update path and update destination?
-// - Have the system run a pathing system if the destination is past a certain
-// distance
-// - System should check for a path, if there is a path run the path
-// system otherwise run the current move system
-// - Clicking anything should clear
-// the current Path and rerun the pathing calculation if applicable
 
 pub fn movement(world:&mut World,) {
-  update_path(world,);
-  update_destination(world,);
+  // update_path(world,);
+  // update_destination(world,);
   update_velocity(world,);
   update_position(world,);
   // update_hitbox(world,);
@@ -99,6 +89,7 @@ mod test {
 
     for entity in entities {
       let updated_position = entity.get_component::<Position>().unwrap();
+      // TODO: Replace with asserts
       dbg!(updated_position.0);
     }
     Ok((),)

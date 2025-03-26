@@ -75,8 +75,10 @@ impl Velocity {
     Velocity(velocity,)
   }
 
-  /// Adds another velocity to the velocity
-  pub fn add_with_clamping(&mut self,) {}
+  /// Returns the magnitude of a Velocity vector.
+  pub fn mag(&self,) -> f32 {
+    self.0.magnitude()
+  }
 }
 
 impl From<Vec3,> for Velocity {

@@ -2,7 +2,7 @@ use nina::world::World;
 
 use crate::{
   data_lib::{Controllable, UnitSpeed, Velocity},
-  event::{GameEvent, GameEventQueue},
+  input::user_inputs::PlayerInputs,
 };
 // TODO: Eventually this will handle all entities with velocity and the function
 // docs will need updating
@@ -16,22 +16,36 @@ pub fn update_velocity(world:&World,) {
   // Get player movement stats
   let velocity = world.get_component_mut::<Velocity>(player.id,).unwrap();
   let speed = world.get_component::<UnitSpeed>(player.id,).unwrap();
+  let player_input_state = world.get_resource_mut::<PlayerInputs>();
 
-  // Process movement events
-  let events = world.get_resource::<GameEventQueue>();
-  events.process_events(|event| {
-    // Update the players velocity based on the event
-    match event {
-      GameEvent::StartUp => velocity.0.z = (velocity.0.z + 1.0).clamp(-1.0, 1.0,),
-      GameEvent::StartDown => velocity.0.z = (velocity.0.z - 1.0).clamp(-1.0, 1.0,),
-      GameEvent::StartLeft => velocity.0.x = (velocity.0.x + 1.0).clamp(-1.0, 1.0,),
-      GameEvent::StartRight => velocity.0.x = (velocity.0.x - 1.0).clamp(1.0, 1.0,),
-      _ => {}
-    }
-  },);
+  // If there is a horizontal input add it to the player's velocity.
+  match (player_input_state.left, player_input_state.right,) {
+    // Both buttons pressed cancel each other out
+    (true, true,) => velocity.0.x = 0.0,
+    // Only left pressed means go left
+    (true, false,) => velocity.0.x = 1.0,
+    // Only right pressed means go right
+    (false, true,) => velocity.0.x = -1.0,
+    // Nothing to do if nothing is pressed :P
+    (false, false,) => velocity.0.x = 0.0,
+  }
+
+  // If there is a vertical input add it to the player's velocity.
+  match (player_input_state.up, player_input_state.down,) {
+    // Both buttons pressed cancel each other out
+    (true, true,) => velocity.0.z = 0.0,
+    // Only up pressed means go up
+    (true, false,) => velocity.0.z = 1.0,
+    // Only down pressed means go down
+    (false, true,) => velocity.0.z = -1.0,
+    // Nothing to do if nothing is pressed :P
+    (false, false,) => velocity.0.z = 0.0,
+  }
 
   // Normalize + scale velocity to ensure it always has a |v| = speed
-  // *velocity = Velocity(velocity.0.normalize().scale(speed.total(),),);
+  if velocity.mag() > speed.total() {
+    *velocity = Velocity(velocity.0.normalize().scale(speed.total(),),);
+  }
 }
 
 #[cfg(test)]

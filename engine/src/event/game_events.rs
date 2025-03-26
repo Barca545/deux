@@ -1,6 +1,5 @@
 use crate::{
   data_lib::{BufferedAbilityCast, Cooldown, Owner},
-  math::MouseRay,
   time::Timer,
 };
 
@@ -11,6 +10,8 @@ use crate::{
 // of the pending field?  Not 100% on this, there may be reasons to keep it.
 // -Need an ability cast event that can be emitted by the stage in the casting
 // system when an ability is cast
+
+// TODO: Clear old obsolete
 
 #[derive(Debug, Clone,)]
 pub enum GameEvent {
@@ -28,18 +29,8 @@ pub enum GameEvent {
     killer:usize,
   },
 
-  //Movement Events
-  UpdateDestination {
-    owner:Owner,
-    mouse:MouseRay,
-  },
-  // Break movement events
-  StartUp,
-  StartDown,
-  StartLeft,
-  StartRight,
-
   //Camera Events
+  // TODO: These probably go in a separate thing with input handling
   MoveCameraUp,
   MoveCameraDown,
   MoveCameraRight,
@@ -104,15 +95,6 @@ impl GameEventQueue {
   pub fn push(&mut self, event:GameEvent,) {
     self.events.push(event,);
   }
-
-  // Add a [`DelayedEvent`] to the [`GameEventQueue`]'s `pending` field.
-  // pub fn push_pending(&mut self, timer: f64, server_time: &mut ServerTime,
-  // event: GameEvent) {   //this needs to create a new timer with the cd
-  // duration instead   //the move pending needs to make sure to delete the
-  // timer   let timer = Cooldown::new(server_time, timer);
-  //   let event = DelayedEvent { timer, event };
-  //   self.pending.push(event);
-  // }
 
   ///Checks whether any [`DelayedEvent`]s' timers are completed. Moves
   /// completed events into the [`GameEventQueue`].

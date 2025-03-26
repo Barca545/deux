@@ -19,6 +19,27 @@ use std::{collections::HashMap, fmt::Debug};
 // - One reason might be so the client and server can be decoupled
 // - Need to find ways to store mouse bindings
 
+/// Resource containing the state of all inputs in the game.
+pub struct PlayerInputs {
+  // Movement
+  pub up:bool,
+  pub down:bool,
+  pub left:bool,
+  pub right:bool,
+  // TODO: Analog would hold a vec3 not a bool
+}
+
+impl PlayerInputs {
+  pub fn new() -> Self {
+    PlayerInputs {
+      up:false,
+      down:false,
+      left:false,
+      right:false,
+    }
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,)]
 pub enum Keybind {
   AbilityOne,
@@ -27,8 +48,8 @@ pub enum Keybind {
   AbilityFour,
   MouseClick,
   // Movement
-  Foward,
-  Backwards,
+  Up,
+  Down,
   Left,
   Right,
 }
@@ -46,16 +67,14 @@ impl Keybinds {
     world:&World,
     mouse_pos:&PhysicalPosition,
     key:Keycode,
+    action:KeyAction,
   ) -> Result<Input,> {
     if let Some(keybind,) = self.buttons.get(&key,) {
       let transforms = world.get_resource::<Transforms>();
       let camera = world.get_resource::<Camera>();
       let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera,);
 
-      Ok(Input {
-        mouse,
-        keybind:*keybind,
-      },)
+      Ok(Input::new(mouse, *keybind, Some(action,),),)
     }
     else {
       return Err(InputErrors::KeyNotRegistered { key, }.into(),);
@@ -73,10 +92,7 @@ impl Keybinds {
       let transforms = world.get_resource::<Transforms>();
       let camera = world.get_resource::<Camera>();
       let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera,);
-      Ok(Input {
-        mouse,
-        keybind:*keybind,
-      },)
+      Ok(Input::new(mouse, *keybind, None,),)
     }
     else {
       return Err(InputErrors::ButtonNotRegistered { button:*button, }.into(),);
@@ -102,13 +118,13 @@ impl Default for Keybinds {
     };
     keybinds
       .buttons
-      .insert(Keycode::from_name("W",).unwrap(), Keybind::Foward,);
+      .insert(Keycode::from_name("W",).unwrap(), Keybind::Up,);
     keybinds
       .buttons
       .insert(Keycode::from_name("A",).unwrap(), Keybind::Left,);
     keybinds
       .buttons
-      .insert(Keycode::from_name("S",).unwrap(), Keybind::Backwards,);
+      .insert(Keycode::from_name("S",).unwrap(), Keybind::Down,);
     keybinds
       .buttons
       .insert(Keycode::from_name("D",).unwrap(), Keybind::Right,);
@@ -122,13 +138,28 @@ impl Default for Keybinds {
 
 #[derive(Debug, Clone, Copy,)]
 pub struct Input {
+  /// The location of the mouse at the time of the `Input`.
   pub mouse:MouseRay,
+  /// The command the `Input` contains.
   pub keybind:Keybind,
+  /// The [`KeyAction`] of the key.
+  pub action:Option<KeyAction,>,
+}
+
+#[derive(Debug, Clone, Copy,)]
+/// Indicates what action occured to a key in an [`Input`].
+pub enum KeyAction {
+  Press,
+  Release,
 }
 
 impl Input {
-  pub fn new(mouse:MouseRay, keybind:Keybind,) -> Self {
-    Self { mouse, keybind, }
+  pub fn new(mouse:MouseRay, keybind:Keybind, action:Option<KeyAction,>,) -> Self {
+    Self {
+      mouse,
+      keybind,
+      action,
+    }
   }
 }
 
@@ -163,7 +194,9 @@ impl FrameInputs {
   /// Run at the end of each tick to reset the input list.
   pub fn clear(&mut self,) {
     // TODO: This needs to do something like not clear the ones still being held
-    // down?
+    // down? Could maybe have an array of stashed inputs or something to send each
+    // frame. But I think it's easier to just have stuff rely on assuming something
+    // is pressed until it gets a released notif
     self.inputs.clear()
   }
 }
