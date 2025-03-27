@@ -1,4 +1,7 @@
-use super::{update_position, update_velocity};
+use super::{
+  move_camera::update_camera_position, update_position::update_position,
+  update_velocity::update_velocity,
+};
 use nina::world::World;
 
 // Refactor:
@@ -13,6 +16,7 @@ pub fn movement(world:&mut World,) {
   // update_destination(world,);
   update_velocity(world,);
   update_position(world,);
+  update_camera_position(world,);
   // update_hitbox(world,);
   // move_attacks(world,);
 }

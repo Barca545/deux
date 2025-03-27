@@ -1,11 +1,10 @@
 mod move_attacks;
+mod move_camera;
 mod movement;
 mod update_hitbox;
 mod update_path;
 mod update_position;
 mod update_velocity;
 
-pub use self::{
-  move_attacks::*, movement::*, update_hitbox::*, update_path::*, update_position::*,
-  update_velocity::*,
-};
+// TODO: I think these exports should be revisited
+pub use self::movement::*;

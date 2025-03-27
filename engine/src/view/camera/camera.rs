@@ -6,60 +6,81 @@ use crate::math::{
 
 // Refactor:
 // - Confirm if the OPENGL_TO_WGPU_MATRIX is needed
-// - Move the transforms into a shared mod
-// - Up doesn't change so I can just use (0.0, 1.0, 0.0)
 
-const VIEW_ANGLE: f32 = 55.0;
-const DEFAULT_Z_DIST: f32 = -10.0;
+const VIEW_ANGLE:f32 = 55.0;
+const DEFAULT_X_DIST:f32 = 0.0;
+const DEFAULT_Z_DIST:f32 = -15.0;
 
-#[derive(Debug)]
+#[derive(Debug,)]
 pub struct Camera {
-  pub position: Vec3,
-  pub target: Vec3,
-  pub up: Vec3,
-  front: Vec3,
-  pv_mat: Option<FlatMat4>,
+  /// Location in space the camera is looking from.
+  pub position:Vec3,
+  /// Point the target is looking at
+  pub target:Vec3,
+  pub camera_up:Vec3,
+  front:Vec3,
+  pv_mat:Option<FlatMat4,>,
 }
 
 impl Camera {
   ///Create a new [`Camera`].
   pub fn new() -> Self {
-    let x = 0.0;
+    let x = DEFAULT_X_DIST;
     let z = DEFAULT_Z_DIST;
-    let y = -z * radians(VIEW_ANGLE).tan();
+    let y = -z * radians(VIEW_ANGLE,).tan();
 
-    let position: Vec3 = Vec3::new(x, y, z);
-
-    let world_up: Vec3 = Vec3::new(0.0, 1.0, 0.0);
-    let front: Vec3 = Vec3::new(-x, -y, -z);
-    let right: Vec3 = front.cross(&world_up).normalize();
-    let up: Vec3 = right.cross(&front).normalize();
-    let target: Vec3 = position + front;
+    let position:Vec3 = Vec3::new(x, y, z,);
+    let front:Vec3 = Vec3::new(-x, -y, -z,);
+    // Normally: right = front.cross(&WORLD_UP,).normalize();
+    // Cross product is (AyBz - AzBy)i + (AxBz - AzBx)j + (AxBy - AyBx)k
+    // However WORLD_UP is (0, 1, 0) so right = front x WORLD_UP = (-z, 0, -x)
+    // Normally: camera_up:Vec3 = right.cross(&front,).normalize();
+    // However right is (z, 0.0, -x)
+    // Thus right x front is (-AzBy)i + (AxBz - AzBx)j + (AxBy)
+    // Given:
+    // Ax = z   Bx = -x
+    // Ay = 0   By = -y
+    // Az = -x  Bz = -z
+    // right x front =  (-xy, zz - xx, -zy)
+    let camera_up:Vec3 = Vec3::new(-(-x * -y), z * -z - (-x * -x), z * -y,).normalize();
+    let target:Vec3 = position + front;
 
     Camera {
       position,
       target,
-      up,
+      camera_up,
       front,
-      pv_mat: None,
+      pv_mat:None,
     }
   }
 
-  pub fn front(&self) -> Vec3 {
+  pub fn front(&self,) -> Vec3 {
     self.front
   }
 
-  pub fn view_mat(&self) -> Mat4 {
-    look_at(self.position, self.target, self.up)
+  // Returns the [`Camera`]'s `view` matrix.
+  pub fn view_mat(&self,) -> Mat4 {
+    look_at(self.position, self.target, self.camera_up,)
   }
-  ///Updates the [`Camera`]'s `projection * view` matrix.
-  pub fn update_pv(&mut self, transforms: &Transforms) {
-    self.pv_mat = Some((transforms.proj_mat() * self.view_mat()).into())
+  /// Updates the [`Camera`]'s `projection * view` matrix.
+  pub fn update_pv(&mut self, transforms:&Transforms,) {
+    self.pv_mat = Some((transforms.proj_mat() * self.view_mat()).into(),)
   }
 
-  ///Returns the [`Camera`]'s `projection * view` matrix.
-  pub fn pv_mat(&self) -> [[f32; 4]; 4] {
+  /// Returns the [`Camera`]'s `projection * view` matrix.
+  pub fn pv_mat(&self,) -> [[f32; 4]; 4] {
     self.pv_mat.unwrap()
+  }
+
+  /// Offset the [`Camera`]'s `position` by the `x` and `y` of the the position
+  /// vector. Set the `Camera`'s `target` to the provided `position`.
+  pub fn offset_camera_relative_to_position(&mut self, pos:Vec3,) {
+    // Move the camera so it keeps the same relationship to the new target as it had
+    // before moving
+    self.position = Vec3::new(pos.x, self.position.y, pos.z + DEFAULT_Z_DIST,);
+
+    // Update the target
+    self.target = pos + self.front;
   }
 }
 
