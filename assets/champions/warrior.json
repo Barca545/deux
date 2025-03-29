@@ -1,20 +1,20 @@
 {
-  "health":100,
-  "resource":100,
+  "health": 100,
+  "resource": 100,
 
-  "armor":10,
-  "magic_resist":10,
+  "armor": 10,
+  "magic_resist": 10,
 
-  "attack_damage":100,
-  "magic_damage":100,
-  "auto_attack_missle_speed":0.07,
-  "auto_attack_cooldown":0.5,
+  "attack_damage": 100,
+  "magic_damage": 100,
+  "auto_attack_missle_speed": 0.1,
+  "auto_attack_cooldown": 0.5,
 
-  "unit_speed":0.05,
+  "unit_speed": 0.05,
   "selection_radius": {
-    "height":0.7,
-    "radius":0.7
+    "height": 0.7,
+    "radius": 0.7
   },
-  "pathing_radius":0.5,
-  "gameplay_radius":0.5
+  "pathing_radius": 0.5,
+  "gameplay_radius": 0.5
 }

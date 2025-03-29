@@ -8,7 +8,7 @@ use crate::{
   filesystem::load_champion_json,
   math::Vec3,
   time::ServerTime,
-  view::Renderer
+  renderer::Renderer
 };
 
 // Refactor

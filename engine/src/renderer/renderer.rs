@@ -1,15 +1,11 @@
-use super::{
-  buffer::InstanceBuffer, camera::Camera, sdl2_helpers::Window, DrawModel, Frame, InstanceRaw,
-  Instances, Model, ModelId, ModelVertex, Texture,
-};
+use super::sdl2_helpers::Window;
 use crate::{
   data_lib::{Position, PreviousPosition, SkinnedRenderable, StaticRenderable},
   data_storage::Arena,
   filesystem::{load_model, load_shader},
-  math::Transforms,
+  renderer::sdl2_helpers::PhysicalSize,
   time::ServerTime,
   utility::calculate_render_position,
-  view::{sdl2_helpers::PhysicalSize, Vertex},
 };
 use eyre::Result;
 use nina::world::World;
@@ -50,8 +46,12 @@ pub struct Renderer {
   config:SurfaceConfiguration,
   size:PhysicalSize<u32,>,
   pipeline:RenderPipeline,
+  // TODO: The camera might be able to store it's own information about the bindgroup and textures?
+  // I had avoided it before when I wanted it to be an ECS thing but now its not a resource there's
+  // no real reason to strongly decouple it from graphics
   camera_bind_group:BindGroup,
   camera_buffer:Buffer,
+  // TODO: Unsure where depth texture goes
   depth_texture:Texture,
   models:Arena<Model,>,
   frame:Frame,
@@ -159,7 +159,7 @@ impl Renderer {
       pipeline_layout,
       config.format,
       Some(Texture::DEPTH_FORMAT,),
-      &[ModelVertex::desc(), InstanceRaw::desc(),],
+      &[ModelVertex::DESCRIPTOR, InstanceRaw::desc(),],
       model_shader,
     );
 
@@ -338,6 +338,7 @@ impl Renderer {
   pub fn add_render_pipeline(&mut self,) {
     // Move the logic for adding a pipeline to the renderer here
     todo!()
+    // TODO: That is sort of what the function below does?
   }
 
   /// Create a new [`RenderPipeline`].

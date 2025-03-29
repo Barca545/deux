@@ -1,6 +1,6 @@
 use crate::{
   data_lib::{Controllable, Position},
-  view::camera::Camera,
+  renderer::camera::Camera,
 };
 use nina::world::World;
 

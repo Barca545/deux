@@ -3,7 +3,7 @@ use crate::{
   arena::Grid,
   data_lib::AbilityMap,
   errors::FilesystemErrors,
-  view::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer}
+  renderer::{IndexBuffer, Material, Mesh, Model, ModelVertex, Renderer, Texture, VertexBuffer}
 };
 use eyre::Result;
 use image::io::Reader;

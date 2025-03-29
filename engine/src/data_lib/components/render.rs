@@ -1,4 +1,4 @@
-use crate::view::ModelId;
+use crate::renderer::ModelId;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SkinnedRenderable(pub ModelId);

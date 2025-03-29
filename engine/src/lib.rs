@@ -15,5 +15,5 @@ pub mod scripting;
 pub mod systems;
 pub mod time;
 pub mod utility;
-pub mod view;
+pub mod renderer;
 pub mod windowing;

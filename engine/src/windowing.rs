@@ -1,4 +1,4 @@
-use crate::view::sdl2_helpers::{PhysicalSize, BLACK};
+use crate::renderer::sdl2_helpers::{PhysicalSize, BLACK};
 use sdl2::{self, render::Canvas, video::Window, EventPump};
 
 ///Creates and returns a [winit](https://docs.rs/winit/latest/winit/index.html) [`Window`].

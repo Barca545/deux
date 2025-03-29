@@ -2,15 +2,12 @@
 
 [workspace]
 resolver = "2"
-members = [
-  "game_loop",
-  "engine"
-]
+members = ["game_loop", "engine"]
 
 [workspace.dependencies]
-game_loop = {path = "game_loop"}
-engine = {path = "engine"}
-nina = {git = "https://github.com/Barca545/Nina.git"}
+game_loop = { path = "game_loop" }
+engine = { path = "engine" }
+nina = { git = "https://github.com/Barca545/Nina.git" }
 eyre = "0.3.7"
 thiserror = "1.0.48"
 image = "0.24.7"
@@ -19,6 +16,7 @@ nalgebra-glm = "0.18.0"
 serde_json = "1.0"
 wgpu = "0.19.3"
 winit = "0.29.15"
+yakui = "0.3.0"
 
 [workspace.dependencies.sdl2]
 version = "0.37"
@@ -26,8 +24,8 @@ features = ["raw-window-handle", "bundled"]
 
 [workspace.dependencies.serde]
 version = "1.0"
-features = ["derive"] 
+features = ["derive"]
 
 [workspace.dependencies.bytemuck]
 version = "1.15.0"
-features = [ "derive" ]
+features = ["derive"]

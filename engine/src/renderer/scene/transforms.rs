@@ -1,6 +1,5 @@
-use crate::view::sdl2_helpers::PhysicalSize;
-
-use super::math::{Mat4, Perspective, Vec3};
+use crate::math::{math::Perspective, Mat4, Vec3};
+use crate::renderer::sdl2_helpers::PhysicalSize;
 use glm::{identity, scale, translate};
 
 //  Refactor:

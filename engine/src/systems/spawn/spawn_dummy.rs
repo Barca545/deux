@@ -6,7 +6,7 @@ use crate::{
     Velocity, KDA
   },
   // ecs::World,
-  view::Renderer
+  renderer::Renderer
 };
 
 // Refactor:

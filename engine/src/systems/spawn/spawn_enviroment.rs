@@ -3,7 +3,7 @@ use nina::world::World;
 use crate::{
   data_lib::{Position, StaticRenderable},
   // ecs::World,
-  view::Renderer
+  renderer::Renderer
 };
 
 pub fn spawn_enviroment(world:&mut World, name:&str, renderer:&mut Renderer) {

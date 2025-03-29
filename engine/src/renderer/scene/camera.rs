@@ -1,9 +1,6 @@
 extern crate nalgebra_glm as glm;
-use crate::math::{
-  math::{look_at, radians, FlatMat4, Mat4, Vec3},
-  Transforms,
-};
-
+use super::transforms::Transforms;
+use crate::math::math::{look_at, radians, FlatMat4, Mat4, Vec3};
 // Refactor:
 // - Confirm if the OPENGL_TO_WGPU_MATRIX is needed
 

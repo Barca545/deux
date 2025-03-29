@@ -1,7 +1,7 @@
 use crate::{
   errors::InputErrors,
   math::{MouseRay, Transforms},
-  view::{camera::Camera, sdl2_helpers::PhysicalPosition},
+  renderer::{camera::Camera, sdl2_helpers::PhysicalPosition},
 };
 use eyre::Result;
 use nina::world::World;

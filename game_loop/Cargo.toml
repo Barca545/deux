@@ -7,17 +7,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-engine = {workspace=true}
-eyre = {workspace=true}
-nina = {workspace=true}
-thiserror = {workspace=true}
-nalgebra-glm = {workspace=true}
-serde = {workspace=true}
-serde_json = {workspace=true}
-sdl2 ={workspace=true}
+engine = { workspace = true }
+eyre = { workspace = true }
+nina = { workspace = true }
+thiserror = { workspace = true }
+nalgebra-glm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sdl2 = { workspace = true }
+yakui = { workspace = true }
 
 pollster = "0.3"
-
-
-[build-dependencies]
-cmake = "0.1"
