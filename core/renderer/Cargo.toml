@@ -1,0 +1,19 @@
+[package]
+name = "renderer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+math = { workspace = true }
+bytemuck = { version = "1.15.0", features = ["derive"] }
+tobj = "4.0.3"
+wgpu = "0.19.3"
+yakui = "0.3.0"
+image = "0.24.7"
+pollster = "0.3"
+eyre = { workspace = true }
+thiserror = { workspace = true }
+storage = { workspace = true }
+windowing = { workspace = true }
+nina = { workspace = true }
+time = { workspace = true }

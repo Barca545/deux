@@ -1,0 +1,12 @@
+[package]
+name = "game_data"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+math = { workspace = true }
+time = { workspace = true }
+serde = { workspace = true }
+
+# TODO: inputs seems to pollute other crates with the same issue
+# inputs = { workspace = true }

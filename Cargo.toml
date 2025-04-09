@@ -1,22 +1,25 @@
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [workspace]
 resolver = "2"
-members = ["game_loop", "engine"]
+members = ["app", "core/*"]
+exclude = ["core/utility", "core/arena"]
+
+# TODO: inputs seems to not be getting proofed?
+# Cause is any crate that relies on a crate that isn't compiling doesn't get compiled enought to check for errors
 
 [workspace.dependencies]
-game_loop = { path = "game_loop" }
-engine = { path = "engine" }
-nina = { git = "https://github.com/Barca545/Nina.git" }
 eyre = "0.3.7"
+app = { path = "app" }
+game_data = { path = "core/game_data" }
+storage = { path = "core/storage" }
+math = { path = "core/math" }
+time = { path = "core/time" }
+nina = { git = "https://github.com/Barca545/Nina.git" }
+inputs = { path = "core/inputs" }
+renderer = { path = "core/renderer" }
+windowing = { path = "core/windowing" }
 thiserror = "1.0.48"
-image = "0.24.7"
-nalgebra = "0.32.3"
-nalgebra-glm = "0.18.0"
 serde_json = "1.0"
-wgpu = "0.19.3"
-winit = "0.29.15"
-yakui = "0.3.0"
 
 [workspace.dependencies.sdl2]
 version = "0.37"
@@ -24,8 +27,4 @@ features = ["raw-window-handle", "bundled"]
 
 [workspace.dependencies.serde]
 version = "1.0"
-features = ["derive"]
-
-[workspace.dependencies.bytemuck]
-version = "1.15.0"
 features = ["derive"]
