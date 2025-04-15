@@ -1,29 +1,12 @@
-use crate::sdl2_utils::{PhysicalSize, BLACK};
-use sdl2::{self, render::Canvas, EventPump};
-use std::{
-  ops::{Deref, DerefMut},
-  sync::Arc,
-};
+use crate::sdl2_utils::PhysicalSize;
+use sdl2::{self, Sdl};
+use std::sync::Arc;
 
 type WindowInner = Arc<sdl2::video::Window,>;
 pub struct Window {
   pub inner: WindowInner,
-  pub event_pump: EventPump,
+  pub sdl2: Sdl,
 }
-
-// impl Deref for Window {
-//   type Target = WindowInner;
-
-//   fn deref(&self,) -> &Self::Target {
-//     &self.inner
-//   }
-// }
-
-// impl DerefMut for Window {
-//   fn deref_mut(&mut self,) -> &mut Self::Target {
-//     &mut self.inner
-//   }
-// }
 
 impl Window {
   /// Creates and returns a [`Window`].
@@ -49,13 +32,10 @@ impl Window {
     // canvas.clear();
     // canvas.present();
 
-    // Create the event pump
-    let event_pump = sdl2_context.event_pump().unwrap();
-
-    // (canvas, event_pump,)
     Window {
       inner: Arc::new(window,),
-      event_pump,
+      // event_pump,
+      sdl2: sdl2_context,
     }
   }
 

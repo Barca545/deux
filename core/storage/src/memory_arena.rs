@@ -71,7 +71,7 @@ impl<T,> Arena<T,> {
   }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq,)]
+#[derive(Debug, Hash, Eq,)]
 /// [Newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html) for the ID of an element inside an [`Arena`]. Used
 pub struct ArenaId<T,> {
   id: usize,
@@ -88,6 +88,12 @@ impl<T,> Clone for ArenaId<T,> {
 }
 
 impl<T,> Copy for ArenaId<T,> {}
+
+impl<T,> PartialEq for ArenaId<T,> {
+  fn eq(&self, other: &Self,) -> bool {
+    self.id == other.id
+  }
+}
 
 // /// Marker type which allows the implementor to index into an [`Arena`] of
 // type /// `T`.

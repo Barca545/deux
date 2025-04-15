@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 /// Trait indicating the implementor has a "zero" value.
 pub trait Zero: Sized {
   /// The zero value of the implementor.
-  const ZERO:Self;
+  const ZERO: Self;
 
   /// Returns a `bool` indicating whether `Self` is zero.
   fn is_zero(&self,) -> bool;
@@ -18,7 +18,7 @@ pub trait Zero: Sized {
 macro_rules! impl_zero {
   ($num_ty:ty, $val:expr) => {
     impl Zero for $num_ty {
-      const ZERO:$num_ty = $val;
+      const ZERO: $num_ty = $val;
 
       #[inline(always)]
       fn is_zero(&self,) -> bool {
@@ -49,21 +49,18 @@ pub trait NumberOperations<Rhs = Self, Output = Self,>:
 {
 }
 
-impl<N,> NumberOperations<N, N,> for N where N: Mul<N, Output = N,>
-    + Add<N, Output = N,>
-    + Div<N, Output = N,>
-    + Sub<N, Output = N,>
-    + From<f32,>
+impl<N,> NumberOperations<N, N,> for N where
+  N: Mul<N, Output = N,> + Add<N, Output = N,> + Div<N, Output = N,> + Sub<N, Output = N,>
 {
 }
 
 /// Marker trait gauranteeing `N` will behave like a number
-pub trait Number: Sized + PartialOrd + Zero + NumberOperations {}
+pub trait Number: Sized + PartialOrd + Zero + NumberOperations + Clone + Copy {}
 
 pub trait NumberAssign: Number + AddAssign + SubAssign + MulAssign + DivAssign {}
 
 // Blanket implementions of the number trait for all numerical types
-impl<N,> Number for N where N: Sized + PartialOrd + Zero + NumberOperations {}
+impl<N,> Number for N where N: Sized + PartialOrd + Zero + NumberOperations + Clone + Copy {}
 
 // Blanket implementions of the numberassign trait for all numerical types
 impl<N,> NumberAssign for N where N: Number + AddAssign + SubAssign + MulAssign + DivAssign {}

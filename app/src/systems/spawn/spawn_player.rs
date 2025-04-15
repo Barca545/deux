@@ -1,16 +1,12 @@
-use crate::{
-  game_data::{
-    AbilityInfo, AbilityMap, CastQueue, Controllable, DebugElements, Destination, Exp, Gold,
-    Health, IncomingDamage, Level, MissleSpeed, Path, PhysicalDamage, Player, PlayerState,
-    Position, PreviousPosition, Script, SelectionRadius, SkinnedRenderable, SpellResource, Target,
-    Team, UnitSpeed, Velocity, KDA,
-  },
-  filesystem::load_champion_json,
-  math::Vec3,
-  renderer::renderer::Renderer,
-  time::ServerTime,
+use crate::utils::load::load_champion;
+use game_data::{
+  Controllable, DebugElements, Destination, Exp, Gold, Health, IncomingDamage, Level, MissleSpeed,
+  Path, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, SelectionRadius,
+  SkinnedRenderable, SpellResource, Target, Team, UnitSpeed, Velocity, KDA,
 };
+use math::Vec3;
 use nina::world::World;
+use renderer::renderer::Renderer;
 
 // Refactor
 // -Missing some component the combat system needs
@@ -21,12 +17,12 @@ use nina::world::World;
 // -Controllable flag information needs to get passed in from somewhere else
 // -Team information needs to get passed in from somewhere else
 
-///Spawns a player from a given champion name and player number.
-pub fn spawn_player(world:&mut World, name:&str, number:u32, renderer:&mut Renderer,) {
-  //Load player information JSON
-  let champion_info = load_champion_json(name,).unwrap();
+/// Spawns a player from a given champion name and player number.
+pub fn spawn_player(world: &mut World, name: &str, number: u32, renderer: &mut Renderer,) {
+  // Load player information JSON
+  let champion_info = load_champion(name,).unwrap();
 
-  //Basic info
+  // Basic info
   let player = Player(number,);
   let controllable = Controllable;
   let health = Health::new(champion_info.health,);
@@ -62,128 +58,6 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32, renderer:&mut Rende
   let incoming_damage = IncomingDamage::new();
   let auto_attack_missle_speed = MissleSpeed::new(champion_info.auto_attack_missle_speed,);
   let attack_damage = PhysicalDamage::new(champion_info.attack_damage,);
-  let auto_attack_cooldown_duration = champion_info.auto_attack_cooldown;
-  let ability_1_cooldown_duration = 0.0;
-  let ability_2_cooldown_duration = 0.0;
-  let ability_3_cooldown_duration = 0.0;
-  let ability_4_cooldown_duration = 0.0;
-  let ability_1_cast_time = 0.0;
-  let ability_2_cast_time = 0.0;
-  let ability_3_cast_time = 0.0;
-  let ability_4_cast_time = 0.0;
-  let auto_attack_cast_time = 0.10;
-
-  //Script info
-  let ability_1_scripts = Script::new(
-    Some("start",),
-    Some("onhit",),
-    Some("running",),
-    Some("stop",),
-  );
-  let ability_2_scripts = Script::new(
-    Some("start",),
-    Some("onhit",),
-    Some("running",),
-    Some("stop",),
-  );
-  let ability_3_scripts = Script::new(
-    Some(
-      r#"
-      world:accelerate(owner.id,3.0);
-      world:spawnPersistentScript(owner.id,5.0,3);
-      local pos = mouse:ground_intersection();
-      world:blink(owner.id,pos);
-      "#,
-    ),
-    Some("onhit",),
-    None,
-    Some(
-      r#"
-    world:accelerate(owner.id,-3.0);
-    "#,
-    ),
-  );
-  let ability_4_scripts = Script::new(
-    Some("start",),
-    Some("onhit",),
-    Some("running",),
-    Some("stop",),
-  );
-  let auto_attack_scripts = Script::new(
-    Some(
-      r#"
-      local ability_slot = 12;
-      local cost = 50;
-      if world:hasResource(owner.id, cost) and world:targetIsalive(target.id) and world:isEnemy(owner.id, target.id) then
-        world:removeResource(owner.id, cost);
-        world:spawnTargetedProjectile(owner.id, target.id, ability_slot);
-        return true
-      else
-        return false
-      end
-    "#,
-    ),
-    Some(
-      r#"
-      local target = world:getTarget(ability.id);
-      world:knockback(owner.id,target.id,0.1,1.0);
-      local damage = world:getPhysicalDamage(owner.id);
-      world:dealTrueDamage(owner.id,target.id,damage*100);
-    "#,
-    ),
-    Some("running",),
-    Some("stop",),
-  );
-  let mut ability_map = AbilityMap::default();
-  {
-    //Create the abilityinfo for the basic abilities
-    let mut server_time = world.get_resource_mut::<ServerTime>();
-    let ability_1 = AbilityInfo::new(
-      ability_1_cooldown_duration,
-      &mut server_time,
-      ability_1_cast_time,
-      ability_1_scripts,
-      None,
-    );
-    let ability_2 = AbilityInfo::new(
-      ability_2_cooldown_duration,
-      &mut server_time,
-      ability_2_cast_time,
-      ability_2_scripts,
-      None,
-    );
-    let ability_3 = AbilityInfo::new(
-      ability_3_cooldown_duration,
-      &mut server_time,
-      ability_3_cast_time,
-      ability_3_scripts,
-      None,
-    );
-    let ability_4 = AbilityInfo::new(
-      ability_4_cooldown_duration,
-      &mut server_time,
-      ability_4_cast_time,
-      ability_4_scripts,
-      None,
-    );
-    let auto_attack = AbilityInfo::new(
-      auto_attack_cooldown_duration,
-      &mut server_time,
-      auto_attack_cast_time,
-      auto_attack_scripts,
-      Some(SkinnedRenderable(renderer.add_model("ball",),),),
-    );
-
-    //Insert the basic abilities into the ability map
-    ability_map.insert(0, ability_1,);
-    ability_map.insert(1, ability_2,);
-    ability_map.insert(2, ability_3,);
-    ability_map.insert(3, ability_4,);
-    ability_map.insert(12, auto_attack,);
-  }
-
-  //Casting Info
-  let cast_queue = CastQueue::default();
 
   world
     .create_entity()
@@ -230,14 +104,9 @@ pub fn spawn_player(world:&mut World, name:&str, number:u32, renderer:&mut Rende
     //Casting components
     .with_component(spell_resource,)
     .unwrap()
-    .with_component(cast_queue,)
-    .unwrap()
-    //Combat components
     .with_component(auto_attack_missle_speed,)
     .unwrap()
     .with_component(attack_damage,)
-    .unwrap()
-    .with_component(ability_map,)
     .unwrap()
     .with_component(incoming_damage,)
     .unwrap()

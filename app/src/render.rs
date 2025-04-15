@@ -1,11 +1,11 @@
+use game_data::{Controllable, Position, PreviousPosition, SkinnedRenderable};
+use math::interpolate;
 use nina::world::World;
-use renderer::{renderer::Renderer, scene::camera::Camera};
+use renderer::{drawcall::Scene, renderer::Renderer, scene::camera::Camera, Instance};
 use time::ServerTime;
 
-// query the world and create draw calls
-// The render loop can take the draw calls as input + maybe the camera position?
-
 // TODO: All of this should create a draw call and pass it to the renderer
+/// System which creates [`DrawCall`](renderer::drawcall::DrawCall)s
 pub fn render(world: &World, renderer: &mut Renderer,) {
   // Call it once up here so each object has the same interpolation factor instead
   // of slightly different ones
@@ -19,12 +19,11 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
   let player = &query.with_component::<Controllable>().unwrap().run()[0];
   let player_position = player.get_component::<Position>().unwrap();
   let player_previous_position = player.get_component::<PreviousPosition>().unwrap();
-  let player_render_position = calculate_render_position(
-    *player_previous_position,
-    *player_position,
-    interpolation_factor,
-  )
-  .0;
+  let player_render_position = interpolate(
+    player_previous_position.0,
+    player_position.0,
+    interpolation_factor as f32,
+  );
 
   let mut camera = world.get_resource_mut::<Camera>();
 
@@ -35,25 +34,25 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
   let entities = query.with_component::<SkinnedRenderable>().unwrap().run();
 
   // Create a scene to draw to
-  let mut scene = Vec::new();
+  let mut scene = Scene::new();
 
   for entity in entities {
-    let model_id = &entity.get_component::<SkinnedRenderable>().unwrap().0;
+    let model = &entity.get_component::<SkinnedRenderable>().unwrap().0;
     let position = entity.get_component::<Position>().unwrap();
     let previous_position = entity.get_component::<PreviousPosition>().unwrap();
 
-    let instance = Instance::new(
-      // TODO: I think calculate_render_position could be an associated function on the position
-      // struct or something
-      calculate_render_position(*previous_position, *position, interpolation_factor,).0,
-    );
+    let instance = Instance::new(interpolate(
+      previous_position.0,
+      position.0,
+      interpolation_factor as f32,
+    ),);
 
-    // Group the instances for drawing
-    // frame.record_instance(&model_id, instance,);
-
-    // Create draw calls
-    renderer.render(camera, scene,);
+    // Add the new instance to the scene
+    scene.add_instance(*model, instance,);
   }
+
+  // Draw
+  renderer.render(camera, scene,).unwrap();
 
   // // Render static models
   // let mut query = world.query();

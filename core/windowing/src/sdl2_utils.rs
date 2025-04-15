@@ -1,9 +1,3 @@
-use sdl2::{pixels::Color, video::Window as sdl2Window};
-use std::sync::Arc;
-// TODO: I have this in the renderer crate as well, is both necessary?
-/// The color Black in RGB form.
-pub const BLACK: Color = Color::RGB(0, 0, 0,);
-
 // Helper data structures for managing windowing and other features.
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default, Hash,)]
@@ -43,16 +37,3 @@ impl PhysicalPosition {
     PhysicalPosition::new(x, y,)
   }
 }
-
-// TODO: Figure out how to actually use this newtype
-// pub struct Window(pub Arc<sdl2Window,>,);
-
-// impl Window {
-//   pub fn inner_size(&self,) -> PhysicalSize<u32,> {
-//     let size = self.0.size();
-//     PhysicalSize {
-//       width:size.0,
-//       height:size.1,
-//     }
-//   }
-// }

@@ -1,2 +1,2 @@
-mod champ_data;
-mod load;
+pub mod champ_data;
+pub mod load;

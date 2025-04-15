@@ -66,6 +66,8 @@ impl GpuContext {
     };
     let (device, queue,) = adapter.request_device(&descriptor,).await.unwrap();
 
+    println!("Using backend: {:?}", adapter.get_info().backend);
+
     // Set the texture format as sRGB
     let surface_capabilities = surface.get_capabilities(&adapter,);
     let surface_format = surface_capabilities

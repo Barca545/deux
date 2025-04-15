@@ -107,6 +107,7 @@ impl IndexBuffer {
 
 /// [Buffer] containing all the [`Instances`](crate::core::instance::Instances)
 /// to draw in a scene. Used for [instance rendering](https://learnopengl.com/Advanced-OpenGL/Instancing)
+#[derive(Debug,)]
 pub struct InstanceBuffer {
   buffer: Option<Buffer,>,
   cap: u64,
@@ -135,7 +136,7 @@ impl InstanceBuffer {
   where
     S: RangeBounds<BufferAddress,>,
   {
-    self.buffer().slice(bounds,)
+    self.buffer().unwrap().slice(bounds,)
   }
 
   /// Buffer data into a new [`InstanceBuffer`].
@@ -171,7 +172,7 @@ impl InstanceBuffer {
       usage: BufferUsages::VERTEX
         | BufferUsages::COPY_DST
         | BufferUsages::COPY_SRC
-        | BufferUsages::MAP_WRITE,
+        // | BufferUsages::MAP_WRITE,
     },),);
     // Updated the len of the InstanceBuffer
     self.len = data.len() as u64;
@@ -184,17 +185,15 @@ impl InstanceBuffer {
     let size = self.len + new_data.len() as u64;
 
     // Get the src buffer
-    let src = self.buffer();
+    let src = self.buffer().unwrap();
 
     // Allocate a new buffer with size = self.len + instances.len()
     let dst = ctx.device.create_buffer(&BufferDescriptor {
       label: Some("Instance buffer",),
       size,
-      usage: BufferUsages::VERTEX
-        | BufferUsages::COPY_DST
-        | BufferUsages::COPY_SRC
-        | BufferUsages::MAP_WRITE,
-      mapped_at_creation: true,
+      usage: BufferUsages::VERTEX | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
+      // | BufferUsages::MAP_WRITE,
+      mapped_at_creation: false,
     },);
 
     // Copy the old data into the new buffer
@@ -209,7 +208,7 @@ impl InstanceBuffer {
       .write_buffer(&dst, self.len as u64, bytemuck::cast_slice(&new_data.0,),);
 
     // Unmap the buffer otherwise it will cause issues with later stages
-    dst.unmap();
+    // dst.unmap();
 
     // Update the values of the structure
     self.buffer = Some(dst,);
@@ -221,13 +220,12 @@ impl InstanceBuffer {
   /// Returns a reference to the `Buffer`'s underlying [`wgpu::Buffer`].
   ///
   /// # Panics
-  ///
-  /// - Panics if [`buffer`](TestInstanceBuffer#structfield.buffer) is
+  /// - Panics if [`buffer`](InstanceBuffer::buffer) is
   /// unallocated.
-  fn buffer(&self,) -> &Buffer {
+  fn buffer(&self,) -> Option<&Buffer,> {
     match self.buffer {
-      Some(ref buffer,) => buffer,
-      None => panic!("No buffer assigned"),
+      Some(ref buffer,) => Some(buffer,),
+      None => None,
     }
   }
 }

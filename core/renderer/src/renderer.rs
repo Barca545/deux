@@ -5,27 +5,31 @@ use super::{
   utils::load::load_model,
 };
 use crate::{
-  core::texture::Texture,
-  drawcall::{DrawCall, InternalDrawCall},
+  core::{
+    texture::Texture,
+    vertex::{ModelVertex, Vertex},
+  },
+  drawcall::{InternalDrawCall, Scene},
   utils::{
     load::load_shader,
     resources::{CameraResources, RenderResources},
   },
+  Instance,
 };
 use eyre::Result;
 use math::FlatMat4;
-use std::iter::once;
+use std::{iter::once, num::NonZero};
 use wgpu::{
   util::{BufferInitDescriptor, DeviceExt},
-  BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-  BindingType, BlendState, BufferBindingType, BufferUsages, ColorTargetState, ColorWrites,
-  CommandEncoderDescriptor, CompareFunction, DepthBiasState, DepthStencilState, Face,
-  FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor,
-  PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor,
-  SamplerBindingType, ShaderStages, StencilState, TextureFormat, TextureSampleType,
-  TextureViewDimension, VertexBufferLayout, VertexState,
+  BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
+  BindGroupLayoutEntry, BindingType, BlendState, BufferBinding, BufferBindingType, BufferUsages,
+  ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompareFunction, DepthBiasState,
+  DepthStencilState, Face, FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions,
+  PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
+  RenderPipelineDescriptor, SamplerBindingType, ShaderStages, StencilState, TextureFormat,
+  TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
-use windowing::windowing::Window;
+use windowing::{sdl2_utils::PhysicalSize, windowing::Window};
 
 // Refactor:
 // - Does the Adapter/Device need to be released at the end of the program?
@@ -113,7 +117,10 @@ impl Renderer {
           layout: &ctx
             .device
             .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
-          entries: &[],
+          entries: &[BindGroupEntry {
+            binding: 0,
+            resource: camera_buffer.as_entire_binding(),
+          },],
         },),
         buffer: camera_buffer,
       },),
@@ -141,22 +148,23 @@ impl Renderer {
       .create_bind_group_layout(Self::TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR,)
   }
 
-  // /// Load a [`Model`](crate::scene::model::Model) into the scene and store it
-  // /// in the [`RenderResources`].
-  // pub fn load_model(&mut self, model_name: &str,) {
-  //   let model = utils::load::load_model(self, model_name,);
-  // }
+  /// Add the default Opaque [`RenderPipeline`](wgpu::RenderPipeline) to the
+  /// [`Renderer`](crate::renderer::Renderer).
+  ///
+  /// # Warning
+  /// Must be called before rendering occurs. Otherwise rendering will fail.
+  pub fn add_opaque_pipeline(&mut self, shader_name: &str,) {
+    let pipeline = self.create_opaque_pipeline(shader_name,);
+    self
+      .resources
+      .insert_pipeline(Self::OPAQUE_PIPELINE, pipeline,);
+  }
 
   // TODO: For now this just create the one opaque render pipeline. Might
   // eventually need to be made more general
   // TODO: For now this will have hard coded shaders but as things start to get
   // unique shades this will need to change
-  pub fn create_opaque_pipeline(
-    &mut self,
-    shader_name: &str,
-    texture_format: TextureFormat,
-    vertex_buffer_layouts: VertexBufferLayout,
-  ) -> RenderPipeline {
+  fn create_opaque_pipeline(&mut self, shader_name: &str,) -> RenderPipeline {
     // Load the shaders for the
     let shaders = load_shader(&self.ctx, shader_name,).unwrap();
 
@@ -178,7 +186,7 @@ impl Renderer {
           &self
             .ctx
             .device
-            .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
+            .create_bind_group_layout(Self::TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR,),
         ],
         push_constant_ranges: &[],
       },);
@@ -192,14 +200,14 @@ impl Renderer {
         vertex: VertexState {
           module: &shaders,
           entry_point: Some("vs_main",),
-          buffers: &[vertex_buffer_layouts,],
+          buffers: &[ModelVertex::BUFFER_LAYOUT, Instance::BUFFER_LAYOUT,],
           compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(FragmentState {
           module: &shaders,
           entry_point: Some("fs_main",),
           targets: &[Some(ColorTargetState {
-            format: texture_format,
+            format: self.ctx.config.format,
             blend: Some(BlendState::REPLACE,),
             write_mask: ColorWrites::ALL,
           },),],
@@ -285,20 +293,20 @@ impl Renderer {
   //   self.canvas.window()
   // }
 
-  // pub fn resize(&mut self, new_size:PhysicalSize<u32,>,) {
-  //   if new_size.width > 0 && new_size.height > 0 {
-  //     self.size = new_size;
-  //     self.config.width = new_size.width;
-  //     self.config.height = new_size.height;
-  //     self.surface.configure(&self.device, &self.config,);
-
-  //     //Update the depth texture
-  //     self.depth_texture = Texture::create_depth_texture(&self.device,
-  // &self.config,);   }
-  // }
+  /// Update the size of the render target.
+  pub fn resize(&mut self, new_size: PhysicalSize<u32,>,) {
+    if new_size.width > 0 && new_size.height > 0 {
+      self.ctx.config.width = new_size.width;
+      self.ctx.config.height = new_size.height;
+      self
+        .ctx
+        .surface
+        .configure(&self.ctx.device, &self.ctx.config,);
+    }
+  }
 
   ///// Prepare the [`CommandEncoder`](wgpu::CommandEncoder) for rendering.
-  pub fn render(&mut self, camera: &Camera, scene: Vec<DrawCall,>,) -> Result<(),> {
+  pub fn render(&mut self, camera: &Camera, scene: Scene,) -> Result<(),> {
     // Update the camera buffer
     self.ctx.queue.write_buffer(
       &self.resources.camera.buffer,
@@ -324,7 +332,7 @@ impl Renderer {
 
       let mut internal_drawcalls = Vec::new();
 
-      for draw_call in scene {
+      for draw_call in scene.calls {
         // TODO: Hand off populating the instance buffer to the update render function
         // and replace drawcall with what is currently the internal draw call
 
@@ -332,9 +340,9 @@ impl Renderer {
         let start = buffer.len();
 
         // Push the instances into the Instance buffer
-        {
-          buffer.push_instances(&self.ctx, &mut encoder, &draw_call.instances,);
-        }
+        // TODO: I think this is causing an error on the first frame for...reasons
+
+        buffer.push_instances(&self.ctx, &mut encoder, &draw_call.instances,);
 
         // Capture the end of this entry in the instance buffer
         let end = buffer.len();
@@ -356,14 +364,16 @@ impl Renderer {
         "Opaque Pass",
       );
 
+      // TODO: I am positive rebinding the pipeline and bindgroup each time is bad
+      // Opaque draws: bind the opaque pipeline
+      renderpass.set_pipeline(Self::OPAQUE_PIPELINE,);
+
+      // TODO: Something is failing to generate instances I don't think this should
+      // ever be 0
       // Pass the index buffer to the renderpass
       renderpass.set_instance_buffer(1, &buffer,);
 
       for drawcall in internal_drawcalls {
-        // TODO: I am positive rebinding the pipeline and bindgroup each time is bad
-        // Opaque draws: bind the opaque pipeline
-        renderpass.set_pipeline(Self::OPAQUE_PIPELINE,);
-
         // Set the texture and camera bindgroups
         renderpass.set_bind_group(1, &self.resources.camera.bindgroup,);
 
@@ -374,6 +384,7 @@ impl Renderer {
 
     self.ctx.queue.submit(once(encoder.finish(),),);
     output.present();
+    // device.poll(wgpu::Maintain::Wait);
 
     Ok((),)
   }

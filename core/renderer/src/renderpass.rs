@@ -1,11 +1,11 @@
 use crate::{
-  core::{buffer::InstanceBuffer, color::BLACK, gpu_context::GpuContext, texture::Texture},
+  core::{buffer::InstanceBuffer, gpu_context::GpuContext, texture::Texture},
   scene::{material::Material, mesh::Mesh, model::ModelId},
   utils::resources::RenderResources,
 };
 use std::ops::Range;
 use wgpu::{
-  BindGroup, CommandEncoder, CommandEncoderDescriptor, IndexFormat, LoadOp, Operations,
+  BindGroup, Color, CommandEncoder, CommandEncoderDescriptor, IndexFormat, LoadOp, Operations,
   RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp,
   SurfaceTexture, TextureView, TextureViewDescriptor,
 };
@@ -58,7 +58,7 @@ impl<'pass,> RenderPass<'pass,> {
         view: &view,
         resolve_target: None,
         ops: Operations {
-          load: LoadOp::Clear(BLACK,),
+          load: LoadOp::Clear(Color::BLUE,),
           store: StoreOp::Store,
         },
       },),],
@@ -104,7 +104,10 @@ impl<'pass,> RenderPass<'pass,> {
   /// Specifically, `slot` refers to the index of the matching descriptor in
   /// [`VertexState::buffers`](wgpu::VertexState::buffers).
   pub fn set_instance_buffer(&mut self, slot: u32, buffer: &'pass InstanceBuffer,) {
-    self.renderpass.set_vertex_buffer(slot, buffer.slice(..,),)
+    // There's nothing to buffer if there are no instances.
+    if buffer.len() > 0 {
+      self.renderpass.set_vertex_buffer(slot, buffer.slice(..,),)
+    }
   }
 
   // TODO: Document the draw methods

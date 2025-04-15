@@ -2,6 +2,7 @@ use crate::{
   scene::{material::Material, model::Model},
   utils::cache::{BindGroupCache, BindGroupKey, BindGroupLayoutCache, MaterialCache, MaterialKey},
 };
+use eyre::eyre;
 use storage::Arena;
 use wgpu::{BindGroup, Buffer, RenderPipeline};
 
@@ -59,7 +60,18 @@ impl RenderResources {
   }
 
   pub fn insert_pipeline(&mut self, id: usize, pipeline: RenderPipeline,) {
-    self.pipelines[id] = pipeline;
+    assert_eq!(
+      self.pipelines.len(),
+      id,
+      "{}",
+      // TODO: Make this a real error
+      format!(
+        "Tried to insert Pipeline {} but the len of the pipeline cache was {}. Len must equal pipeline id for insertion.",
+        id,
+        self.pipelines.len()
+      )
+    );
+    self.pipelines.push(pipeline,);
   }
 
   pub fn get_pipeline(&self, id: usize,) -> &RenderPipeline {

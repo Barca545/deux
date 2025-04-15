@@ -21,7 +21,7 @@ impl Instance {
   /// [`VertexBufferLayout`] for an [`Instance`]. Needed for converting an
   /// `Instance` into a value which can placed into a
   /// [`VertexBuffer`](crate::core::buffer::VertexBuffer).
-  pub const LAYOUT: VertexBufferLayout<'static,> = VertexBufferLayout {
+  pub const BUFFER_LAYOUT: VertexBufferLayout<'static,> = VertexBufferLayout {
     array_stride: mem::size_of::<Self,>() as BufferAddress,
     step_mode: VertexStepMode::Instance,
     attributes: &vertex_attr_array![5 => Float32x4, 6 => Float32x4, 7 =>
@@ -56,6 +56,10 @@ impl Instances {
   /// [`Instances`], also referred to as its 'length'.
   pub fn len(&self,) -> usize {
     self.0.len()
+  }
+
+  pub fn push(&mut self, instance: Instance,) {
+    self.0.push(instance,);
   }
 }
 

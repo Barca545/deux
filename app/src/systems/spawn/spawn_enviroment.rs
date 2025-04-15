@@ -1,10 +1,8 @@
-use crate::{
-  game_data::{Position, StaticRenderable},
-  renderer::renderer::Renderer,
-};
+use game_data::{Position, StaticRenderable};
 use nina::world::World;
+use renderer::renderer::Renderer;
 
-pub fn spawn_enviroment(world:&mut World, name:&str, renderer:&mut Renderer,) {
+pub fn spawn_enviroment(world: &mut World, name: &str, renderer: &mut Renderer,) {
   let position = Position::from([0.0, -0.5, 0.0,],);
   let ground_model = StaticRenderable(renderer.add_model(name,),);
   world

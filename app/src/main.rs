@@ -1,21 +1,15 @@
-use engine::{
-  input::user_inputs::{FrameInputs, KeyAction, Keybinds},
-  math::Transforms,
-  renderer::{
-    camera::Camera,
-    sdl2_helpers::{PhysicalPosition, Window},
-    Renderer,
+use app::{
+  render::render,
+  systems::spawn::{
+    register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player,
   },
-  systems::{register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player},
-  time::ServerTime,
-  windowing::create_window,
 };
 use nina::world::World;
-use renderer::renderer::Renderer;
+use renderer::{renderer::Renderer, scene::camera::Camera};
 use sdl2::{event::Event, keyboard::Keycode};
-use std::sync::Arc;
-use update::update;
-use windowing::windowing::Window;
+use time::ServerTime;
+// use update::update;
+use windowing::{sdl2_utils::PhysicalPosition, windowing::Window};
 
 // Refactor:
 // - Re-add other systems
@@ -33,30 +27,31 @@ fn main() {
   register_components(&mut world,);
   register_resources(&mut world,);
 
-  // let (window, mut event_pump,) = windowing::create_window();
   let window = Window::new();
 
   //Create the camera
-  let mut camera = Camera::default();
-  // let transforms = Transforms::from(canvas.window().inner_size(),);
-  // camera.update_pv(&transforms,);
+  let camera = Camera::new(
+    window.inner_size().width as f32,
+    window.inner_size().height as f32,
+  );
 
-  //Spawn the renderer
+  // Spawn the renderer
   let mut renderer = Renderer::new(&window,);
+  renderer.add_opaque_pipeline("ModelShader",);
 
-  //Spawn the player
+  // Spawn the player
   spawn_player(&mut world, "warrior", 1, &mut renderer,);
 
-  //Spawn the ground
+  // Spawn the ground
   spawn_enviroment(&mut world, "ground", &mut renderer,);
 
-  //Spawn dummies
+  // Spawn dummies
   spawn_dummy(&mut world, [3.0, 0.0, -3.0,], &mut renderer,);
   spawn_dummy(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
 
-  //Add the resources to world
+  // Add the resources to world
   world.add_resource(camera,);
-  world.add_resource(transforms,);
+  // world.add_resource(transforms,);
 
   // TODO: Copy the example to implement the function that takes those things as
   // arguments.
@@ -71,10 +66,12 @@ fn main() {
   // TODO: This does not feel like the best way to do this
   // TODO: But the fact you cant't borrow the event pump inside the loop is
   // problematic
-  let mut mouse_pos = PhysicalPosition::new(
-    event_pump.mouse_state().x() as f64,
-    event_pump.mouse_state().y() as f64,
-  );
+
+  // Create the event pump
+  let mut event_pump = window.sdl2.event_pump().unwrap();
+
+  let mouse_state = event_pump.mouse_state();
+  let mut mouse_pos = PhysicalPosition::new(mouse_state.x() as f64, mouse_state.y() as f64,);
 
   'game: loop {
     for event in event_pump.poll_iter() {
@@ -88,7 +85,7 @@ fn main() {
         // Handle mouse movements
         // Don't think it will come up but the "relative" coordinates are really displacement
         Event::MouseMotion { x, y, .. } => {
-          let dimensions = renderer.window().inner_size();
+          let dimensions = window.inner_size();
 
           mouse_pos = PhysicalPosition::from_screen_coords(x, y, dimensions,);
         }
@@ -98,15 +95,16 @@ fn main() {
           mouse_btn, x, y, ..
         } => {
           // Create the mouse position
-          let dimensions = renderer.window().inner_size();
+          let dimensions = window.inner_size();
           let mouse_pos = PhysicalPosition::from_screen_coords(x, y, dimensions,);
 
           // Add the input
-          let keybinds = world.get_resource::<Keybinds>();
-          if let Ok(input,) = keybinds.mouse_input(&world, &mouse_pos, &mouse_btn,) {
-            let inputs = world.get_resource_mut::<FrameInputs>();
-            inputs.push(input,)
-          }
+          // let keybinds = world.get_resource::<Keybinds>();
+          // if let Ok(input,) = keybinds.mouse_input(&world, &mouse_pos,
+          // &mouse_btn,) {   let inputs =
+          // world.get_resource_mut::<FrameInputs>();
+          //   inputs.push(input,)
+          // }
         }
 
         // Handle keypresses by generating a frame input.
@@ -118,19 +116,20 @@ fn main() {
         } => {
           // Generate an input for the keypress
           // TODO: Would it be better to get the position via
-          // `event_pump.mouse_state().x()` insteaad of constantly tracking it? Could
-          // maybe implement a function or trait on the pump to make a direct query for
-          // mouse positon in NDC possible?
-          let keybinds = world.get_resource::<Keybinds>();
-          let input = keybinds.key_input(&world, &mouse_pos, key, KeyAction::Press,);
-          match input {
-            // If the input is valid add it to the frame inputs
-            Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
-            Err(_,) => {
-              // TODO: Could print the error message to the a debug file or
-              // something for debugging but not urgent
-            }
-          }
+          // `event_pump.mouse_state().x()` insteaad of constantly tracking it?
+          // Could maybe implement a function or trait on the pump to
+          // make a direct query for mouse positon in NDC possible?
+          // let keybinds = world.get_resource::<Keybinds>();
+          // let input = keybinds.key_input(&world, &mouse_pos, key,
+          // KeyAction::Press,); match input {
+          //   // If the input is valid add it to the frame inputs
+          //   Ok(input,) =>
+          // world.get_resource_mut::<FrameInputs>().push(input,),
+          //   Err(_,) => {
+          //     // TODO: Could print the error message to the a debug file or
+          //     // something for debugging but not urgent
+          //   }
+          // }
         }
         Event::KeyUp {
           keycode: Some(key,),
@@ -138,19 +137,20 @@ fn main() {
         } => {
           // Generate an input for the keypress
           // TODO: Would it be better to get the position via
-          // `event_pump.mouse_state().x()` insteaad of constantly tracking it? Could
-          // maybe implement a function or trait on the pump to make a direct query for
-          // mouse positon in NDC possible?
-          let keybinds = world.get_resource::<Keybinds>();
-          let input = keybinds.key_input(&world, &mouse_pos, key, KeyAction::Release,);
-          match input {
-            // If the input is valid add it to the frame inputs
-            Ok(input,) => world.get_resource_mut::<FrameInputs>().push(input,),
-            Err(_,) => {
-              // TODO: Could print the error message to the a debug file or
-              // something for debugging but not urgent
-            }
-          }
+          // `event_pump.mouse_state().x()` insteaad of constantly tracking it?
+          // Could maybe implement a function or trait on the pump to
+          // make a direct query for mouse positon in NDC possible?
+          // let keybinds = world.get_resource::<Keybinds>();
+          // let input = keybinds.key_input(&world, &mouse_pos, key,
+          // KeyAction::Release,); match input {
+          //   // If the input is valid add it to the frame inputs
+          //   Ok(input,) =>
+          // world.get_resource_mut::<FrameInputs>().push(input,),
+          //   Err(_,) => {
+          //     // TODO: Could print the error message to the a debug file or
+          //     // something for debugging but not urgent
+          //   }
+          // }
         }
         _ => {}
       }
@@ -166,7 +166,7 @@ fn main() {
 
     // Run update logic
     if server_time.should_update() {
-      update(&mut world,);
+      // update(&mut world,);
       // Update the server time
       world
         .get_resource_mut::<ServerTime>()
@@ -178,6 +178,7 @@ fn main() {
     let server_time = world.get_resource::<ServerTime>();
     if server_time.should_render() {
       // TODO: Use render system from the update mod
+      render(&world, &mut renderer,);
       let server_time = world.get_resource_mut::<ServerTime>();
       server_time.decrement_seconds_since_render()
     }

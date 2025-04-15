@@ -1,16 +1,14 @@
-use crate::{
-  game_data::{
-    Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position,
-    PreviousPosition, SelectionRadius, SkinnedRenderable, Team, Velocity, KDA,
-  },
-  renderer::renderer::Renderer,
+use game_data::{
+  Armor, Destination, GameplayRadius, Gold, Health, IncomingDamage, PathingRadius, Position,
+  PreviousPosition, SelectionRadius, SkinnedRenderable, Team, Velocity, KDA,
 };
 use nina::world::World;
+use renderer::renderer::Renderer;
 
 // Refactor:
 // -Dummy should load in from a JSON too
 
-pub fn spawn_dummy(world:&mut World, position:[f32; 3], renderer:&mut Renderer,) {
+pub fn spawn_dummy(world: &mut World, position: [f32; 3], renderer: &mut Renderer,) {
   //Create the dummy entity
 
   let dummy_position = Position::from(position,);

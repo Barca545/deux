@@ -47,6 +47,8 @@ name = "app"
 version = "0.1.0"
 dependencies = [
  "eyre 0.3.10",
+ "game_data",
+ "math",
  "nina",
  "renderer",
  "sdl2",

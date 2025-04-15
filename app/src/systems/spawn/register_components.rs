@@ -1,15 +1,18 @@
 use nina::world::World;
-
-use crate::{
+use {
   game_data::{
-    AbilityMap, Armor, AutoAttack, CastQueue, Casting, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState, Dead, DebugModel, Destination,
-    Exp, GameplayRadius, Gold, Health, IncomingDamage, Killed, Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path, PathingRadius,
-    PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition, RunningScript, SelectionRadius, SkinnedRenderable, SpellResource,
-    StaticRenderable, Target, Team, UnitSpeed, Velocity, VisionRadius, KDA
-  } // ecs::World,
+    Armor, AutoAttack, Controllable, Cooldown, Cooldowns, CrowdControlList, CrowdControlState,
+    Dead, DebugModel, Destination, Exp, GameplayRadius, Gold, Health, IncomingDamage, Killed,
+    Level, MagicDamage, MagicResist, MissleSpeed, MovementState, Owner, Path, PathingRadius,
+    PersistentScript, PhysicalDamage, Player, PlayerState, Position, PreviousPosition,
+    RunningScript, SelectionRadius, SkinnedRenderable, SpellResource, StaticRenderable, Target,
+    Team, UnitSpeed, Velocity, VisionRadius, KDA,
+  }, // ecs::World,
 };
 
-pub fn register_components(world:&mut World) {
+// TODO, this could be a macro
+
+pub fn register_components(world: &mut World,) {
   world
     //Basic stats
     .register_component::<Health>()
@@ -47,9 +50,9 @@ pub fn register_components(world:&mut World) {
     .register_component::<KDA>()
     .register_component::<IncomingDamage>()
     //Casting
-    .register_component::<AbilityMap>()
-    .register_component::<Casting>()
-    .register_component::<CastQueue>()
+    // .register_component::<AbilityMap>()
+    // .register_component::<Casting>()
+    // .register_component::<CastQueue>()
     //Script components
     .register_component::<PersistentScript>()
     .register_component::<RunningScript>()

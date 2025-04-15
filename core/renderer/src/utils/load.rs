@@ -22,7 +22,9 @@ use wgpu::{
 /// [`Texture`](crate::core::texture::Texture)s.into the scene and store it in
 /// [`RenderResources`](crate::utils::resources::RenderResources).
 pub fn load_model(renderer: &mut Renderer, name: &str,) -> Model {
-  let path = format!("assets/models/{name}.obj");
+  // let path = format!("assets/models/{name}.obj");
+  let path = format!(r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets/models/{name}.obj"#);
+
   let load_options = &LoadOptions {
     single_index: true,
     triangulate: true,
@@ -111,7 +113,8 @@ pub fn load_model(renderer: &mut Renderer, name: &str,) -> Model {
 
 /// Load a [`Texture`].
 fn load_texture(ctx: &GpuContext, name: &str,) -> Result<Texture,> {
-  let path = format!("assets/textures/{name}");
+  // let path = format!("assets/textures/{name}");
+  let path = format!(r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets/textures/{name}"#);
 
   match Reader::open(&path,) {
     Ok(img,) => match img.decode() {
@@ -132,7 +135,8 @@ fn load_texture(ctx: &GpuContext, name: &str,) -> Result<Texture,> {
 
 // TODO: Load the shader function here too
 pub fn load_shader(ctx: &GpuContext, name: &str,) -> Result<ShaderModule,> {
-  let path = format!("assets/shaders/{name}.wgsl");
+  // let path = format!("assets/shaders/{name}.wgsl");
+  let path = r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets\shaders\ModelShader.wgsl"#;
 
   match fs::read_to_string(&path,) {
     Ok(shader,) => Ok(ctx.device.create_shader_module(ShaderModuleDescriptor {
@@ -143,7 +147,7 @@ pub fn load_shader(ctx: &GpuContext, name: &str,) -> Result<ShaderModule,> {
       return Err(
         RendererErrors::ShaderDoesNotExist {
           name: name.to_string(),
-          path,
+          path: path.to_string(),
           err,
         }
         .into(),

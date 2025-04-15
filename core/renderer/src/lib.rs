@@ -1,11 +1,10 @@
 mod core;
-mod drawcall;
 mod errors;
 mod renderpass;
 mod utils;
 
+pub mod drawcall;
 pub mod renderer;
 pub mod scene;
 
-// TODO: Revist export hygine. Might be better to require users type the
-// submodule
+pub use core::instance::Instance;
