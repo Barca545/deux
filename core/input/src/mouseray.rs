@@ -1,19 +1,26 @@
-use math::raycasting::RayCast;
-use renderer::scene::camera::Camera;
+use math::{convert_screen_coords_to_ndc, raycasting::RayCast, Mat4, Vec3, Vec4};
 
 #[derive(Debug, Default, Clone, Copy,)]
 pub struct MouseRay(pub RayCast,);
 
-impl MouseRay {
-  pub fn new(x:f64, y:f64, camera:&Camera,) -> Self {
-    let inverse_projection:Mat4 = transforms.proj_mat().try_inverse().unwrap();
-    let inverse_view:Mat4 = inverse(&camera.view_mat(),);
+// Where do the screen dimensions come from?
+// Camera?
+// Inverse?
 
-    let ndc_x = 2.0 * x as f32 / screen_dimensions.width as f32 - 1.0; // range   [-1,1]
-    let ndc_y = 1.0 - (2.0 * y as f32) / screen_dimensions.height as f32; // range [-1,1]
+impl MouseRay {
+  // If instead of the camera I just make this a mat4 that'd work to decrease
+  // weird dependencies
+  pub fn new(x:f64, y:f64, proj_mat:&Mat4, view_mat:&Mat4,) -> Self {
+    // At least some of the transforms exist on the camera now
+
+    let inverse_projection:Mat4 = proj_mat.try_inverse().unwrap();
+    let inverse_view:Mat4 = view_mat.try_inverse().unwrap();
+
+    // TODO: Why are these not being used? Shouldn't the origin NDC use it?
+    let (ndc_x, ndc_y,) = convert_screen_coords_to_ndc(x as f32, y as f32, todo!(), todo!(),);
 
     // Get the ray's origin in worldspace
-    let origin_ndc:Vec4 = vec4(x as f32, y as f32, -1.0, 1.0,);
+    let origin_ndc:Vec4 = Vec4::new(x as f32, y as f32, -1.0, 1.0,);
 
     // Convert to viewspace
     let mut ray_origin_viewspace_coordinates:Vec4 = inverse_projection * origin_ndc;
@@ -24,7 +31,7 @@ impl MouseRay {
       inverse_view * ray_origin_viewspace_coordinates;
     ray_origin_worldspace_coordinates /= ray_origin_worldspace_coordinates.w;
 
-    let end_ndc:Vec4 = vec4(x as f32, y as f32, 0.0, 1.0,);
+    let end_ndc:Vec4 = Vec4::new(x as f32, y as f32, 0.0, 1.0,);
 
     //convert to viewspace
     let mut ray_end_viewspace_coordinates:Vec4 = inverse_projection * end_ndc;

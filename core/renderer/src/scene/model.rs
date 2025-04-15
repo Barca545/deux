@@ -1,23 +1,25 @@
-use crate::scene::{material::Material, mesh::Mesh};
+use crate::{scene::mesh::Mesh, utils::cache::MaterialKey};
+use storage::ArenaId;
 
 #[derive(Debug, Default,)]
 // TODO: Document what a model is
 pub struct Model {
   // TODO: Does a model need an ID?
-  pub meshes:Vec<Mesh,>,
+  pub meshes: Vec<Mesh,>,
   // TODO: If Mesh holds its material does the model also need to hold it?
-  pub materials:Vec<Material,>,
+  pub materials: Vec<MaterialKey,>,
 }
 
 impl Model {
-  pub fn new(meshes:Vec<Mesh,>, materials:Vec<Material,>,) -> Self {
+  pub fn new(meshes: Vec<Mesh,>, materials: Vec<MaterialKey,>,) -> Self {
     Model { meshes, materials, }
   }
 }
 
-#[derive(Debug, Clone, Copy,)]
 /// [Newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html) for the ID of a [`Model`].
-pub struct ModelId(usize,);
+pub type ModelId = ArenaId<Model,>;
+// #[derive(Debug, Clone, Copy,)]
+// pub struct ModelId(usize,);
 
 // TODO: Figure out what the a lifetime represents and give it a better name
 // I think it might be the lifetime of the models?

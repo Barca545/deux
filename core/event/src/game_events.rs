@@ -1,4 +1,4 @@
-use crate::game_data::{BufferedAbilityCast, Cooldown, Owner};
+use game_data::{BufferedAbilityCast, Cooldown, Owner};
 use time::Timer;
 
 //Refactor:
@@ -16,15 +16,15 @@ pub enum GameEvent {
   //Ability events
   AbilityStart(BufferedAbilityCast,),
   AbilityHit {
-    owner:Owner,
-    ability_slot:u32,
-    ability_id:usize,
+    owner: Owner,
+    ability_slot: u32,
+    ability_id: usize,
   },
   AbilityCast,
   //Combat events
   EntityKilled {
-    target:usize,
-    killer:usize,
+    target: usize,
+    killer: usize,
   },
 
   //Camera Events
@@ -40,24 +40,24 @@ pub enum GameEvent {
 
 #[derive(Debug, Clone,)]
 pub struct DelayedEvent {
-  timer:Cooldown,
-  event:GameEvent,
+  timer: Cooldown,
+  event: GameEvent,
 }
 
 #[derive(Debug, Clone,)]
 /// A stucture which tracks the game events. Does not track input or other
 /// changes.
 pub struct GameEventQueue {
-  events:Vec<GameEvent,>,
-  pending:Vec<DelayedEvent,>,
+  events: Vec<GameEvent,>,
+  pending: Vec<DelayedEvent,>,
 }
 
 impl GameEventQueue {
   /// Create a new [`GameEventQueue`].
   pub fn new() -> Self {
     GameEventQueue {
-      events:Vec::default(),
-      pending:Vec::default(),
+      events: Vec::default(),
+      pending: Vec::default(),
     }
   }
 
@@ -68,8 +68,10 @@ impl GameEventQueue {
 
   /// Iterates over the [`GameEvent`]s stored in the [`GameEventQueue`] and
   /// applies a callback function.
-  pub fn process_events<F,>(&self, mut f:F,)
-  where F: FnMut(&GameEvent,) {
+  pub fn process_events<F,>(&self, mut f: F,)
+  where
+    F: FnMut(&GameEvent,),
+  {
     for event in &self.events {
       f(event,)
     }
@@ -78,8 +80,10 @@ impl GameEventQueue {
   /// Iterates over the [`GameEvent`]s stored in the [`GameEventQueue`] and
   /// applies a callback function which can mutate the `GameEvent` or
   /// `GameEventQueue itself`.
-  pub fn process_events_mut<F,>(&mut self, mut f:F,)
-  where F: FnMut(&mut GameEvent,) {
+  pub fn process_events_mut<F,>(&mut self, mut f: F,)
+  where
+    F: FnMut(&mut GameEvent,),
+  {
     for event in &mut self.events {
       f(event,)
     }
@@ -90,7 +94,7 @@ impl GameEventQueue {
   }
 
   /// Add a [`GameEvent`] to the [`GameEventQueue`]'s `events` field.
-  pub fn push(&mut self, event:GameEvent,) {
+  pub fn push(&mut self, event: GameEvent,) {
     self.events.push(event,);
   }
 
@@ -104,8 +108,7 @@ impl GameEventQueue {
       .filter_map(|event| {
         if event.timer.is_zero() {
           Some(event.event.clone(),)
-        }
-        else {
+        } else {
           None
         }
       },)

@@ -7,7 +7,7 @@ edition = "2021"
 math = { workspace = true }
 bytemuck = { version = "1.15.0", features = ["derive"] }
 tobj = "4.0.3"
-wgpu = "0.19.3"
+wgpu = "25.0.0"
 yakui = "0.3.0"
 image = "0.24.7"
 pollster = "0.3"
@@ -17,3 +17,5 @@ storage = { workspace = true }
 windowing = { workspace = true }
 nina = { workspace = true }
 time = { workspace = true }
+# game_data = { workspace = true }
+macros = { workspace = true }

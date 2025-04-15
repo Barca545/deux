@@ -1,149 +1,240 @@
 use super::{
-  core::{
-    color::BLACK,
-    frame::Frame,
-    gpu_context::GpuContext,
-    texture::Texture,
-    vertex::{ModelVertex, Vertex},
-  },
-  resources::{CameraResources, RenderResources},
-  scene::{
-    camera::Camera,
-    instance::{Instance, InstanceBuffer},
-    model::ModelId,
-  },
+  core::{buffer::InstanceBuffer, gpu_context::GpuContext},
+  renderpass::RenderPass,
+  scene::{camera::Camera, model::ModelId},
   utils::load::load_model,
+};
+use crate::{
+  core::texture::Texture,
+  drawcall::{DrawCall, InternalDrawCall},
+  utils::{
+    load::load_shader,
+    resources::{CameraResources, RenderResources},
+  },
 };
 use eyre::Result;
 use math::FlatMat4;
-use nina::world::World;
 use std::iter::once;
-use time::ServerTime;
 use wgpu::{
   util::{BufferInitDescriptor, DeviceExt},
-  BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-  BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, BufferUsages, Color,
-  CommandEncoderDescriptor, LoadOp, Operations, PipelineLayoutDescriptor,
-  RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
-  SamplerBindingType, ShaderStages, StoreOp, TextureFormat, TextureSampleType,
-  TextureViewDescriptor, TextureViewDimension,
+  BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+  BindingType, BlendState, BufferBindingType, BufferUsages, ColorTargetState, ColorWrites,
+  CommandEncoderDescriptor, CompareFunction, DepthBiasState, DepthStencilState, Face,
+  FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor,
+  PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor,
+  SamplerBindingType, ShaderStages, StencilState, TextureFormat, TextureSampleType,
+  TextureViewDimension, VertexBufferLayout, VertexState,
 };
-use windowing::sdl2_helpers::Window;
+use windowing::windowing::Window;
 
 // Refactor:
 // - Does the Adapter/Device need to be released at the end of the program?
 // - Swap the frame buffer?
-// - Create load functions for the shaders
-// - Do static meshes need a different pipeline?
-// - Create a safer way of generating model numbers which increment. Not a huge
-//   priority. This is single threaded so ultimately safe.
-
-// TODO: Test keeping it in the function like this keeps yielding new
+// - Do static meshes need a different pipeline? -- not sure if they have a
+//   different shader
 
 pub struct Renderer {
-  pub(crate) ctx:GpuContext,
-  /// Cached Resources needed for Rendering.
-  pub(crate) render_resources:RenderResources,
-  // TODO: I think this is fine for now. Eventually I want to make the camera something more
-  // functional.
-  // /// [`Buffer`] where camera data is stored during rendering.
-  // camera_buffer:Buffer,
-  // /// Collection of pipelines used for rendering.
-  // pipeline:RenderPipeline,
-  // // TODO: The camera might be able to store it's own information about the bindgroup and
-  // textures? // I had avoided it before when I wanted it to be an ECS thing but now its not a
-  // resource there's // no real reason to strongly decouple it from graphics
-  // camera_bind_group:BindGroup,
-  // camera_buffer:Buffer,
-  // // TODO: Unsure where depth texture goes
-  // depth_texture:Texture,
-  // models:Arena<Model,>,
-  // frame:Frame,
+  pub(crate) ctx: GpuContext,
+  /// Cached Resources needed for rendering.
+  pub(crate) resources: RenderResources,
 }
 
 impl Renderer {
+  /// Id of the Opaque [`RenderPipeline`](wgpu::RenderPipeline).
+  /// Use to set the opaque `RenderPipeline` during a [`RenderPass`].
+  const OPAQUE_PIPELINE: usize = 0;
+
   // Lasts the whole program so static
   /// The [`BindGroupLayoutDescriptor`] for the [`Camera`]'s data.
   /// Describes how the vertex shader will process `Camera` data.
   // TODO: The camera bindgroup will always be the same.
-  const CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR:&'static BindGroupLayoutDescriptor<'static,> =
+  const CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR: &BindGroupLayoutDescriptor<'static,> =
     &BindGroupLayoutDescriptor {
-      label:Some("Camera Bindgroup Layout",),
-      entries:&[BindGroupLayoutEntry {
-        binding:0,
-        visibility:ShaderStages::VERTEX,
-        ty:BindingType::Buffer {
-          ty:BufferBindingType::Uniform,
-          has_dynamic_offset:false,
-          min_binding_size:None,
+      label: Some("Camera Bindgroup Layout",),
+      entries: &[BindGroupLayoutEntry {
+        binding: 0,
+        visibility: ShaderStages::VERTEX,
+        ty: BindingType::Buffer {
+          ty: BufferBindingType::Uniform,
+          has_dynamic_offset: false,
+          min_binding_size: None,
         },
-        count:None,
+        count: None,
       },],
     };
 
-  /// The [`BindGroupLayoutDescriptor`] for [`Texture`] data. Describes how the
+  /// The [`BindGroupLayoutDescriptor`] for
+  /// [`Texture`](crate::core::texture::Texture) data. Describes how the
   /// fragement shader will process `Texture` data.
-  const TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR:&'static BindGroupLayoutDescriptor<'static,> =
+  const TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR: &BindGroupLayoutDescriptor<'static,> =
     &BindGroupLayoutDescriptor {
-      label:Some("Texture Bindgroup layout",),
-      entries:&[
+      label: Some("Texture Bindgroup layout",),
+      entries: &[
         BindGroupLayoutEntry {
-          binding:0,
-          visibility:ShaderStages::FRAGMENT,
-          ty:BindingType::Texture {
-            multisampled:false,
-            view_dimension:TextureViewDimension::D2,
-            sample_type:TextureSampleType::Float { filterable:true, },
+          binding: 0,
+          visibility: ShaderStages::FRAGMENT,
+          ty: BindingType::Texture {
+            multisampled: false,
+            view_dimension: TextureViewDimension::D2,
+            sample_type: TextureSampleType::Float { filterable: true, },
           },
-          count:None,
+          count: None,
         },
         BindGroupLayoutEntry {
-          binding:1,
-          visibility:ShaderStages::FRAGMENT,
-          ty:BindingType::Sampler(SamplerBindingType::Filtering,),
-          count:None,
+          binding: 1,
+          visibility: ShaderStages::FRAGMENT,
+          ty: BindingType::Sampler(SamplerBindingType::Filtering,),
+          count: None,
         },
       ],
     };
 
   /// Create a new `Renderer` struct.
-  fn new(window:&Window,) -> Self {
+  pub fn new(window: &Window,) -> Self {
     let ctx = pollster::block_on(GpuContext::new(window,),);
 
     // Create a buffer to hold camera data passed to the renderer
     let camera_buffer = ctx.device.create_buffer_init(&BufferInitDescriptor {
-      label:Some("Camera Buffer",),
+      label: Some("Camera Buffer",),
       // Pad the buffer with dummy "camera"
       // This will be overwritten during the first render
-      contents:bytemuck::cast_slice(&FlatMat4::default(),),
+      contents: bytemuck::cast_slice(&FlatMat4::default(),),
       // The camera corresponds to a uniform
       // The camera needs to allow data to be copied to it so the
       // camera data can be updated each frame.
-      usage:BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+      usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     },);
 
     Renderer {
       // Create the camera resources and use it to create the render resources
-      render_resources:RenderResources::new(CameraResources {
-        bindgroup:ctx.device.create_bind_group(&BindGroupDescriptor {
-          label:Some("Main Camera Bindgroup",),
-          layout:&ctx
+      resources: RenderResources::new(CameraResources {
+        bindgroup: ctx.device.create_bind_group(&BindGroupDescriptor {
+          label: Some("Main Camera Bindgroup",),
+          layout: &ctx
             .device
             .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
-          entries:&[],
+          entries: &[],
         },),
-        buffer:camera_buffer,
+        buffer: camera_buffer,
       },),
       ctx,
     }
   }
 
-  // TODO: Is there any way to do this
-  pub fn texture_bind_group_layout(&self,) -> BindGroupLayout {
-    todo!()
+  /// Create a new [`Bindgroup`](wgpu::BindGroup) to hold a
+  /// [`Texture`](crate::core::texture::Texture).
+  pub fn create_texture_bindgroup(&self,) -> BindGroup {
+    self.ctx.device.create_bind_group(&BindGroupDescriptor {
+      // TODO: Need a better debug name
+      label: Some("Texture Bindgroup",),
+      layout: &self.create_texture_bindgroup_layout(),
+      entries: &[],
+    },)
   }
 
-  // TODO: Do I needa create bindgroup function which takes...something
+  /// Create a new [`BindGroupLayout`] for a
+  /// [`Texture`](crate::core::texture::Texture) [`Bindgroup`](wgpu::BindGroup).
+  pub fn create_texture_bindgroup_layout(&self,) -> BindGroupLayout {
+    self
+      .ctx
+      .device
+      .create_bind_group_layout(Self::TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR,)
+  }
+
+  // /// Load a [`Model`](crate::scene::model::Model) into the scene and store it
+  // /// in the [`RenderResources`].
+  // pub fn load_model(&mut self, model_name: &str,) {
+  //   let model = utils::load::load_model(self, model_name,);
+  // }
+
+  // TODO: For now this just create the one opaque render pipeline. Might
+  // eventually need to be made more general
+  // TODO: For now this will have hard coded shaders but as things start to get
+  // unique shades this will need to change
+  pub fn create_opaque_pipeline(
+    &mut self,
+    shader_name: &str,
+    texture_format: TextureFormat,
+    vertex_buffer_layouts: VertexBufferLayout,
+  ) -> RenderPipeline {
+    // Load the shaders for the
+    let shaders = load_shader(&self.ctx, shader_name,).unwrap();
+
+    // Create the pipeline's layout
+    let pipeline_layout = self
+      .ctx
+      .device
+      .create_pipeline_layout(&PipelineLayoutDescriptor {
+        label: Some("Opaque RenderPipelineLayout",),
+        // TODO: A real opaque material will have a few textures
+        // Declare the bind_group_layouts the pipeline will use (1 camera and 1 texure)
+        bind_group_layouts: &[
+          // Create the Camera BindGroup Layout
+          &self
+            .ctx
+            .device
+            .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
+          // Create the Base Color Texture BindGroup Layout
+          &self
+            .ctx
+            .device
+            .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
+        ],
+        push_constant_ranges: &[],
+      },);
+
+    self
+      .ctx
+      .device
+      .create_render_pipeline(&RenderPipelineDescriptor {
+        label: Some("Opaque RenderPipeline",),
+        layout: Some(&pipeline_layout,),
+        vertex: VertexState {
+          module: &shaders,
+          entry_point: Some("vs_main",),
+          buffers: &[vertex_buffer_layouts,],
+          compilation_options: PipelineCompilationOptions::default(),
+        },
+        fragment: Some(FragmentState {
+          module: &shaders,
+          entry_point: Some("fs_main",),
+          targets: &[Some(ColorTargetState {
+            format: texture_format,
+            blend: Some(BlendState::REPLACE,),
+            write_mask: ColorWrites::ALL,
+          },),],
+          compilation_options: PipelineCompilationOptions::default(),
+        },),
+        primitive: PrimitiveState {
+          topology: PrimitiveTopology::TriangleList,
+          strip_index_format: None,
+          // Cull triangles whose verts are not arranged counterclockwise
+          front_face: FrontFace::Ccw,
+          cull_mode: Some(Face::Back,),
+          // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+          polygon_mode: PolygonMode::Fill,
+          // Requires Features::DEPTH_CLIP_CONTROL
+          unclipped_depth: false,
+          // Requires Features::CONSERVATIVE_RASTERIZATION
+          conservative: false,
+        },
+        depth_stencil: Some(DepthStencilState {
+          // TODO: How do I know this is the correct color format
+          format: Texture::DEPTH_FORMAT,
+          depth_write_enabled: true,
+          depth_compare: CompareFunction::Less,
+          stencil: StencilState::default(),
+          bias: DepthBiasState::default(),
+        },),
+        multisample: MultisampleState {
+          count: 1,
+          mask: !0,
+          alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+        cache: None,
+      },)
+  }
 
   // /// Add a new [`RenderPipeline`](wgpu::RenderPipeline) to the `Renderer`.
   // pub fn create_opaque_pipeline(&mut self, name:&str,
@@ -206,73 +297,11 @@ impl Renderer {
   // &self.config,);   }
   // }
 
-  /// Prepare the [`CommandEncoder`](wgpu::CommandEncoder) for rendering.
-  pub fn render(&mut self, world:&World,) -> Result<(),> {
-    // BEGINNING OF SETUP LOGIC
-
-    // Call it once up here so each object has the same interpolation factor instead
-    // of slightly different ones
-    let interpolation_factor = world
-      .get_resource::<ServerTime>()
-      .get_interpolation_factor();
-
-    // Update the camera
-
-    let mut query = world.query();
-    let player = &query.with_component::<Controllable>().unwrap().run()[0];
-    let player_position = player.get_component::<Position>().unwrap();
-    let player_previous_position = player.get_component::<PreviousPosition>().unwrap();
-    let player_render_position = calculate_render_position(
-      *player_previous_position,
-      *player_position,
-      interpolation_factor,
-    )
-    .0;
-
-    let mut camera = world.get_resource_mut::<Camera>();
-
-    camera.offset_camera_relative_to_position(player_render_position,);
-
-    // Render skinned models
-    let mut query = world.query();
-    let entities = query.with_component::<SkinnedRenderable>().unwrap().run();
-
-    // Create a Frame to draw to
-    let mut frame = Frame::new(entities.len(),);
-
-    for entity in entities {
-      let model_id = &entity.get_component::<SkinnedRenderable>().unwrap().0;
-      let position = entity.get_component::<Position>().unwrap();
-      let previous_position = entity.get_component::<PreviousPosition>().unwrap();
-
-      let instance = Instance::new(
-        // TODO: I think calculate_render_position could be an associated function on the position
-        // struct or something
-        calculate_render_position(*previous_position, *position, interpolation_factor,).0,
-      );
-
-      // Group the instances for drawing
-      frame.record_instance(&model_id, instance,);
-    }
-
-    // // Render static models
-    // let mut query = world.query();
-    // let entities = query.with_component::<StaticRenderable>().unwrap().run();
-    // // Add every instance of a model which needs to be rendered to the frame
-    // for entity in entities {
-    //   let model_id = entity.get_component::<StaticRenderable>().unwrap();
-    //   let position = entity.get_component::<Position>().unwrap();
-    // }
-
-    // BEGINNING OF RENDER LOGIC
-
-    // TODO: Pipeline comes from the material so I actually need to fetch that first
-    // So loop over all the entities and get their materials bind the pipelines
-
+  ///// Prepare the [`CommandEncoder`](wgpu::CommandEncoder) for rendering.
+  pub fn render(&mut self, camera: &Camera, scene: Vec<DrawCall,>,) -> Result<(),> {
     // Update the camera buffer
-    let camera = world.get_resource::<Camera>();
     self.ctx.queue.write_buffer(
-      &self.render_resources.camera.buffer,
+      &self.resources.camera.buffer,
       0,
       bytemuck::cast_slice(&camera.pv_mat(),),
     );
@@ -282,70 +311,64 @@ impl Renderer {
       .ctx
       .device
       .create_command_encoder(&CommandEncoderDescriptor {
-        label:Some("Render Encoder",),
+        label: Some("Render Encoder",),
       },);
 
     // Get a texture to render to from the surface
-    let output = self.ctx.surface.get_current_texture()?;
+    let output = self.ctx.surface.get_current_texture().unwrap();
 
-    // Create a textureview to control how the code renders to the texture
-    let view = output
-      .texture
-      .create_view(&TextureViewDescriptor::default(),);
-
-    // Create a render pass descriptor
-    let descriptor = RenderPassDescriptor {
-      label:Some("Diffuse Material Pass",),
-      color_attachments:&[Some(RenderPassColorAttachment {
-        view:&view,
-        resolve_target:None,
-        ops:Operations {
-          load:LoadOp::Clear(BLACK,),
-          store:StoreOp::Store,
-        },
-      },),],
-      // Attach the depth stencil
-      depth_stencil_attachment:Some(RenderPassDepthStencilAttachment {
-        view:&Texture::create_depth_texture(
-          &self.ctx.device,
-          /* TODO */ todo!("Find a way to grescreen dimensions"),
-        )
-        .view,
-        depth_ops:Some(Operations {
-          load:LoadOp::Clear(1.0,),
-          store:StoreOp::Store,
-        },),
-        stencil_ops:None,
-      },),
-      timestamp_writes:None,
-      occlusion_query_set:None,
-    };
-
+    // TODO: If this works make it a render resource
+    let mut buffer = InstanceBuffer::new();
     {
-      let mut render_pass = encoder.begin_render_pass(&descriptor,);
+      // Prep all the drawcalls
 
-      // Opaque draws: bind the opaque pipeline (Is there only one opaque pipeline?)
-      render_pass.set_pipeline(/* TODO */ todo!(),);
+      let mut internal_drawcalls = Vec::new();
 
-      // Set the texture and camera bindgroups
-      render_pass.set_bind_group(1, &self.render_resources.camera.bindgroup, &[],);
+      for draw_call in scene {
+        // TODO: Hand off populating the instance buffer to the update render function
+        // and replace drawcall with what is currently the internal draw call
 
-      // TODO: I think iterating over a hashmap is slow
-      for (id, instances,) in frame.instances {
-        // TODO: I think creating an instance buffer like this is slow
-        // Create the instance buffer
-        let buffer = InstanceBuffer::new(&self.ctx.device, &instances,);
+        // Capture the start of this entry in the instance buffer
+        let start = buffer.len();
 
-        // Buffer the instances
-        render_pass.set_vertex_buffer(1, buffer.slice(..,),);
+        // Push the instances into the Instance buffer
+        {
+          buffer.push_instances(&self.ctx, &mut encoder, &draw_call.instances,);
+        }
+
+        // Capture the end of this entry in the instance buffer
+        let end = buffer.len();
+
+        // Prepare an internal drawcall
+        internal_drawcalls.push(InternalDrawCall {
+          model: draw_call.model,
+          instances: start as u32..end as u32,
+        },);
+      }
+      // Here do the actual drawing
+
+      // Create a renderpass
+      let mut renderpass = RenderPass::new(
+        &self.ctx,
+        &mut encoder,
+        &self.resources,
+        &output,
+        "Opaque Pass",
+      );
+
+      // Pass the index buffer to the renderpass
+      renderpass.set_instance_buffer(1, &buffer,);
+
+      for drawcall in internal_drawcalls {
+        // TODO: I am positive rebinding the pipeline and bindgroup each time is bad
+        // Opaque draws: bind the opaque pipeline
+        renderpass.set_pipeline(Self::OPAQUE_PIPELINE,);
+
+        // Set the texture and camera bindgroups
+        renderpass.set_bind_group(1, &self.resources.camera.bindgroup,);
 
         // Draw
-        // TODO: How was this initally fetched
-        render_pass.draw_model_instanced(
-          &self.render_resources.bindgroups,
-          self.render_resources.models.get(/* TODO */ todo!(),),
-          instances.range(),
-        );
+        renderpass.draw_model_instanced(drawcall.model, drawcall.instances,);
       }
     }
 
@@ -356,14 +379,14 @@ impl Renderer {
   }
 
   /// Adds a [`Model`] to the [`Renderer`] and returns its [`ModelId`]
-  pub fn add_model(&mut self, name:&str,) -> ModelId {
+  pub fn add_model(&mut self, name: &str,) -> ModelId {
     // TODO: Load model can take a graphics contex
     let model = load_model(self, name,);
 
     // Initially this returned a model which I then stored but the model data is all
     // buffered All I need is a handle to it
 
-    self.render_resources.models.alloc(model,)
+    self.resources.models.alloc(model,)
   }
 
   // /// Create a new [`RenderPipeline`].

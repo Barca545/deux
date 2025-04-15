@@ -11,5 +11,8 @@ nina = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+time = { workspace = true }
 sdl2 = { workspace = true }
 # game_data = { workspace = true }
+renderer = { workspace = true }
+windowing = { workspace = true }

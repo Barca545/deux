@@ -1,6 +1,6 @@
 use crate::{
-  cache::MaterialKey,
   core::buffer::{IndexBuffer, VertexBuffer},
+  utils::cache::MaterialKey,
 };
 use std::ops::Range;
 
@@ -9,22 +9,22 @@ use std::ops::Range;
 /// game.
 pub struct Mesh {
   /// Name of the `Mesh`. Used for debugging.
-  pub name:String,
-  pub vertex_buffer:VertexBuffer,
-  pub index_buffer:IndexBuffer,
+  pub name: String,
+  pub vertex_buffer: VertexBuffer,
+  pub index_buffer: IndexBuffer,
   /// The identifier for the `Mesh`'s [`Material`](super::material::Material).
-  pub material:MaterialKey,
+  pub material: MaterialKey,
 }
 
 impl Mesh {
   pub fn new(
-    name:&str,
-    vertex_buffer:VertexBuffer,
-    index_buffer:IndexBuffer,
-    material:MaterialKey,
+    name: &str,
+    vertex_buffer: VertexBuffer,
+    index_buffer: IndexBuffer,
+    material: MaterialKey,
   ) -> Self {
     Mesh {
-      name:name.to_string(),
+      name: name.to_string(),
       vertex_buffer,
       index_buffer,
       material,

@@ -1,4 +1,4 @@
-mod abilities;
+// mod abilities;
 mod basic_stats;
 mod buffs;
 mod combat;
@@ -13,5 +13,15 @@ mod scripting;
 mod status;
 
 pub use self::{
-  abilities::*, basic_stats::*, combat::*, cooldowns::*, identification::*, income::*, levels::*, movement::*, radii::*, render::*, scripting::*, status::*
+  basic_stats::*,
+  combat::*,
+  cooldowns::*,
+  identification::*,
+  income::*,
+  levels::*,
+  movement::*,
+  radii::*,
+  render::*,
+  scripting::*,
+  status::*, // abilities::*,
 };

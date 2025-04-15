@@ -7,6 +7,10 @@ edition = "2021"
 math = { workspace = true }
 time = { workspace = true }
 serde = { workspace = true }
+inputs = { workspace = true }
+renderer = { workspace = true }
 
-# TODO: inputs seems to pollute other crates with the same issue
+
+# TODO: These pollute other crates because they are erroring so their dependents can't compile enough to show errors
 # inputs = { workspace = true }
+# renderer = { workspace = true }

@@ -49,8 +49,13 @@ pub trait NumberOperations<Rhs = Self, Output = Self,>:
 {
 }
 
-impl<N,> NumberOperations<N, N,> for N where N: Mul<N, Output = N,> + Add<N, Output = N,> + Div<N, Output = N,> + Sub<N, Output = N,>
-{}
+impl<N,> NumberOperations<N, N,> for N where N: Mul<N, Output = N,>
+    + Add<N, Output = N,>
+    + Div<N, Output = N,>
+    + Sub<N, Output = N,>
+    + From<f32,>
+{
+}
 
 /// Marker trait gauranteeing `N` will behave like a number
 pub trait Number: Sized + PartialOrd + Zero + NumberOperations {}

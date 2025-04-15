@@ -1,7 +1,6 @@
-use crate::errors::InputErrors;
+use crate::{errors::InputErrors, mouseray::MouseRay};
 use eyre::Result;
 use nina::world::World;
-use renderer::{camera::Camera, sdl2_helpers::PhysicalPosition};
 use sdl2::{keyboard::Keycode, mouse::MouseButton};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug};
@@ -19,20 +18,20 @@ use std::{collections::HashMap, fmt::Debug};
 /// Resource containing the state of all inputs in the game.
 pub struct PlayerInputs {
   // Movement
-  pub up:bool,
-  pub down:bool,
-  pub left:bool,
-  pub right:bool,
+  pub up: bool,
+  pub down: bool,
+  pub left: bool,
+  pub right: bool,
   // TODO: Analog would hold a vec3 not a bool
 }
 
 impl PlayerInputs {
   pub fn new() -> Self {
     PlayerInputs {
-      up:false,
-      down:false,
-      left:false,
-      right:false,
+      up: false,
+      down: false,
+      left: false,
+      right: false,
     }
   }
 }
@@ -53,27 +52,25 @@ pub enum Keybind {
 
 #[derive(Debug, Clone,)]
 pub struct Keybinds {
-  buttons:HashMap<Keycode, Keybind,>,
-  mouse:HashMap<MouseButton, Keybind,>,
+  buttons: HashMap<Keycode, Keybind,>,
+  mouse: HashMap<MouseButton, Keybind,>,
 }
 
 impl Keybinds {
   /// Create an [`Input`] from a [`Keycode`].
   pub fn key_input(
     &self,
-    world:&World,
-    mouse_pos:&PhysicalPosition,
-    key:Keycode,
-    action:KeyAction,
+    world: &World,
+    mouse: &MouseRay,
+    key: Keycode,
+    action: KeyAction,
   ) -> Result<Input,> {
     if let Some(keybind,) = self.buttons.get(&key,) {
-      let transforms = world.get_resource::<Transforms>();
-      let camera = world.get_resource::<Camera>();
-      let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera,);
+      // let camera = world.get_resource::<Camera>();
+      // let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &camera,);
 
-      Ok(Input::new(mouse, *keybind, Some(action,),),)
-    }
-    else {
+      Ok(Input::new(*mouse, *keybind, Some(action,),),)
+    } else {
       return Err(InputErrors::KeyNotRegistered { key, }.into(),);
     }
   }
@@ -81,27 +78,24 @@ impl Keybinds {
   /// Create an [`Input`] from a mouse button click.
   pub fn mouse_input(
     &self,
-    world:&World,
-    mouse_pos:&PhysicalPosition,
-    button:&MouseButton,
+    world: &World,
+    mouse: &MouseRay,
+    button: &MouseButton,
   ) -> Result<Input,> {
     if let Some(keybind,) = self.mouse.get(&button,) {
-      let transforms = world.get_resource::<Transforms>();
-      let camera = world.get_resource::<Camera>();
-      let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &transforms, &camera,);
-      Ok(Input::new(mouse, *keybind, None,),)
-    }
-    else {
-      return Err(InputErrors::ButtonNotRegistered { button:*button, }.into(),);
+      // let camera = world.get_resource::<Camera>();
+      // let mouse = MouseRay::new(mouse_pos.x, mouse_pos.y, &camera.p,);
+      Ok(Input::new(*mouse, *keybind, None,),)
+    } else {
+      return Err(InputErrors::ButtonNotRegistered { button: *button, }.into(),);
     }
   }
 
   /// Returns a [`Keycode`]'s corresponding [`Keybind`].
-  pub fn get_input(&self, key:Keycode,) -> Result<Keybind,> {
+  pub fn get_input(&self, key: Keycode,) -> Result<Keybind,> {
     if let Some(keybind,) = self.buttons.get(&key,) {
       Ok(*keybind,)
-    }
-    else {
+    } else {
       return Err(InputErrors::KeyNotRegistered { key, }.into(),);
     }
   }
@@ -110,8 +104,8 @@ impl Keybinds {
 impl Default for Keybinds {
   fn default() -> Self {
     let mut keybinds = Keybinds {
-      buttons:HashMap::new(),
-      mouse:HashMap::new(),
+      buttons: HashMap::new(),
+      mouse: HashMap::new(),
     };
     keybinds
       .buttons
@@ -136,11 +130,11 @@ impl Default for Keybinds {
 #[derive(Debug, Clone, Copy,)]
 pub struct Input {
   /// The location of the mouse at the time of the `Input`.
-  pub mouse:MouseRay,
+  pub mouse: MouseRay,
   /// The command the `Input` contains.
-  pub keybind:Keybind,
+  pub keybind: Keybind,
   /// The [`KeyAction`] of the key.
-  pub action:Option<KeyAction,>,
+  pub action: Option<KeyAction,>,
 }
 
 #[derive(Debug, Clone, Copy,)]
@@ -151,7 +145,7 @@ pub enum KeyAction {
 }
 
 impl Input {
-  pub fn new(mouse:MouseRay, keybind:Keybind, action:Option<KeyAction,>,) -> Self {
+  pub fn new(mouse: MouseRay, keybind: Keybind, action: Option<KeyAction,>,) -> Self {
     Self {
       mouse,
       keybind,
@@ -162,25 +156,27 @@ impl Input {
 
 #[derive(Debug,)]
 pub struct FrameInputs {
-  inputs:Vec<Input,>,
+  inputs: Vec<Input,>,
 }
 
 impl FrameInputs {
   pub fn new() -> Self {
-    FrameInputs { inputs:vec![], }
+    FrameInputs { inputs: vec![], }
   }
 
   /// Iterates over the [`Input`]s stored in the [`FrameInputs`] and applies a
   /// callback function.
-  pub fn process_inputs<F,>(&self, mut f:F,)
-  where F: FnMut(&Input,) {
+  pub fn process_inputs<F,>(&self, mut f: F,)
+  where
+    F: FnMut(&Input,),
+  {
     for input in &self.inputs {
       f(input,)
     }
   }
 
   /// Add a [`Input`] to the [`FrameInputs`].
-  pub fn push(&mut self, input:Input,) {
+  pub fn push(&mut self, input: Input,) {
     self.inputs.push(input,)
   }
 

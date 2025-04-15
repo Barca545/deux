@@ -1,5 +1,3 @@
-mod update;
-
 use engine::{
   input::user_inputs::{FrameInputs, KeyAction, Keybinds},
   math::Transforms,
@@ -13,9 +11,11 @@ use engine::{
   windowing::create_window,
 };
 use nina::world::World;
+use renderer::renderer::Renderer;
 use sdl2::{event::Event, keyboard::Keycode};
 use std::sync::Arc;
 use update::update;
+use windowing::windowing::Window;
 
 // Refactor:
 // - Re-add other systems
@@ -33,15 +33,16 @@ fn main() {
   register_components(&mut world,);
   register_resources(&mut world,);
 
-  let (canvas, mut event_pump,) = create_window();
+  // let (window, mut event_pump,) = windowing::create_window();
+  let window = Window::new();
 
   //Create the camera
   let mut camera = Camera::default();
-  let transforms = Transforms::from(canvas.window().inner_size(),);
-  camera.update_pv(&transforms,);
+  // let transforms = Transforms::from(canvas.window().inner_size(),);
+  // camera.update_pv(&transforms,);
 
   //Spawn the renderer
-  let mut renderer = pollster::block_on(Renderer::new(Arc::new(canvas,),),);
+  let mut renderer = Renderer::new(&window,);
 
   //Spawn the player
   spawn_player(&mut world, "warrior", 1, &mut renderer,);
@@ -176,8 +177,7 @@ fn main() {
     // update loop since it needs to reflect how long the update took
     let server_time = world.get_resource::<ServerTime>();
     if server_time.should_render() {
-      renderer.update(&world,);
-      renderer.render().unwrap();
+      // TODO: Use render system from the update mod
       let server_time = world.get_resource_mut::<ServerTime>();
       server_time.decrement_seconds_since_render()
     }

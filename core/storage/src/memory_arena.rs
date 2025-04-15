@@ -10,28 +10,28 @@ use std::marker::PhantomData;
 /// Structure for holding preallocated data. [See more](https://en.wikipedia.org/wiki/Region-based_memory_management).
 pub struct Arena<T,> {
   /// Containter for allocated data.
-  data:Vec<T,>,
+  data: Vec<T,>,
   /// Pointer to the next free slot.
-  ptr_next:usize,
+  ptr_next: usize,
   /// Number of elements stored in the [`Arena`].
-  len:usize,
+  len: usize,
 }
 
 impl<T,> Arena<T,> {
   /// Default capacity of the [`Arena`].
-  const DEFAULT_CAP:usize = 100;
+  const DEFAULT_CAP: usize = 100;
 
   /// Create a new [`Arena`] with size equal to `DEFAULT_CAP`.
   pub fn new() -> Self {
     Arena {
-      data:Vec::with_capacity(Self::DEFAULT_CAP,),
-      ptr_next:0,
-      len:0,
+      data: Vec::with_capacity(Self::DEFAULT_CAP,),
+      ptr_next: 0,
+      len: 0,
     }
   }
 
   /// Loads data into [`Arena`] and returns a `usize` handle to the data.
-  pub fn alloc(&mut self, data:T,) -> ArenaId<T,> {
+  pub fn alloc(&mut self, data: T,) -> ArenaId<T,> {
     self.data.push(data,);
     let id = self.ptr_next;
     self.ptr_next += 1;
@@ -40,16 +40,16 @@ impl<T,> Arena<T,> {
     // Return the id of the newly inserted data
     ArenaId {
       id,
-      _data:PhantomData,
+      _data: PhantomData,
     }
   }
 
   /// Creates an [`Arena`] with a custom capcity.
-  pub fn with_capacity(cap:usize,) -> Self {
+  pub fn with_capacity(cap: usize,) -> Self {
     Arena {
-      data:Vec::with_capacity(cap,),
-      ptr_next:0,
-      len:0,
+      data: Vec::with_capacity(cap,),
+      ptr_next: 0,
+      len: 0,
     }
   }
   /// Returns the number of elements stored in the [`Arena`].
@@ -58,7 +58,7 @@ impl<T,> Arena<T,> {
   }
 
   /// Return elements matching the submitted [`ArenaId`]s.
-  pub fn get_elements(&self, ids:Vec<ArenaId<T,>,>,) -> Vec<&T,> {
+  pub fn get_elements(&self, ids: Vec<ArenaId<T,>,>,) -> Vec<&T,> {
     ids
       .into_iter()
       .map(|id| &self.data[id.id],)
@@ -66,17 +66,28 @@ impl<T,> Arena<T,> {
   }
 
   /// Return the element matching the submitted [`ArenaId`].
-  pub fn get(&self, id:ArenaId<T,>,) -> &T {
+  pub fn get(&self, id: &ArenaId<T,>,) -> &T {
     &self.data[id.id]
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq,)]
+#[derive(Debug, Hash, PartialEq, Eq,)]
 /// [Newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html) for the ID of an element inside an [`Arena`]. Used
 pub struct ArenaId<T,> {
-  id:usize,
-  _data:PhantomData<*const T,>,
+  id: usize,
+  _data: PhantomData<*const T,>,
 }
+
+impl<T,> Clone for ArenaId<T,> {
+  fn clone(&self,) -> Self {
+    Self {
+      id: self.id.clone(),
+      _data: self._data.clone(),
+    }
+  }
+}
+
+impl<T,> Copy for ArenaId<T,> {}
 
 // /// Marker type which allows the implementor to index into an [`Arena`] of
 // type /// `T`.

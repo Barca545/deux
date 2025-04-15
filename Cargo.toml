@@ -2,7 +2,7 @@
 [workspace]
 resolver = "2"
 members = ["app", "core/*"]
-exclude = ["core/utility", "core/arena"]
+exclude = ["core/utility", "core/arena", "core/errors"]
 
 # TODO: inputs seems to not be getting proofed?
 # Cause is any crate that relies on a crate that isn't compiling doesn't get compiled enought to check for errors
@@ -15,11 +15,12 @@ storage = { path = "core/storage" }
 math = { path = "core/math" }
 time = { path = "core/time" }
 nina = { git = "https://github.com/Barca545/Nina.git" }
-inputs = { path = "core/inputs" }
+inputs = { path = "core/input" }
 renderer = { path = "core/renderer" }
 windowing = { path = "core/windowing" }
 thiserror = "1.0.48"
 serde_json = "1.0"
+macros = { path = "core/macros" }
 
 [workspace.dependencies.sdl2]
 version = "0.37"

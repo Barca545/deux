@@ -115,11 +115,10 @@ pub fn max<N:Number,>(a:N, b:N,) -> N {
   }
 }
 
-/// Maps an `(x,y)` pixel value to a value in normalized device coordinates,
-/// range[-1,1].
-pub fn to_ndc(x:f32, y:f32, width:i32, height:i32,) -> (f32, f32,) {
-  let x = 2.0 * x as f32 / width as f32 - 1.0;
-  let y = 1.0 - (2.0 * y as f32) / height as f32;
+/// Maps an `(x,y)` pixel value to a value in [normalized device coordinates](https://learnopengl.com/Getting-started/Coordinate-Systems).
+pub fn convert_screen_coords_to_ndc(x:f32, y:f32, width:i32, height:i32,) -> (f32, f32,) {
+  let x = 2.0 * x / width as f32 - 1.0; // range [-1,1]
+  let y = 1.0 - (2.0 * y) / height as f32; // range [-1,1]
   (x, y,)
 }
 
@@ -134,6 +133,9 @@ pub fn interpolate(a:Vec3, b:Vec3, factor:f32,) -> Vec3 {
   }
 }
 
+// - Updated `Renderer` struct
+// - Removed `update` method as its logic overlaped with render
+// From here:https://gamedev.stackexchange.com/questions/18615/how-do-i-linearly-interpolate-between-two-vectors
 fn lerp(a:Vec3, b:Vec3, factor:f32,) -> Vec3 {
   // TODO: Confirm this is correct
   a * factor + (1.0 - factor) * b
