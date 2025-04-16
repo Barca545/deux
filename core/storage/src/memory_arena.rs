@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{hash::Hash, marker::PhantomData};
 
 // Refactor:
 // - Make the Arena generational I *think* this is as easy as making the ID
@@ -71,7 +71,7 @@ impl<T,> Arena<T,> {
   }
 }
 
-#[derive(Debug, Hash, Eq,)]
+#[derive(Debug,)]
 /// [Newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html) for the ID of an element inside an [`Arena`]. Used
 pub struct ArenaId<T,> {
   id: usize,
@@ -92,6 +92,14 @@ impl<T,> Copy for ArenaId<T,> {}
 impl<T,> PartialEq for ArenaId<T,> {
   fn eq(&self, other: &Self,) -> bool {
     self.id == other.id
+  }
+}
+
+impl<T,> Eq for ArenaId<T,> {}
+
+impl<T,> Hash for ArenaId<T,> {
+  fn hash<H: std::hash::Hasher,>(&self, state: &mut H,) {
+    self.id.hash(state,);
   }
 }
 

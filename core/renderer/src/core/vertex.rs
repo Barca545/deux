@@ -18,13 +18,14 @@ use wgpu::{vertex_attr_array, BufferAddress, VertexBufferLayout, VertexStepMode}
 /// Data which is submitted to the `VertexBuffer` must implement [`Pod`] +
 /// [`Zeroable`] so they can be converted into `&[u8]` using
 /// [`bytemuck::cast_slice`] when inserted into a `VertexBuffer`.
-pub trait Vertex: Copy + Clone + Hash + Pod + Zeroable {
+// TODO: Could this be implemented by the buffers themselves?
+pub trait VertexBufferData: Copy + Clone + Pod + Zeroable {
   const BUFFER_LAYOUT: VertexBufferLayout<'static,>;
 }
 
 #[derive(Copy, Clone, Debug, Pod, Zeroable,)]
 #[repr(C)]
-/// Vertex belonging to an in-game model.
+/// Vertex belonging to an in-game [`Model`](crate::scene::model::Model).
 pub struct ModelVertex {
   /// The location of the vertex.
   pub(crate) pos: [f32; 3],
@@ -51,7 +52,7 @@ impl Hash for ModelVertex {
   }
 }
 
-impl Vertex for ModelVertex {
+impl VertexBufferData for ModelVertex {
   // TODO: Describe what this is needed for (second sentence) better
   /// [`VertexBufferLayout`] for a [`ModelVertex`]. Needed for converting a
   /// `ModelVertex` into a value which can placed into a
@@ -104,7 +105,7 @@ impl Hash for DebugVertex {
   }
 }
 
-impl Vertex for DebugVertex {
+impl VertexBufferData for DebugVertex {
   // TODO: Describe what this is needed for (second sentence) better
   /// [`VertexBufferLayout`] for a [`DebugVertex`]. Needed for converting a
   /// `DebugVertex` into a value which can placed into a

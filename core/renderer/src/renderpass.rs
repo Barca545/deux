@@ -1,18 +1,19 @@
 use crate::{
   core::{buffer::InstanceBuffer, gpu_context::GpuContext, texture::Texture},
   scene::{material::Material, mesh::Mesh, model::ModelId},
-  utils::resources::RenderResources,
+  utils::{
+    resources::RenderResources,
+    vertex_state::{INSTANCE_BUFFER_SLOT, VERTEX_BUFFER_SLOT},
+  },
 };
 use std::ops::Range;
 use wgpu::{
-  BindGroup, Color, CommandEncoder, CommandEncoderDescriptor, IndexFormat, LoadOp, Operations,
-  RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp,
-  SurfaceTexture, TextureView, TextureViewDescriptor,
+  BindGroup, Color, CommandEncoder, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
+  RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp, SurfaceTexture, TextureView,
+  TextureViewDescriptor,
 };
 
 pub struct RenderPass<'encoder,> {
-  /// Name used for debugging.
-  label: &'encoder str,
   /// wgpu [`RenderPass`](wgpu::RenderPass). Stores render commands and draws
   /// them to a render target.
   renderpass: wgpu::RenderPass<'encoder,>,
@@ -23,25 +24,7 @@ pub struct RenderPass<'encoder,> {
 }
 
 impl<'pass,> RenderPass<'pass,> {
-  // TODO: document. I am pretty sure this is the surface the draw commands
-  // actually target
-  fn create_texture_view(output: &SurfaceTexture,) -> TextureView {
-    // Create a textureview to control how the code renders to the texture
-    output
-      .texture
-      .create_view(&TextureViewDescriptor::default(),)
-  }
-
-  /// Create a [`CommandEncoder`] for the [`RenderPass`] to use.
-  fn create_command_encoder(ctx: &GpuContext,) -> CommandEncoder {
-    // Create a command encoder for draw commands
-    ctx
-      .device
-      .create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Render Encoder",),
-      },)
-  }
-
+  /// Create a new [`RenderPass`].
   pub fn new<'encoder,>(
     ctx: &GpuContext,
     encoder: &'encoder mut CommandEncoder,
@@ -53,7 +36,7 @@ impl<'pass,> RenderPass<'pass,> {
     let depth_view = Texture::create_depth_texture(ctx,).view;
 
     let desc = RenderPassDescriptor {
-      label: Some("Diffuse Material Pass",),
+      label: Some(label,),
       color_attachments: &[Some(RenderPassColorAttachment {
         view: &view,
         resolve_target: None,
@@ -77,13 +60,31 @@ impl<'pass,> RenderPass<'pass,> {
 
     let pass = encoder.begin_render_pass(&desc,).forget_lifetime();
     RenderPass {
-      label: label,
       renderpass: pass,
       resources,
     }
   }
 
-  /// Set the id of the active [`RenderPipeline`](wgpu::RenderPipeline).
+  // /// Create a [`CommandEncoder`] for the [`RenderPass`] to use.
+  // fn create_command_encoder(ctx: &GpuContext,) -> CommandEncoder {
+  //   // Create a command encoder for draw commands
+  //   ctx
+  //     .device
+  //     .create_command_encoder(&CommandEncoderDescriptor {
+  //       label: Some("Render Encoder",),
+  //     },)
+  // }
+
+  // TODO: document. I am pretty sure this is the surface the draw commands
+  // actually target
+  fn create_texture_view(output: &SurfaceTexture,) -> TextureView {
+    // Create a textureview to control how the code renders to the texture
+    output
+      .texture
+      .create_view(&TextureViewDescriptor::default(),)
+  }
+
+  /// Set the ID of the active [`RenderPipeline`](wgpu::RenderPipeline).
   /// Subsequent operations will use this `RenderPipeline`.
   pub fn set_pipeline(&mut self, pipeline_id: usize,) {
     self
@@ -91,7 +92,7 @@ impl<'pass,> RenderPass<'pass,> {
       .set_pipeline(self.resources.get_pipeline(pipeline_id,),);
   }
 
-  /// Set the id of the active [`BindGroup`] in the
+  /// Set the ID of the active [`BindGroup`] in the
   /// active [`RenderPipeline`](wgpu::RenderPipeline).
   pub fn set_bind_group(&mut self, index: u32, bindgroup: &'pass BindGroup,) {
     // Currently I'm not dealing with bindgroup offsets. This is always easy enough
@@ -103,14 +104,17 @@ impl<'pass,> RenderPass<'pass,> {
   /// slot in the currently bound [`RenderPipeline`](wgpu::RenderPipeline).
   /// Specifically, `slot` refers to the index of the matching descriptor in
   /// [`VertexState::buffers`](wgpu::VertexState::buffers).
-  pub fn set_instance_buffer(&mut self, slot: u32, buffer: &'pass InstanceBuffer,) {
+  pub fn set_instance_buffer(&mut self, buffer: &'pass InstanceBuffer,) {
     // There's nothing to buffer if there are no instances.
     if buffer.len() > 0 {
-      self.renderpass.set_vertex_buffer(slot, buffer.slice(..,),)
+      self
+        .renderpass
+        .set_vertex_buffer(INSTANCE_BUFFER_SLOT, buffer.slice(..,),)
     }
   }
 
   // TODO: Document the draw methods
+  // TODO: look at learn wgpu to find out where this *should* be used
   #[warn(missing_docs)]
   pub fn draw_mesh(&mut self, mesh: &'pass Mesh, material: &'pass Material,) {
     self.draw_mesh_instanced(mesh, material, 0..1,)
@@ -131,7 +135,7 @@ impl<'pass,> RenderPass<'pass,> {
     // Buffer the vertices
     self
       .renderpass
-      .set_vertex_buffer(0, mesh.vertex_buffer.slice(..,),);
+      .set_vertex_buffer(VERTEX_BUFFER_SLOT, mesh.vertex_buffer.slice(..,),);
 
     // Buffer the indices
     self

@@ -5,29 +5,26 @@ use super::{
   utils::load::load_model,
 };
 use crate::{
-  core::{
-    texture::Texture,
-    vertex::{ModelVertex, Vertex},
-  },
-  drawcall::{InternalDrawCall, Scene},
+  core::texture::Texture,
+  scene::Scene,
   utils::{
     load::load_shader,
     resources::{CameraResources, RenderResources},
+    vertex_state::VERTEX_STATE_BUFFERS,
   },
-  Instance,
 };
 use eyre::Result;
 use math::FlatMat4;
-use std::{iter::once, num::NonZero};
+use std::iter::once;
 use wgpu::{
   util::{BufferInitDescriptor, DeviceExt},
   BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-  BindGroupLayoutEntry, BindingType, BlendState, BufferBinding, BufferBindingType, BufferUsages,
-  ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompareFunction, DepthBiasState,
-  DepthStencilState, Face, FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions,
-  PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
-  RenderPipelineDescriptor, SamplerBindingType, ShaderStages, StencilState, TextureFormat,
-  TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
+  BindGroupLayoutEntry, BindingType, BlendState, BufferBindingType, BufferUsages, ColorTargetState,
+  ColorWrites, CommandEncoderDescriptor, CompareFunction, DepthBiasState, DepthStencilState, Face,
+  FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor,
+  PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor,
+  SamplerBindingType, ShaderStages, StencilState, TextureSampleType, TextureViewDimension,
+  VertexState,
 };
 use windowing::{sdl2_utils::PhysicalSize, windowing::Window};
 
@@ -36,6 +33,8 @@ use windowing::{sdl2_utils::PhysicalSize, windowing::Window};
 // - Swap the frame buffer?
 // - Do static meshes need a different pipeline? -- not sure if they have a
 //   different shader
+// - Might make sense to move the logic for creating bindgroups into it's own
+//   module
 
 pub struct Renderer {
   pub(crate) ctx: GpuContext,
@@ -113,7 +112,7 @@ impl Renderer {
       // Create the camera resources and use it to create the render resources
       resources: RenderResources::new(CameraResources {
         bindgroup: ctx.device.create_bind_group(&BindGroupDescriptor {
-          label: Some("Main Camera Bindgroup",),
+          label: Some("Camera Bindgroup",),
           layout: &ctx
             .device
             .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
@@ -130,18 +129,30 @@ impl Renderer {
 
   /// Create a new [`Bindgroup`](wgpu::BindGroup) to hold a
   /// [`Texture`](crate::core::texture::Texture).
-  pub fn create_texture_bindgroup(&self,) -> BindGroup {
+  // TODO: Right now this is really only for albedo/base color textures. Will
+  // probably need updating when new ones are added
+  // Texture bindgroups are never being created
+  pub fn create_texture_bindgroup(&self, texture: &Texture,) -> BindGroup {
     self.ctx.device.create_bind_group(&BindGroupDescriptor {
       // TODO: Need a better debug name
       label: Some("Texture Bindgroup",),
       layout: &self.create_texture_bindgroup_layout(),
-      entries: &[],
+      entries: &[
+        BindGroupEntry {
+          binding: 0,
+          resource: wgpu::BindingResource::TextureView(&texture.view,),
+        },
+        BindGroupEntry {
+          binding: 1,
+          resource: wgpu::BindingResource::Sampler(&texture.sampler,),
+        },
+      ],
     },)
   }
 
   /// Create a new [`BindGroupLayout`] for a
   /// [`Texture`](crate::core::texture::Texture) [`Bindgroup`](wgpu::BindGroup).
-  pub fn create_texture_bindgroup_layout(&self,) -> BindGroupLayout {
+  fn create_texture_bindgroup_layout(&self,) -> BindGroupLayout {
     self
       .ctx
       .device
@@ -200,7 +211,8 @@ impl Renderer {
         vertex: VertexState {
           module: &shaders,
           entry_point: Some("vs_main",),
-          buffers: &[ModelVertex::BUFFER_LAYOUT, Instance::BUFFER_LAYOUT,],
+          // TODO: DO we not need a camera buffer here?
+          buffers: &VERTEX_STATE_BUFFERS,
           compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(FragmentState {
@@ -286,13 +298,6 @@ impl Renderer {
   //   let depth_texture = Texture::create_depth_texture(&self.ctx.device,
   // &todo!(),); }
 
-  // TODO: Since I am not giving the renderer ownership of the window I don't
-  // think this is needed
-  // /// Get the handle of the [`Renderer`]'s [`Window`](sdl2::video::Window).
-  // pub fn window(&self,) -> &sdl2Window {
-  //   self.canvas.window()
-  // }
-
   /// Update the size of the render target.
   pub fn resize(&mut self, new_size: PhysicalSize<u32,>,) {
     if new_size.width > 0 && new_size.height > 0 {
@@ -306,7 +311,8 @@ impl Renderer {
   }
 
   ///// Prepare the [`CommandEncoder`](wgpu::CommandEncoder) for rendering.
-  pub fn render(&mut self, camera: &Camera, scene: Scene,) -> Result<(),> {
+  pub fn render(&mut self, camera: &Camera, mut scene: Scene,) -> Result<(),> {
+    dbg!(self.resources.camera.buffer.size());
     // Update the camera buffer
     self.ctx.queue.write_buffer(
       &self.resources.camera.buffer,
@@ -328,32 +334,8 @@ impl Renderer {
     // TODO: If this works make it a render resource
     let mut buffer = InstanceBuffer::new();
     {
-      // Prep all the drawcalls
-
-      let mut internal_drawcalls = Vec::new();
-
-      for draw_call in scene.calls {
-        // TODO: Hand off populating the instance buffer to the update render function
-        // and replace drawcall with what is currently the internal draw call
-
-        // Capture the start of this entry in the instance buffer
-        let start = buffer.len();
-
-        // Push the instances into the Instance buffer
-        // TODO: I think this is causing an error on the first frame for...reasons
-
-        buffer.push_instances(&self.ctx, &mut encoder, &draw_call.instances,);
-
-        // Capture the end of this entry in the instance buffer
-        let end = buffer.len();
-
-        // Prepare an internal drawcall
-        internal_drawcalls.push(InternalDrawCall {
-          model: draw_call.model,
-          instances: start as u32..end as u32,
-        },);
-      }
-      // Here do the actual drawing
+      // Update the buffer's drawcalls for with the current scene
+      scene.update_buffer(&self.ctx, &mut encoder, &mut buffer,);
 
       // Create a renderpass
       let mut renderpass = RenderPass::new(
@@ -371,12 +353,13 @@ impl Renderer {
       // TODO: Something is failing to generate instances I don't think this should
       // ever be 0
       // Pass the index buffer to the renderpass
-      renderpass.set_instance_buffer(1, &buffer,);
+      renderpass.set_instance_buffer(&buffer,);
 
-      for drawcall in internal_drawcalls {
-        // Set the texture and camera bindgroups
-        renderpass.set_bind_group(1, &self.resources.camera.bindgroup,);
+      // Set the camera bindgroup
+      renderpass.set_bind_group(0, &self.resources.camera.bindgroup,);
 
+      // Here do the actual drawing
+      for drawcall in scene.drawcalls() {
         // Draw
         renderpass.draw_model_instanced(drawcall.model, drawcall.instances,);
       }
@@ -389,7 +372,8 @@ impl Renderer {
     Ok((),)
   }
 
-  /// Adds a [`Model`] to the [`Renderer`] and returns its [`ModelId`]
+  /// Adds a [`Model`](crate::scene::model::Model) to the [`Renderer`] and
+  /// returns its [`ModelId`].
   pub fn add_model(&mut self, name: &str,) -> ModelId {
     // TODO: Load model can take a graphics contex
     let model = load_model(self, name,);
@@ -399,61 +383,4 @@ impl Renderer {
 
     self.resources.models.alloc(model,)
   }
-
-  // /// Create a new [`RenderPipeline`].
-  // fn create_render_pipeline(
-  //   device:&Device,
-  //   pipeline_layout:PipelineLayout,
-  //   color_format:TextureFormat,
-  //   depth_format:Option<TextureFormat,>,
-  //   vertex_layouts:&[VertexBufferLayout],
-  //   shader:ShaderModule,
-  // ) -> RenderPipeline {
-  //   //Create the render pipeline
-  //   device.create_render_pipeline(&RenderPipelineDescriptor {
-  //     label:Some("render pipeline",),
-  //     layout:Some(&pipeline_layout,),
-  //     vertex:VertexState {
-  //       module:&shader,
-  //       entry_point:"vs_main",
-  //       buffers:vertex_layouts,
-  //     },
-  //     fragment:Some(FragmentState {
-  //       module:&shader,
-  //       entry_point:"fs_main",
-  //       targets:&[Some(ColorTargetState {
-  //         format:color_format,
-  //         blend:Some(BlendState::REPLACE,),
-  //         write_mask:ColorWrites::ALL,
-  //       },),],
-  //     },),
-  //     primitive:PrimitiveState {
-  //       topology:PrimitiveTopology::TriangleList,
-  //       strip_index_format:None,
-  //       //Cull triangles whose verts are not arranged counter clockwise
-  //       front_face:FrontFace::Ccw,
-  //       cull_mode:Some(Face::Back,),
-  //       //Setting this to anything other than Fill requires
-  // Features::NON_FILL_POLYGON_MODE       polygon_mode:PolygonMode::Fill,
-  //       //Requires Features::DEPTH_CLIP_CONTROL
-  //       unclipped_depth:false,
-  //       //Requires Features::CONSERVATIVE_RASTERIZATION
-  //       conservative:false,
-  //     },
-  //     //Instantiate depth testing
-  //     depth_stencil:depth_format.map(|format| DepthStencilState {
-  //       format,
-  //       depth_write_enabled:true,
-  //       depth_compare:CompareFunction::Less,
-  //       stencil:StencilState::default(),
-  //       bias:DepthBiasState::default(),
-  //     },),
-  //     multisample:MultisampleState {
-  //       count:1,
-  //       mask:!0,
-  //       alpha_to_coverage_enabled:false,
-  //     },
-  //     multiview:None,
-  //   },)
-  // }
 }

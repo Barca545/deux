@@ -2,27 +2,26 @@ use crate::{
   scene::{material::Material, model::Model},
   utils::cache::{BindGroupCache, BindGroupKey, BindGroupLayoutCache, MaterialCache, MaterialKey},
 };
-use eyre::eyre;
 use storage::Arena;
 use wgpu::{BindGroup, Buffer, RenderPipeline};
 
 // TODO: Need a better description in documentation. Problem is this is
 // ultimately a pretty random struct that just holds data that doesn't easily
 // fit anywhere else
-/// Collection of all the data needed for rendering.
+/// Collection of the data needed for rendering.
 pub struct RenderResources {
   /// Collection of cached [`BindGroup`](wgpu::BindGroup)s the
-  /// [`Renderer`](super::renderer::Renderer) will use.
+  /// [`Renderer`](crate::renderer::Renderer) will use.
   bindgroups: BindGroupCache,
   /// Collection of cached [`BindGroupLayout`](wgpu::BindGroupLayout)s the
-  /// [`Renderer`](super::renderer::Renderer) will use.
+  /// [`Renderer`](crate::renderer::Renderer) will use.
   bindgrouplayouts: BindGroupLayoutCache,
   /// Collection of cached [`Material`](crate::scene::material::Material)s the
   /// [`Renderer`](super::renderer::Renderer) will use.
   materials: MaterialCache,
   // TODO: See if I can just use wgpu's pipelinecache instead
   /// Collection of cached [`RenderPipeline`](wgpu::RenderPipeline)s the
-  /// [`Renderer`](super::renderer::Renderer) will use.
+  /// [`Renderer`](crate::renderer::Renderer) will use.
   // pipelines: RenderPipelineCache,
   pipelines: Vec<RenderPipeline,>,
   pub camera: CameraResources,

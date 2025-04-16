@@ -13,10 +13,7 @@ use eyre::Result;
 use image::io::Reader;
 use std::fs;
 use tobj::LoadOptions;
-use wgpu::{
-  BindGroupDescriptor, BindGroupEntry, BindingResource, ShaderModule, ShaderModuleDescriptor,
-  ShaderSource,
-};
+use wgpu::{ShaderModule, ShaderModuleDescriptor, ShaderSource};
 
 /// Load a [`Model`](crate::scene::model::Model) and its
 /// [`Texture`](crate::core::texture::Texture)s.into the scene and store it in
@@ -42,29 +39,16 @@ pub fn load_model(renderer: &mut Renderer, name: &str,) -> Model {
       None => load_texture(&renderer.ctx, "red.jpg",).unwrap(),
     };
 
-    // Create the Texture and Sampler bindgroup and cache it
-    let bind_group = renderer
+    // Create the Texture bindgroup and cache it
+    let texture_bindgroup = renderer
       .resources
-      .insert_bindgroup(renderer.ctx.device.create_bind_group(&BindGroupDescriptor {
-        label: Some(diffuse_texture.label.as_str(),),
-        layout: &renderer.create_texture_bindgroup_layout(),
-        entries: &[
-          BindGroupEntry {
-            binding: 0,
-            resource: BindingResource::TextureView(&diffuse_texture.view,),
-          },
-          BindGroupEntry {
-            binding: 1,
-            resource: BindingResource::Sampler(&diffuse_texture.sampler,),
-          },
-        ],
-      },),);
+      .insert_bindgroup(renderer.create_texture_bindgroup(&diffuse_texture,),);
 
     // Cache the material and return the key
     let material =
       renderer
         .resources
-        .insert_material(Material::new(name, diffuse_texture, bind_group,),);
+        .insert_material(Material::new(name, diffuse_texture, texture_bindgroup,),);
     materials.push(material,);
   }
 

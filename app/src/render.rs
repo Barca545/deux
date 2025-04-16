@@ -1,7 +1,11 @@
 use game_data::{Controllable, Position, PreviousPosition, SkinnedRenderable};
 use math::interpolate;
 use nina::world::World;
-use renderer::{drawcall::Scene, renderer::Renderer, scene::camera::Camera, Instance};
+use renderer::{
+  renderer::Renderer,
+  scene::{camera::Camera, Scene},
+  Instance,
+};
 use time::ServerTime;
 
 // TODO: All of this should create a draw call and pass it to the renderer
@@ -25,8 +29,8 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
     interpolation_factor as f32,
   );
 
+  // Update the camera's position
   let mut camera = world.get_resource_mut::<Camera>();
-
   camera.offset_camera_relative_to_position(player_render_position,);
 
   // Render skinned models
@@ -48,7 +52,7 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
     ),);
 
     // Add the new instance to the scene
-    scene.add_instance(*model, instance,);
+    scene.insert(model, instance,);
   }
 
   // Draw
