@@ -11,7 +11,7 @@ use crate::{
 };
 use eyre::Result;
 use image::io::Reader;
-use std::fs;
+use std::{fs, path::PathBuf};
 use tobj::LoadOptions;
 use wgpu::{ShaderModule, ShaderModuleDescriptor, ShaderSource};
 
@@ -19,8 +19,7 @@ use wgpu::{ShaderModule, ShaderModuleDescriptor, ShaderSource};
 /// [`Texture`](crate::core::texture::Texture)s.into the scene and store it in
 /// [`RenderResources`](crate::utils::resources::RenderResources).
 pub fn load_model(renderer: &mut Renderer, name: &str,) -> Model {
-  // let path = format!("assets/models/{name}.obj");
-  let path = format!(r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets/models/{name}.obj"#);
+  let path = PathBuf::from(format!("assets/models/{name}.obj"),);
 
   let load_options = &LoadOptions {
     single_index: true,
@@ -97,8 +96,7 @@ pub fn load_model(renderer: &mut Renderer, name: &str,) -> Model {
 
 /// Load a [`Texture`].
 fn load_texture(ctx: &GpuContext, name: &str,) -> Result<Texture,> {
-  // let path = format!("assets/textures/{name}");
-  let path = format!(r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets/textures/{name}"#);
+  let path = format!("assets/textures/{name}");
 
   match Reader::open(&path,) {
     Ok(img,) => match img.decode() {
@@ -119,8 +117,7 @@ fn load_texture(ctx: &GpuContext, name: &str,) -> Result<Texture,> {
 
 // TODO: Load the shader function here too
 pub fn load_shader(ctx: &GpuContext, name: &str,) -> Result<ShaderModule,> {
-  // let path = format!("assets/shaders/{name}.wgsl");
-  let path = r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets\shaders\ModelShader.wgsl"#;
+  let path = format!("assets/shaders/{name}.wgsl");
 
   match fs::read_to_string(&path,) {
     Ok(shader,) => Ok(ctx.device.create_shader_module(ShaderModuleDescriptor {
