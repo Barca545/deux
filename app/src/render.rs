@@ -1,15 +1,14 @@
-use game_data::{Controllable, Position, PreviousPosition, SkinnedRenderable};
+use game_data::{Controllable, Position, PreviousPosition, SkinnedRenderable, StaticRenderable};
 use math::interpolate;
 use nina::world::World;
 use renderer::{
   renderer::Renderer,
-  scene::{camera::Camera, Scene},
+  scene::{camera::Camera, SceneBuilder},
   Instance,
 };
 use time::ServerTime;
 
-// TODO: All of this should create a draw call and pass it to the renderer
-/// System which creates [`DrawCall`](renderer::drawcall::DrawCall)s
+/// System which creates and renders a [`Scene`](renderer::scene::Scene).
 pub fn render(world: &World, renderer: &mut Renderer,) {
   // Call it once up here so each object has the same interpolation factor instead
   // of slightly different ones
@@ -18,7 +17,6 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
     .get_interpolation_factor();
 
   // Update the camera
-
   let mut query = world.query();
   let player = &query.with_component::<Controllable>().unwrap().run()[0];
   let player_position = player.get_component::<Position>().unwrap();
@@ -38,7 +36,7 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
   let entities = query.with_component::<SkinnedRenderable>().unwrap().run();
 
   // Create a scene to draw to
-  let mut scene = Scene::new();
+  let mut scene = SceneBuilder::new();
 
   for entity in entities {
     let model = &entity.get_component::<SkinnedRenderable>().unwrap().0;
@@ -55,15 +53,20 @@ pub fn render(world: &World, renderer: &mut Renderer,) {
     scene.insert(model, instance,);
   }
 
-  // Draw
-  renderer.render(camera, scene,).unwrap();
+  // Render static models
+  let mut query = world.query();
+  let entities = query.with_component::<StaticRenderable>().unwrap().run();
+  // Add every instance of a model which needs to be rendered to the frame
+  for entity in entities {
+    let model = &entity.get_component::<StaticRenderable>().unwrap().0;
+    let position = entity.get_component::<Position>().unwrap();
 
-  // // Render static models
-  // let mut query = world.query();
-  // let entities = query.with_component::<StaticRenderable>().unwrap().run();
-  // // Add every instance of a model which needs to be rendered to the frame
-  // for entity in entities {
-  //   let model_id = entity.get_component::<StaticRenderable>().unwrap();
-  //   let position = entity.get_component::<Position>().unwrap();
-  // }
+    let instance = Instance::new(position.0,);
+
+    // Add the new instance to the scene
+    scene.insert(model, instance,);
+  }
+
+  // Draw
+  renderer.render(camera, scene.build(),).unwrap();
 }

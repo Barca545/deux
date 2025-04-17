@@ -4,7 +4,7 @@ use math::{FlatMat4, Mat4, Vec3};
 use std::mem;
 use wgpu::{vertex_attr_array, BufferAddress, VertexBufferLayout, VertexStepMode};
 
-#[repr(C)]
+#[repr(C, packed)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable,)]
 /// Struct containing position information needed for rendering an [instance](https://learnopengl.com/Advanced-OpenGL/Instancing) of a
 /// [`Mesh`](crate::scene::mesh::Mesh).
@@ -26,50 +26,9 @@ impl VertexBufferData for Instance {
 }
 
 impl Instance {
-  // TODO: This is preferable to having the Instance implement Vertex but feels
-  // clumsy. Maybe I should just rename it like uniform data or something
-
   /// Create a new [`Instance`].
   pub fn new(position: Vec3,) -> Self {
     let position = Mat4::new_translation(&position,).into();
     Instance { position, }
   }
 }
-
-// // TODO: Confirm this is the use of this struct
-// /// Collection of a group of [`Instance`]s of a
-// /// [`Mesh`](crate::scene::mesh::Mesh). Used for collecting all instances of
-// a /// `Mesh` in the scene.
-// #[derive(Debug, Clone,)]
-// pub struct Instances(pub Vec<Instance,>,);
-
-// impl Instances {
-//   pub fn new() -> Self {
-//     Instances(Vec::new(),)
-//   }
-
-//   /// Returns a [`Range`] over the length of the `Instances`.
-//   pub fn range(&self,) -> Range<u32,> {
-//     0..self.0.len() as u32
-//   }
-
-//   /// Returns the number of [elements](crate::core::instance::Instance) in
-//   /// [`Instances`], also referred to as its 'length'.
-//   pub fn len(&self,) -> usize {
-//     self.0.len()
-//   }
-
-//   pub fn push(&mut self, instance: Instance,) {
-//     self.0.push(instance,);
-//   }
-// }
-
-// impl IntoIterator for Instances {
-//   type Item = Instance;
-
-//   type IntoIter = vec::IntoIter<Instance,>;
-
-//   fn into_iter(self,) -> Self::IntoIter {
-//     self.0.into_iter()
-//   }
-// }

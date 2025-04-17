@@ -6,10 +6,16 @@ use app::{
 };
 use nina::world::World;
 use renderer::{renderer::Renderer, scene::camera::Camera};
-use sdl2::{event::Event, keyboard::Keycode};
+use sdl2::{
+  event::{Event, WindowEvent},
+  keyboard::Keycode,
+};
 use time::ServerTime;
 // use update::update;
-use windowing::{sdl2_utils::PhysicalPosition, windowing::Window};
+use windowing::{
+  sdl2_utils::{PhysicalPosition, PhysicalSize},
+  windowing::Window,
+};
 
 // Refactor:
 // - Re-add other systems
@@ -82,6 +88,10 @@ fn main() {
           keycode: Some(Keycode::Escape,),
           ..
         } => break 'game,
+        Event::Window {
+          win_event: WindowEvent::Resized(width, height,),
+          ..
+        } => renderer.resize(PhysicalSize::new(width as u32, height as u32,),),
         // Handle mouse movements
         // Don't think it will come up but the "relative" coordinates are really displacement
         Event::MouseMotion { x, y, .. } => {

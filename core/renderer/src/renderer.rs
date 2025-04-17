@@ -15,7 +15,7 @@ use crate::{
 };
 use eyre::Result;
 use math::FlatMat4;
-use std::iter::once;
+use std::iter;
 use wgpu::{
   util::{BufferInitDescriptor, DeviceExt},
   BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
@@ -47,10 +47,8 @@ impl Renderer {
   /// Use to set the opaque `RenderPipeline` during a [`RenderPass`].
   const OPAQUE_PIPELINE: usize = 0;
 
-  // Lasts the whole program so static
   /// The [`BindGroupLayoutDescriptor`] for the [`Camera`]'s data.
   /// Describes how the vertex shader will process `Camera` data.
-  // TODO: The camera bindgroup will always be the same.
   const CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR: &BindGroupLayoutDescriptor<'static,> =
     &BindGroupLayoutDescriptor {
       label: Some("Camera Bindgroup Layout",),
@@ -108,30 +106,34 @@ impl Renderer {
       usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     },);
 
+    // TODO: Figure out why this needs to be recreated if new instances are created per https://sotrh.github.io/learn-wgpu/beginner/tutorial7-instancing/#the-instance-buffer
+
+    // Create the camera_bindgroup
+    let camera_bind_group = ctx.device.create_bind_group(&BindGroupDescriptor {
+      label: Some("Camera Bindgroup",),
+      layout: &ctx
+        .device
+        .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
+      entries: &[BindGroupEntry {
+        binding: 0,
+        resource: camera_buffer.as_entire_binding(),
+      },],
+    },);
+
     Renderer {
       // Create the camera resources and use it to create the render resources
       resources: RenderResources::new(CameraResources {
-        bindgroup: ctx.device.create_bind_group(&BindGroupDescriptor {
-          label: Some("Camera Bindgroup",),
-          layout: &ctx
-            .device
-            .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,),
-          entries: &[BindGroupEntry {
-            binding: 0,
-            resource: camera_buffer.as_entire_binding(),
-          },],
-        },),
+        bindgroup: camera_bind_group,
         buffer: camera_buffer,
       },),
       ctx,
     }
   }
 
-  /// Create a new [`Bindgroup`](wgpu::BindGroup) to hold a
-  /// [`Texture`](crate::core::texture::Texture).
   // TODO: Right now this is really only for albedo/base color textures. Will
   // probably need updating when new ones are added
-  // Texture bindgroups are never being created
+  /// Create a new [`Bindgroup`](wgpu::BindGroup) to hold a
+  /// [`Texture`](crate::core::texture::Texture).
   pub fn create_texture_bindgroup(&self, texture: &Texture,) -> BindGroup {
     self.ctx.device.create_bind_group(&BindGroupDescriptor {
       // TODO: Need a better debug name
@@ -211,7 +213,6 @@ impl Renderer {
         vertex: VertexState {
           module: &shaders,
           entry_point: Some("vs_main",),
-          // TODO: DO we not need a camera buffer here?
           buffers: &VERTEX_STATE_BUFFERS,
           compilation_options: PipelineCompilationOptions::default(),
         },
@@ -239,7 +240,6 @@ impl Renderer {
           conservative: false,
         },
         depth_stencil: Some(DepthStencilState {
-          // TODO: How do I know this is the correct color format
           format: Texture::DEPTH_FORMAT,
           depth_write_enabled: true,
           depth_compare: CompareFunction::Less,
@@ -256,48 +256,7 @@ impl Renderer {
       },)
   }
 
-  // /// Add a new [`RenderPipeline`](wgpu::RenderPipeline) to the `Renderer`.
-  // pub fn create_opaque_pipeline(&mut self, name:&str,
-  // layouts:&[BindGroupLayout], shader:&str,) {   // Create the render pipeline
-  // layout   let pipeline_layout = self
-  //     .ctx
-  //     .device
-  //     .create_pipeline_layout(&PipelineLayoutDescriptor {
-  //       // TODO: Arguably these need more descriptive names
-  //       label:Some("Render Pipeline Layout",),
-  //       bind_group_layouts:&[
-  //         &self
-  //           .ctx
-  //           .device
-  //           .
-  // create_bind_group_layout(Self::TEXTURE_BINDGROUP_LAYOUT_DESCRIPTOR,),
-  //         &&self
-  //           .ctx
-  //           .device
-  //           .create_bind_group_layout(Self::CAMERA_BINDGROUP_LAYOUT_DESCRIPTOR,
-  // ),       ],
-  //       push_constant_ranges:&[],
-  //     },);
-
-  //   // Load and instantiate the pipeline's shader
-  //   let model_shader = load_shader(&self.ctx.device, shader,).unwrap();
-
-  //   let pipeline = Self::create_render_pipeline(
-  //     &self.ctx.device,
-  //     pipeline_layout,
-  //     // TODO: How do I know this is the correct color format
-  //     TextureFormat::Rgba16Float,
-  //     Some(Texture::DEPTH_FORMAT,),
-  //     &[ModelVertex::DESCRIPTOR, Instance::DESCRIPTOR,],
-  //     model_shader,
-  //   );
-
-  //   // TODO: Can depth textures be reused for different pipelines?
-
-  //   // Create the depth texture
-  //   let depth_texture = Texture::create_depth_texture(&self.ctx.device,
-  // &todo!(),); }
-
+  // TODO: Can depth textures be reused for different pipelines?
   /// Update the size of the render target.
   pub fn resize(&mut self, new_size: PhysicalSize<u32,>,) {
     if new_size.width > 0 && new_size.height > 0 {
@@ -310,9 +269,10 @@ impl Renderer {
     }
   }
 
-  ///// Prepare the [`CommandEncoder`](wgpu::CommandEncoder) for rendering.
-  pub fn render(&mut self, camera: &Camera, mut scene: Scene,) -> Result<(),> {
-    dbg!(self.resources.camera.buffer.size());
+  /// Convert a [`Scene`] into data which can be renderered and create a
+  /// [`CommandEncoder`](wgpu::CommandEncoder) to pass it to the
+  /// [`CommandQueue`](wgpu::Queue).
+  pub fn render(&mut self, camera: &Camera, scene: Scene,) -> Result<(),> {
     // Update the camera buffer
     self.ctx.queue.write_buffer(
       &self.resources.camera.buffer,
@@ -331,12 +291,9 @@ impl Renderer {
     // Get a texture to render to from the surface
     let output = self.ctx.surface.get_current_texture().unwrap();
 
-    // TODO: If this works make it a render resource
-    let mut buffer = InstanceBuffer::new();
+    // Set the instance buffer
+    let instance_buffer = InstanceBuffer::new(&self.ctx, &scene.instances(),);
     {
-      // Update the buffer's drawcalls for with the current scene
-      scene.update_buffer(&self.ctx, &mut encoder, &mut buffer,);
-
       // Create a renderpass
       let mut renderpass = RenderPass::new(
         &self.ctx,
@@ -350,10 +307,8 @@ impl Renderer {
       // Opaque draws: bind the opaque pipeline
       renderpass.set_pipeline(Self::OPAQUE_PIPELINE,);
 
-      // TODO: Something is failing to generate instances I don't think this should
-      // ever be 0
       // Pass the index buffer to the renderpass
-      renderpass.set_instance_buffer(&buffer,);
+      renderpass.set_instance_buffer(&instance_buffer,);
 
       // Set the camera bindgroup
       renderpass.set_bind_group(0, &self.resources.camera.bindgroup,);
@@ -361,13 +316,12 @@ impl Renderer {
       // Here do the actual drawing
       for drawcall in scene.drawcalls() {
         // Draw
-        renderpass.draw_model_instanced(drawcall.model, drawcall.instances,);
+        renderpass.draw_model_instanced(drawcall.model, &drawcall.slice,);
       }
     }
 
-    self.ctx.queue.submit(once(encoder.finish(),),);
+    self.ctx.queue.submit(iter::once(encoder.finish(),),);
     output.present();
-    // device.poll(wgpu::Maintain::Wait);
 
     Ok((),)
   }
@@ -375,12 +329,7 @@ impl Renderer {
   /// Adds a [`Model`](crate::scene::model::Model) to the [`Renderer`] and
   /// returns its [`ModelId`].
   pub fn add_model(&mut self, name: &str,) -> ModelId {
-    // TODO: Load model can take a graphics contex
     let model = load_model(self, name,);
-
-    // Initially this returned a model which I then stored but the model data is all
-    // buffered All I need is a handle to it
-
     self.resources.models.alloc(model,)
   }
 }

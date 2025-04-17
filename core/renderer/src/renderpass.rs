@@ -15,7 +15,7 @@ use wgpu::{
 
 pub struct RenderPass<'encoder,> {
   /// wgpu [`RenderPass`](wgpu::RenderPass). Stores render commands and draws
-  /// them to a render target.
+  /// them to a render target. [`wgpu::RenderPass::end`]
   renderpass: wgpu::RenderPass<'encoder,>,
   /// Reference to the [`Renderer`](super::renderer::Renderer)'s
   /// [`RenderResources`]. Provides information from the `Renderer` needed for
@@ -129,10 +129,7 @@ impl<'pass,> RenderPass<'pass,> {
   ) {
     // Set the pipeline for the materials
     // TODO: I am unsure if here should have something to do with altering the
-    // pipeline self
-    //   .renderpass
-    //   .set_pipeline(self.resources.get_pipeline(material.mtype().pipeline,),);
-    // Buffer the vertices
+    // pipeline
     self
       .renderpass
       .set_vertex_buffer(VERTEX_BUFFER_SLOT, mesh.vertex_buffer.slice(..,),);
@@ -145,7 +142,7 @@ impl<'pass,> RenderPass<'pass,> {
     // Set the Texture bind group
     self
       .renderpass
-      .set_bind_group(0, self.resources.get_bindgroup(material.bindgroup(),), &[],);
+      .set_bind_group(1, self.resources.get_bindgroup(material.bindgroup(),), &[],);
 
     // Draw the mesh
     self
@@ -153,7 +150,7 @@ impl<'pass,> RenderPass<'pass,> {
       .draw_indexed(mesh.indices_range(), 0, instances,)
   }
 
-  pub fn draw_model_instanced(&mut self, model: ModelId, instances: Range<u32,>,) {
+  pub fn draw_model_instanced(&mut self, model: ModelId, instances: &Range<u32,>,) {
     // Iterate over the model's submeshes and render each one.
     for mesh in &self.resources.models.get(&model,).meshes {
       let material = self.resources.get_material(mesh.material,);

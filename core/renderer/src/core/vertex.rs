@@ -5,11 +5,6 @@ use std::{
 };
 use wgpu::{vertex_attr_array, BufferAddress, VertexBufferLayout, VertexStepMode};
 
-// Refactor:
-// - Use #[repr(C, packed)] instead of just #[repr(C)]?
-// - Why do verts need to be hashable? Is it to preserve uniqueness?
-// - Does hash *need* to be used for a vertex?
-
 /// Describes the behavior of data submitted to a
 /// [`VertexBuffer`](super::buffer::VertexBuffer). Needed so the `VertexBuffer`
 /// accepts all data types without requiring a unique version for each
@@ -53,7 +48,6 @@ impl Hash for ModelVertex {
 }
 
 impl VertexBufferData for ModelVertex {
-  // TODO: Describe what this is needed for (second sentence) better
   /// [`VertexBufferLayout`] for a [`ModelVertex`]. Needed for converting a
   /// `ModelVertex` into a value which can placed into a
   /// [`VertexBuffer`](super::buffer::VertexBuffer).
@@ -106,7 +100,6 @@ impl Hash for DebugVertex {
 }
 
 impl VertexBufferData for DebugVertex {
-  // TODO: Describe what this is needed for (second sentence) better
   /// [`VertexBufferLayout`] for a [`DebugVertex`]. Needed for converting a
   /// `DebugVertex` into a value which can placed into a
   /// [`VertexBuffer`](super::buffer::VertexBuffer).

@@ -1,13 +1,15 @@
 use super::champ_data::ChampionData;
 use eyre::{eyre, Result};
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
 /// Load a a Champion's data from the assets folder.
 pub fn load_champion(name: &str,) -> Result<ChampionData,> {
-  let path =
-    PathBuf::from(r#"C:\Users\jamar\Documents\Hobbies\Coding\deux\assets\champions\warrior.json"#,);
-
-  dbg!(path.canonicalize().unwrap());
+  // TODO: This does not feel that robust use a config file + build script or
+  // something
+  let path = PathBuf::from(format!(
+    r#"{}\assets\champions\warrior.json"#,
+    env::current_dir().unwrap().to_str().unwrap()
+  ),);
 
   let champion_string = match fs::read_to_string(&path,) {
     Ok(str,) => str,
