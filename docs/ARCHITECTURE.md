@@ -4,69 +4,67 @@
 
 # Table of Contents
 
-- [[#Core]]
-  - [[#Storage]]
-  - [[#Events]]
-  - [[#Inputs]]
-  - [[#Math]]
-  - [[#Renderer]]
-  - [[#Time]]
-  - [[#Game Data]]
-  - [[#Utility]]
-- [[#App]]
-  - Loop
-  - [[#Lib]]
-  - [[#Main]]
-- ==Assets==
-  (Crates containing only a `lib.rs` are not expanded)
-  ├─App
-  │ └─Loop
-  ├─Core
-  │ ├─Storage
-  │ │ ├─Cache
-  │ │ └─Memory Arena
-  │ ├─Event
-  │ ├─Math
-  │ │ └─Number
-  │ ├─Renderer
-  │ │ ├─Core
-  │ │ │ ├─Buffer
-  │ │ │ ├─Frame
-  │ │ │ ├─GPU Context
-  │ │ │ ├─Instance
-  │ │ │ ├─Texture
-  │ │ │ └─Vertex
-  │ │ ├─Scene
-  │ │ │ ├─Camera
-  │ │ │ ├─Material
-  │ │ │ ├─Mesh
-  │ │ │ ├─Model
-  │ │ │ └─Scene
-  │ │ ├─Utils
-  │ │ │ ├─Load // Utility functions for loading model data
-  │ │ │ ├─Render Resources // Resources needed for rendering
-  │ │ │ └─VertexState // Information for filling out `wgpu::VertexState`
-  │ │ ├─Errors
-  │ │ ├─RenderPass
-  │ │ ├─Render Resources
-  │ │ ├─Renderer
-  │ │ └─Errors
-  │ ├─Time
-  │ │ ├─Server Time
-  │ │ └─Timer
-  │ ├─Windowing
-  │ │ ├─Window
-  │ │ └─SDL2 Utils
-  │ ├─Input Handling
-  │ │ ├─Errors
-  │ │ ├─Frame Inputs
-  │ │ └─Keybinds
-  │ └─Game Data
-  │ ├─Components
-  │ ├─Resources
-  │ │ └─World Map
-  │ └─Utility
-  └─Assets
+- [Core](#core)
+  - [Storage](#storage)
+  - [Events](#events)
+  - [Inputs](#inputs)
+  - [Math](#math)
+  - [Renderer](#renderer)
+  - [Time](#time)
+  - [Game Data](#game-data)
+  - [Utility](#utility)
+- [App](#app)
+  - [Lib](#lib)
+  - [Main](#main)
+- [Assets](#assets)
+
+# Module Tree
+Crates containing only a `lib.rs` are not expanded
+
+```text
+├─App
+│    └─Loop
+├─Core
+│    ├─Storage
+│    │   ├─Cache
+│    │   └─Memory Arena
+│    ├─Event
+│    ├─Math
+│    │   └─Number 
+│    ├─Renderer
+│    │   ├─Core
+│    │   │   ├─Buffer
+│    │   │   ├─Color
+│    │   │   ├─GPU Context
+│    │   │   ├─Texture
+│    │   │   ├─Instance
+│    │   │   └─Vertex
+│    │   ├─Scene
+│    │   │   ├─Camera
+│    │   │   ├─Material
+│    │   │   ├─Mesh
+│    │   │   └─Model
+│    │   ├─RenderPass
+│    │   ├─Render Resources
+│    │   ├─Renderer
+│    │   └─Errors
+│    ├─Time
+│    │   ├─Server Time
+│    │   └─Timer
+│    ├─Windowing
+│    │   ├─Window
+│    │   └─SDL2 Utils
+│    ├─Input Handling
+│    │   ├─Mouse Ray
+│    │   ├─Player Inputs
+│    │   └─Errors
+│    └─Game Data
+│        ├─Components
+│        ├─Resources 
+│        │    └─World Map
+│        └─Utility
+└─Assets
+```
 
 # Core
 
