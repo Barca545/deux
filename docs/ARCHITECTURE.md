@@ -1,7 +1,7 @@
-> [! Warning] 
+> [!WARNING]
 > Deux is still under heavy development. This documentation is **not** final.
 
-> [! Note] 
+> [!Note] 
 > This document is a work in progress. Some or most sections are currently unfilled.
 
 # Table of Contents
