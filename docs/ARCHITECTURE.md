@@ -23,46 +23,46 @@ Crates containing only a `lib.rs` are not expanded
 
 ```text
 ├─App
-│    └─Loop
+│  └─Loop
 ├─Core
-│    ├─Storage
-│    │   ├─Cache
-│    │   └─Memory Arena
-│    ├─Event
-│    ├─Math
-│    │   └─Number 
-│    ├─Renderer
-│    │   ├─Core
-│    │   │   ├─Buffer
-│    │   │   ├─Color
-│    │   │   ├─GPU Context
-│    │   │   ├─Texture
-│    │   │   ├─Instance
-│    │   │   └─Vertex
-│    │   ├─Scene
-│    │   │   ├─Camera
-│    │   │   ├─Material
-│    │   │   ├─Mesh
-│    │   │   └─Model
-│    │   ├─RenderPass
-│    │   ├─Render Resources
-│    │   ├─Renderer
-│    │   └─Errors
-│    ├─Time
-│    │   ├─Server Time
-│    │   └─Timer
-│    ├─Windowing
-│    │   ├─Window
-│    │   └─SDL2 Utils
-│    ├─Input Handling
-│    │   ├─Mouse Ray
-│    │   ├─Player Inputs
-│    │   └─Errors
-│    └─Game Data
-│        ├─Components
-│        ├─Resources 
-│        │    └─World Map
-│        └─Utility
+│  ├─Storage
+│  │   ├─Cache
+│  │   └─Memory Arena
+│  ├─Event
+│  ├─Math
+│  │   └─Number 
+│  ├─Renderer
+│  │   ├─Core
+│  │   │   ├─Buffer
+│  │   │   ├─Color
+│  │   │   ├─GPU Context
+│  │   │   ├─Texture
+│  │   │   ├─Instance
+│  │   │   └─Vertex
+│  │   ├─Scene
+│  │   │   ├─Camera
+│  │   │   ├─Material
+│  │   │   ├─Mesh
+│  │   │   └─Model
+│  │   ├─RenderPass
+│  │   ├─Render Resources
+│  │   ├─Renderer
+│  │   └─Errors
+│  ├─Time
+│  │   ├─Server Time
+│  │   └─Timer
+│  ├─Windowing
+│  │   ├─Window
+│  │   └─SDL2 Utils
+│  ├─Input Handling
+│  │   ├─Mouse Ray
+│  │   ├─Player Inputs
+│  │   └─Errors
+│  └─Game Data
+│      ├─Components
+│      ├─Resources 
+│      │    └─World Map
+│      └─Utility
 └─Assets
 ```
 
@@ -80,7 +80,7 @@ Data structure used for storing information the engine needs. ==**TODO:**== Disc
 
 ### Math
 
-Exposes wrappers around [glm-rs](https://docs.rs/glm/latest/glm/) functions and types. Designed so replacing the math library the game relies on is easy if necessary.
+Exposes wrappers around [glm-rs](https://docs.rs/glm/latest/glm/) functions and types. Designed so replacing the game's math library is easy if necessary.
 
 ### Physics
 
