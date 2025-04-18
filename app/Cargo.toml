@@ -17,3 +17,4 @@ game_data = { workspace = true }
 renderer = { workspace = true }
 windowing = { workspace = true }
 math = { workspace = true }
+inputs = { workspace = true }

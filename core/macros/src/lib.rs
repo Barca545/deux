@@ -2,9 +2,6 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, Type};
 
-#[cfg(doctest)]
-use storage;
-
 /// Create type aliases for the provided type.
 /// # Output
 /// Creates types:
@@ -47,43 +44,3 @@ pub fn create_cache_type_aliases(stream: TokenStream,) -> TokenStream {
 
   TokenStream::from(expanded,)
 }
-
-// #[proc_macro_derive(Cacheable)]
-// pub fn derive_cacheable(stream: TokenStream,) -> TokenStream {
-//   // TODO: Make more general
-
-//   let input = parse_macro_input!(stream as DeriveInput);
-//   let name = input.ident;
-
-//   let expanded = match input.data {
-//     syn::Data::Struct(data,) => match &data.fields {
-//       syn::Fields::Named(named,) => todo!(),
-//       syn::Fields::Unnamed(unnamed,) => {
-//         // If it is a single field tuple struct try to derive on the field
-//         if data.fields.len() == 1 {
-//           // Get the type of the field
-//           let field_ty = &data.fields.iter().last().unwrap().ty;
-//           quote! {
-//             impl Cacheable for #name {
-//               type Output = #field_ty;
-
-//               fn hash(&self) -> Self::Output {
-//                 self.0.clone()
-//               }
-//             }
-//           }
-//         } else {
-//           todo!()
-//         }
-//       }
-//       syn::Fields::Unit => todo!("Cacheable cannot be implemented for unit
-// structs"),     },
-//     syn::Data::Enum(data,) => {
-//       // Just need some kind of value from the enum that's unique to the enum
-//       todo!()
-//     }
-//     syn::Data::Union(data_union,) => unreachable!("Cachable cannot be derived
-// for unions"),   };
-
-//   TokenStream::from(expanded,)
-// }

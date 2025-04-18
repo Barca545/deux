@@ -1,4 +1,4 @@
-use crate::{scene::mesh::Mesh, utils::cache::MaterialKey};
+use crate::{scene::mesh::Mesh, utils::resources::MaterialKey};
 use storage::ArenaId;
 
 #[derive(Debug, Default,)]

@@ -1,18 +1,15 @@
-use crate::systems::{
-  movement,
-  // process_inputs
-};
+use inputs::frame_inputs::FrameInputs;
 use nina::world::World;
 
 pub fn update(world: &mut World,) {
   // process_inputs(world,);
   // execute_scripts(world,);
-  movement(world,);
+  // movement(world,);
   // casting(world,);
   // combat(world,);
 
-  // let frame_inputs = world.get_resource_mut::<FrameInputs>();
-  // frame_inputs.clear();
+  // Clean up the frame events
+  world.get_resource_mut::<FrameInputs>().end_frame();
   // let events = world.get_resource_mut::<GameEventQueue>();
   // events.clear();
   // events.move_pending();

@@ -1,6 +1,6 @@
 use crate::{
   core::buffer::{IndexBuffer, VertexBuffer},
-  utils::cache::MaterialKey,
+  utils::resources::MaterialKey,
 };
 use std::ops::Range;
 

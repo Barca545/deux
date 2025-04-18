@@ -1,5 +1,7 @@
 #![feature(path_add_extension)]
 pub mod render;
 pub mod systems;
+mod update;
 pub mod utils;
-// mod update;
+
+pub use update::update;

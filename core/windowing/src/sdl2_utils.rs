@@ -15,7 +15,7 @@ impl<P,> PhysicalSize<P,> {
   }
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Clone, Copy,)]
 pub struct PhysicalPosition {
   pub x: f64,
   pub y: f64,

@@ -1,9 +1,7 @@
-use crate::{
-  scene::{material::Material, model::Model},
-  utils::cache::{BindGroupCache, BindGroupKey, BindGroupLayoutCache, MaterialCache, MaterialKey},
-};
-use storage::Arena;
-use wgpu::{BindGroup, Buffer, RenderPipeline};
+use crate::scene::{material::Material, model::Model};
+use macros::create_cache_type_aliases;
+use storage::{Arena, Cacheable};
+use wgpu::{BindGroup, BindGroupLayout, Buffer, RenderPipeline};
 
 // TODO: Need a better description in documentation. Problem is this is
 // ultimately a pretty random struct that just holds data that doesn't easily
@@ -84,4 +82,21 @@ impl RenderResources {
 pub struct CameraResources {
   pub bindgroup: wgpu::BindGroup,
   pub buffer: Buffer,
+}
+
+create_cache_type_aliases!(BindGroup);
+create_cache_type_aliases!(Material);
+create_cache_type_aliases!(BindGroupLayout);
+
+// Cacheable is implemented for every wgpu type because they're Clone + Hash +
+// Eq
+
+impl Cacheable for Material {
+  type Output = String;
+
+  fn hash(&self,) -> Self::Output {
+    match self {
+      Material::Opaque(opaque,) => opaque.name.clone(),
+    }
+  }
 }

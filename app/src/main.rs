@@ -3,12 +3,19 @@ use app::{
   systems::spawn::{
     register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player,
   },
+  update,
+};
+use inputs::{
+  frame_inputs::FrameInputs,
+  keybinds::{ButtonAction, Keybinds},
 };
 use nina::world::World;
 use renderer::{renderer::Renderer, scene::camera::Camera};
 use sdl2::{
   event::{Event, WindowEvent},
   keyboard::Keycode,
+  mouse::MouseState,
+  EventPump,
 };
 use time::ServerTime;
 // use update::update;
@@ -27,6 +34,7 @@ use windowing::{
 //   its own function
 // - Look into the command pattern https://gameprogrammingpatterns.com/command.html
 //   for inputs
+
 fn main() {
   let mut world = World::new();
   // Register all the components and resources the game will need
@@ -57,7 +65,6 @@ fn main() {
 
   // Add the resources to world
   world.add_resource(camera,);
-  // world.add_resource(transforms,);
 
   // TODO: Copy the example to implement the function that takes those things as
   // arguments.
@@ -67,20 +74,12 @@ fn main() {
   // Set clear the canvas
   // TODO: Does canvas clear need to happen like in the sdl2 document example:https://docs.rs/sdl2/latest/sdl2/index.html
 
-  // Create the mouse input just outside the loop.
-  // This basically needs to constantly update
-  // TODO: This does not feel like the best way to do this
-  // TODO: But the fact you cant't borrow the event pump inside the loop is
-  // problematic
-
   // Create the event pump
   let mut event_pump = window.sdl2.event_pump().unwrap();
 
-  let mouse_state = event_pump.mouse_state();
-  let mut mouse_pos = PhysicalPosition::new(mouse_state.x() as f64, mouse_state.y() as f64,);
-
   'game: loop {
-    for event in event_pump.poll_iter() {
+    // TODO: Does this collect hit performance?
+    for event in event_pump.poll_iter().collect::<Vec<_,>>() {
       match event {
         // Code to exit the game
         Event::Quit { .. }
@@ -92,75 +91,49 @@ fn main() {
           win_event: WindowEvent::Resized(width, height,),
           ..
         } => renderer.resize(PhysicalSize::new(width as u32, height as u32,),),
-        // Handle mouse movements
-        // Don't think it will come up but the "relative" coordinates are really displacement
-        Event::MouseMotion { x, y, .. } => {
-          let dimensions = window.inner_size();
-
-          mouse_pos = PhysicalPosition::from_screen_coords(x, y, dimensions,);
+        // Record an event each time the mouse state is changed
+        Event::MouseMotion { .. } | Event::MouseButtonDown { .. } => {
+          world
+            .get_resource_mut::<FrameInputs>()
+            .insert_mouse(event_pump.mouse_state(),);
         }
-        // TODO: Unsure if using the mouse_pos variable or these directly is better. These directky
-        // most likely since they will be the most up to date
-        Event::MouseButtonDown {
-          mouse_btn, x, y, ..
-        } => {
-          // Create the mouse position
-          let dimensions = window.inner_size();
-          let mouse_pos = PhysicalPosition::from_screen_coords(x, y, dimensions,);
-
-          // Add the input
-          // let keybinds = world.get_resource::<Keybinds>();
-          // if let Ok(input,) = keybinds.mouse_input(&world, &mouse_pos,
-          // &mouse_btn,) {   let inputs =
-          // world.get_resource_mut::<FrameInputs>();
-          //   inputs.push(input,)
-          // }
-        }
-
-        // Handle keypresses by generating a frame input.
-        // TODO: Maybe make this into a self contained function both for documentation perposes and
-        // also to reduce clutter
+        // Generate an input for the keypress
         Event::KeyDown {
           keycode: Some(key,),
           ..
         } => {
-          // Generate an input for the keypress
-          // TODO: Would it be better to get the position via
-          // `event_pump.mouse_state().x()` insteaad of constantly tracking it?
-          // Could maybe implement a function or trait on the pump to
-          // make a direct query for mouse positon in NDC possible?
-          // let keybinds = world.get_resource::<Keybinds>();
-          // let input = keybinds.key_input(&world, &mouse_pos, key,
-          // KeyAction::Press,); match input {
-          //   // If the input is valid add it to the frame inputs
-          //   Ok(input,) =>
-          // world.get_resource_mut::<FrameInputs>().push(input,),
-          //   Err(_,) => {
-          //     // TODO: Could print the error message to the a debug file or
-          //     // something for debugging but not urgent
-          //   }
-          // }
+          // TODO: Maybe make this into a self contained function both for documentation
+          // perposes and also to reduce clutter?
+          // If the input exists, record it
+          let keybinds = world.get_resource::<Keybinds>();
+          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Press,) {
+            Some(input,) => {
+              let mut inputs = world.get_resource_mut::<FrameInputs>();
+              inputs.insert(input,);
+            }
+            None => {
+              // TODO: Could print the error message to the a debug file or
+              // something for debugging but not urgent
+            }
+          }
         }
+        // Generate an input for the key release
         Event::KeyUp {
           keycode: Some(key,),
           ..
         } => {
-          // Generate an input for the keypress
-          // TODO: Would it be better to get the position via
-          // `event_pump.mouse_state().x()` insteaad of constantly tracking it?
-          // Could maybe implement a function or trait on the pump to
-          // make a direct query for mouse positon in NDC possible?
-          // let keybinds = world.get_resource::<Keybinds>();
-          // let input = keybinds.key_input(&world, &mouse_pos, key,
-          // KeyAction::Release,); match input {
-          //   // If the input is valid add it to the frame inputs
-          //   Ok(input,) =>
-          // world.get_resource_mut::<FrameInputs>().push(input,),
-          //   Err(_,) => {
-          //     // TODO: Could print the error message to the a debug file or
-          //     // something for debugging but not urgent
-          //   }
-          // }
+          let keybinds = world.get_resource::<Keybinds>();
+          // If the input exists, record it
+          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Release,) {
+            Some(input,) => {
+              let mut inputs = world.get_resource_mut::<FrameInputs>();
+              inputs.insert(input,);
+            }
+            None => {
+              // TODO: Could print the error message to the a debug file or
+              // something for debugging but not urgent
+            }
+          }
         }
         _ => {}
       }
@@ -176,7 +149,8 @@ fn main() {
 
     // Run update logic
     if server_time.should_update() {
-      // update(&mut world,);
+      update(&mut world,);
+      // TODO: Not sure server time needs to update here
       // Update the server time
       world
         .get_resource_mut::<ServerTime>()

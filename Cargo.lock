@@ -48,6 +48,7 @@ version = "0.1.0"
 dependencies = [
  "eyre 0.3.10",
  "game_data",
+ "inputs",
  "math",
  "nina",
  "renderer",
@@ -621,6 +622,7 @@ dependencies = [
  "sdl2",
  "serde",
  "thiserror 1.0.58",
+ "windowing",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use crate::{core::texture::Texture, utils::cache::BindGroupKey};
+use crate::{core::texture::Texture, utils::resources::BindGroupKey};
 use wgpu::BindGroupLayout;
 
 // TODO: I genuinely don't know how to document what a material is...
