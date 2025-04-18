@@ -96,7 +96,7 @@ The Renderer is one of the more complex crates in the engine. Deux's renderer is
 
 ### Core
 
-`Core` contains the main functionality of the render. It holds the [`GpuContext`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Fgpu_context.rs), the abstraction used for communicating with the GPU. As well as the ==APIs== for various primatives; primarily [Vertex](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Fvertex.rs)es and [`Texture`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Ftexture.rs)s.
+`Core` contains the main functionality of the render. It holds the [`GpuContext`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Fgpu_context.rs), the abstraction used for communicating with the GPU. Also contains various primatives; primarily [`Vertex`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Fvertex.rs)es and [`Texture`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fcore%2Ftexture.rs)s.
 
 ### Scene
 
