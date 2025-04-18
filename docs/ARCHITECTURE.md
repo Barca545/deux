@@ -121,6 +121,7 @@ SDL2 helpers and window context management.
 ### Utility
 
 ## Inputs
+Provides tools for processing and evaluating input events from SLD2's [`EventPump`](https://docs.rs/sdl2/latest/sdl2/struct.EventPump.html). Exports the [`KeyBinds`](https://github.com/Barca545/deux/blob/wgpu-switch/core%2Finput%2Fsrc%2Fkeybinds.rs#L9), [`FrameInputs`](https://github.com/Barca545/deux/blob/wgpu-switch/core%2Finput%2Fsrc%2Fframe_inputs.rs#L8), and [`MouseRay`](https://github.com/Barca545/deux/blob/wgpu-switch/core%2Finput%2Fsrc%2Fmouseray.rs#L4) structs.
 
 ## Macros
 
