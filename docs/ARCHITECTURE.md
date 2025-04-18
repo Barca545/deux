@@ -1,6 +1,8 @@
-> [! Warning] Deux is still under heavy development. This documentation is **not** final.
+> [! Warning] 
+> Deux is still under heavy development. This documentation is **not** final.
 
-> [! Note] This document is a work in progress. Some or most sections are currently unfilled.
+> [! Note] 
+> This document is a work in progress. Some or most sections are currently unfilled.
 
 # Table of Contents
 
@@ -98,7 +100,7 @@ The Renderer is one of the more complex crates in the engine. Deux's renderer is
 
 ### Scene
 
-==`Scene` controls how the game is rendered.== The central module is the [`Camera`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fscene%2Fcamera.rs) which provides the logic to control how vertices in a scene are manipulated. The other modules in `scene` control rendering the meshes which make up the elements within the scene.
+`Scene` controls how the game is rendered. The central module is the [`Camera`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fscene%2Fcamera.rs) which provides the logic to control how vertices in a scene are manipulated. The other modules in `scene` control rendering the meshes which make up the elements within the scene.
 
 ### Renderer
 
