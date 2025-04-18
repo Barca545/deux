@@ -88,7 +88,7 @@ Exposes wrappers around [glm-rs](https://docs.rs/glm/latest/glm/) functions and 
 
 ### Physics
 
-Provides basic functionality for calculating object collisions and raycasting. As the game this engine is designed for has no substantive Physics interactions this module is deliberately lightweight.
+Provides basic functionality for calculating object collisions and raycasting. As the game this engine is designed for has no substantive physics interactions this module is deliberately lightweight.
 
 ## Renderer
 
