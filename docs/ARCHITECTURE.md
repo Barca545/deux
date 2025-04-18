@@ -70,7 +70,9 @@ Crates containing only a `lib.rs` are not expanded
 
 ## Storage
 
-Data structure used for storing information the engine needs. ==**TODO:**== Discuss the Arena in more detail.
+Data structures used for storing information the engine needs. 
+
+**TODO:** Discuss the memory Arena in more detail.
 
 ## Events
 
@@ -96,11 +98,11 @@ The Renderer is one of the more complex crates in the engine. Deux's renderer is
 
 ### Scene
 
-==`Scene` controls how the game is rendered.== The central module is the [`camera`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fscene%2Fcamera.rs) which provides the logic to control how vertices in a scene are manipulated. The other modules in `scene` control rendering the meshes which make up the elements within the scene.
+==`Scene` controls how the game is rendered.== The central module is the [`Camera`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Fscene%2Fcamera.rs) which provides the logic to control how vertices in a scene are manipulated. The other modules in `scene` control rendering the meshes which make up the elements within the scene.
 
 ### Renderer
 
-Both subsection are tied together by the [`renderer`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Frenderer.rs) which handles building the ==renderpiplines== and dispatching ==DrawCommands== to the GPU.
+Both subsection are tied together by the [`Renderer`](https://github.com/Barca545/deux/blob/wgpu-switch/engine%2Fsrc%2Frenderer%2Frenderer.rs) which handles building the `RenderPiplines` and dispatching `DrawCall`s to the GPU.
 
 ## Scripting
 
@@ -110,25 +112,19 @@ Struct driving the game's time. Uses Rust's [`Instant`](https://doc.rust-lang.or
 
 ## Windowing
 
-==The Window is responsible for receiving inputs==
-
-- SDL2 helpers go here needed for windowing
-- Arguably inputs should too.
+SDL2 helpers and window context management.
 
 ## Game Data
 
-### ==Utility==
+### Utility
 
 ## Inputs
 
 ## Macros
 
-**UNIMPLEMENTED** Procedural Macros for the engine.
+Procedural Macros for the engine.
 
-# App J
-
-<
-Convert inputs into game events.
+# App 
 
 ## Main
 
@@ -136,7 +132,7 @@ Root of the binary. Very little logic lives here. See the [library module](#Lib)
 
 ## Lib
 
-## ==ECS==
+## ECS
 
 ### Components
 
