@@ -3,6 +3,7 @@ use std::{
   collections::HashMap,
   hash::Hash,
   ops::{Deref, DerefMut},
+  time::Instant,
 };
 
 #[derive(Debug,)]
@@ -22,9 +23,15 @@ impl Keybinds {
     key: &Keycode,
     mouse: MouseState,
     action: ButtonAction,
+    timestamp: Instant,
   ) -> Option<Input,> {
     match self.get(key,) {
-      Some(&ty,) => Some(Input { ty, mouse, action, },),
+      Some(&ty,) => Some(Input {
+        ty,
+        mouse,
+        action,
+        timestamp,
+      },),
       None => None,
     }
   }
@@ -66,7 +73,23 @@ pub enum InputType {
   Mouse,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq,)]
+impl InputType {
+  /// Return a list of the  `InputType`s related to movement.
+  /// - `InputType::MoveUp`
+  /// - `InputType::MoveDown`
+  /// - `InputType::MoveRight`
+  /// - `InputType::MoveLeft`
+  pub fn movement() -> [InputType; 4] {
+    [
+      InputType::MoveRight,
+      InputType::MoveLeft,
+      InputType::MoveUp,
+      InputType::MoveDown,
+    ]
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq,)]
 pub enum ButtonAction {
   Press,
   Release,
@@ -84,6 +107,7 @@ pub struct Input {
   pub(crate) action: ButtonAction,
   // TODO: I think inputs should also track the tick they were omitted. I am debating if there
   // should be some sort of trait for this?
+  pub(crate) timestamp: Instant,
 }
 
 impl Input {

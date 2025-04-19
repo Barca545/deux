@@ -1,10 +1,16 @@
 use sdl2::mouse::MouseState;
 
 use crate::keybinds::{ButtonAction, Input, InputType};
-use std::collections::{HashMap, HashSet};
+use std::{
+  collections::{HashMap, HashSet},
+  time::Instant,
+};
 
 // TODO: I believe there are better options than a hashmap for faster look up
-
+#[derive(Debug,)]
+/// A structure which tracks the [`Input`]s in a frame.
+/// Also tracks any `Input`s which have been carried over from the previous
+/// frame.
 pub struct FrameInputs {
   // TODO: I am not 100% sure if this is how I want to track this property
   /// All \[presssed\] [`InputType`]s retained from the previous frame. Used to
@@ -25,6 +31,7 @@ impl FrameInputs {
 
   /// Record a new [`Input`] in the current frame.
   pub fn insert(&mut self, input: Input,) {
+    dbg!(&input);
     self
       .frame
       .entry(input.ty,)
@@ -33,11 +40,12 @@ impl FrameInputs {
   }
 
   /// Insert a mouse input.
-  pub fn insert_mouse(&self, mouse: MouseState,) -> Input {
+  pub fn insert_mouse(&self, mouse: MouseState, timestamp: Instant,) -> Input {
     Input {
       ty: InputType::Mouse,
       mouse,
       action: ButtonAction::None,
+      timestamp,
     }
   }
 
@@ -55,6 +63,18 @@ impl FrameInputs {
       },)
   }
 
+  /// Returns true if the current frame contains any inputs with [`InputType`].
+  pub fn contains(&self, types: &[InputType],) -> bool {
+    for ty in types {
+      if self.frame.contains_key(ty,) {
+        return true;
+      }
+    }
+    false
+  }
+
+  // TODO: Figuring out how to make this interact with releasing in a frame is
+  // hard
   /// Returns true if the [`InputType`] was held at the beginning of the frame.
   pub fn was_held(&self, ty: &InputType,) -> bool {
     self.holdover.contains(ty,)
@@ -67,6 +87,56 @@ impl FrameInputs {
         Some(inputs,) => inputs.last().unwrap().action == ButtonAction::Press,
         None => false,
       }
+  }
+
+  /// Locates the [`Input`] whose
+  /// [`InputType`] and [Time](std::time::Instant) most closely match the
+  /// parameters.
+  pub fn find_closest(&self, ty: &InputType, time: &Instant,) -> Input {
+    let inputs = self.frame.get(&ty,).unwrap();
+    match inputs.binary_search_by_key(time, |probe| probe.timestamp,) {
+      Ok(idx,) => inputs[idx],
+      Err(idx,) => {
+        let input_1 = inputs[idx - 1];
+        let input_2 = match inputs.get(&idx + 1,) {
+          Some(input_2,) => *input_2,
+          None => return inputs[idx],
+        };
+        // Check the remainder of time - inputs[idx].time and return whichever
+        // yields the smallest one.
+        match *time - input_1.timestamp > *time - input_2.timestamp {
+          true => input_2,
+          false => input_1,
+        }
+      }
+    }
+  }
+
+  /// Collects all [`Input`]s stored in [`FrameInputs`] which match the
+  /// specified [`InputType`]s apply a callback function to each one.
+  pub fn process_inputs<F,>(&self, types: &[InputType], mut f: F,)
+  where
+    F: FnMut(&Input,),
+  {
+    // Create the vec to iterate over
+    let mut out_inputs = Vec::new();
+
+    for ty in types {
+      match self.frame.get(ty,) {
+        Some(inputs,) => out_inputs.extend_from_slice(inputs,),
+        None => {}
+      }
+    }
+
+    for input in &out_inputs {
+      f(input,)
+    }
+  }
+
+  /// Get all the inputs of [`InputType`] which occured in the current frame.
+  /// Returns `None` if no matching inputs occured.
+  pub fn frame_get(&self, ty: &InputType,) -> Option<&Vec<Input,>,> {
+    self.frame.get(ty,)
   }
 
   /// Move any held buttons into [`FrameInputs::holdover`] and purge
@@ -94,6 +164,8 @@ impl FrameInputs {
 
 #[cfg(test)]
 mod test {
+  use std::time::Instant;
+
   use super::FrameInputs;
   use crate::keybinds::{ButtonAction, Input, InputType};
   use sdl2::mouse::MouseState;
@@ -104,6 +176,7 @@ mod test {
       ty: InputType::MoveDown,
       mouse: MouseState::from_sdl_state(32,),
       action: ButtonAction::None,
+      timestamp: Instant::now(),
     };
 
     let mut inputs = FrameInputs::new();
@@ -118,5 +191,29 @@ mod test {
 
     assert_eq!(num_1, 4);
     assert_eq!(num_2, 0);
+  }
+
+  #[test]
+  fn processing_inputs() {
+    let input = Input {
+      ty: InputType::MoveDown,
+      mouse: MouseState::from_sdl_state(32,),
+      action: ButtonAction::None,
+      timestamp: Instant::now(),
+    };
+
+    let mut inputs = FrameInputs::new();
+
+    inputs.insert(input,);
+    inputs.insert(input,);
+    inputs.insert(input,);
+    inputs.insert(input,);
+
+    let mut test = Vec::new();
+    inputs.process_inputs(&InputType::movement(), |input| {
+      test.push(input.clone(),);
+    },);
+
+    assert_eq!([input; 4], test.as_slice());
   }
 }

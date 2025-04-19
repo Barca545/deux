@@ -1,10 +1,9 @@
-mod move_attacks;
-mod move_camera;
+// mod move_attacks;
+// mod move_camera;
+// mod update_hitbox;
+// pub(super) mod update_path;
 mod movement;
-mod update_hitbox;
-mod update_path;
-mod update_position;
-mod update_velocity;
+pub(super) mod update_position;
+pub(super) mod update_velocity;
 
-// TODO: I think these exports should be revisited
-pub use self::movement::*;
+pub use self::movement::movement;

@@ -1,4 +1,4 @@
-use game_data::{DebugElements, Selected};
+use game_data::{player_movement::PlayerMovement, DebugElements, Selected};
 use inputs::{frame_inputs::FrameInputs, keybinds::Keybinds};
 use nina::world::World;
 use time::ServerTime;
@@ -15,5 +15,6 @@ pub fn register_resources(world: &mut World,) {
     .add_resource(FrameInputs::new(),)
     .add_resource(ServerTime::new(),)
     .add_resource(DebugElements::new(false, false,),)
-    .add_resource(Keybinds::default(),);
+    .add_resource(Keybinds::default(),)
+    .add_resource(PlayerMovement::new(),);
 }

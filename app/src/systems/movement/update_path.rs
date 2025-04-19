@@ -1,11 +1,10 @@
+use game_data::{Destination, Path, Position};
 use nina::world::World;
-
-use crate::game_data::{Destination, Path, Position};
 
 ///Checks for entities with a [`Path`]. If a `Path` exists and the current
 /// [`Destination`] has been reached, replaces the current `Destination` with
 /// the next `Destination` in the `Path`.
-pub fn update_path(world:&mut World) {
+pub fn update_path(world: &mut World,) {
   // let mut query = world.query();
   // let entities = query.with_component::<Path>().unwrap().run();
 

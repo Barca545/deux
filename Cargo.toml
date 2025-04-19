@@ -29,3 +29,7 @@ features = ["raw-window-handle", "bundled"]
 [workspace.dependencies.serde]
 version = "1.0"
 features = ["derive"]
+
+# Mark things to exclude from the public build with this feature
+# [features]
+# dev-only = []

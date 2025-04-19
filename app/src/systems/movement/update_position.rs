@@ -1,7 +1,5 @@
-use crate::{
-  game_data::{PathingRadius, Position, PreviousPosition, Velocity},
-  physics::circle_circle_collision_test,
-};
+use game_data::{PathingRadius, Position, PreviousPosition, Velocity};
+use math::collisions::circle_circle_collision_test;
 use nina::world::World;
 
 ///Updates the [`Position`] of all entities in the [`World`].
@@ -9,7 +7,7 @@ use nina::world::World;
 /// If they overshoot their [`Destination`] their `Position` is set to their
 /// `Destination`. If moving forward would cause a collision with another
 /// object, the entity does not move forward.
-pub fn update_position(world:&World,) {
+pub fn update_position(world: &World,) {
   let mut query = world.query();
 
   let entities = query
@@ -64,10 +62,10 @@ pub fn update_position(world:&World,) {
 
 // TODO: The collision test should be in the math crate or something
 fn collision_test(
-  world:&World,
-  entity_position:Position,
-  entity_radius:f32,
-  test_id:usize,
+  world: &World,
+  entity_position: Position,
+  entity_radius: f32,
+  test_id: usize,
 ) -> bool {
   let test_position = world.get_component::<Position>(test_id,).unwrap();
   let pathing_radius = world.get_component::<PathingRadius>(test_id,).unwrap();

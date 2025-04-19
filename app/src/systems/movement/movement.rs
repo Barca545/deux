@@ -1,8 +1,8 @@
-use super::{
-  move_camera::update_camera_position, update_position::update_position,
-  update_velocity::update_velocity,
-};
+// use move_camera::update_camera_position;
+use super::{update_position::update_position, update_velocity::update_velocity};
 use nina::world::World;
+// use update_position::update_position;
+// use update_velocity::update_velocity;
 
 // Refactor:
 // - Update path, update destination, and update velocity need to be integrated
@@ -11,12 +11,12 @@ use nina::world::World;
 //  needs selection needs to run first and do the AABB test
 //  this should only run if the selection test says nothing is selected
 
-pub fn movement(world:&mut World,) {
-  // update_path(world,);
-  // update_destination(world,);
+pub fn movement(world: &mut World,) {
   update_velocity(world,);
   update_position(world,);
-  update_camera_position(world,);
+  // update_path(world,);
+  // update_destination(world,);
+  // update_camera_position(world,);
   // update_hitbox(world,);
   // move_attacks(world,);
 }
@@ -24,11 +24,9 @@ pub fn movement(world:&mut World,) {
 #[cfg(test)]
 mod test {
   use super::update_position;
-  use crate::{
-    game_data::{Destination, Position, UnitSpeed, Velocity},
-    math::Vec3,
-  };
   use eyre::Result;
+  use game_data::{Destination, Position, UnitSpeed, Velocity};
+  use math::Vec3;
   use nina::world::World;
 
   #[test]
@@ -38,10 +36,10 @@ mod test {
     let speed = UnitSpeed::new(1.0,);
 
     // TODO: Replace dbgs with asserts
-    let velocity = Velocity::new(&position, &destination, &speed.total(),);
+    let velocity = Velocity::new(&position, &destination, &speed.max(),);
     dbg!(velocity.0);
 
-    let velocity = Velocity::new(&position, &destination, &speed.total(),);
+    let velocity = Velocity::new(&position, &destination, &speed.max(),);
 
     dbg!(velocity.0);
   }
@@ -51,7 +49,7 @@ mod test {
     let position = Position(Vec3::new(0.0, 0.0, 0.0,),);
     let destination = Destination(Vec3::new(3.0, 0.0, 3.0,),);
     let speed = UnitSpeed::new(5.0,);
-    let velocity = Velocity::new(&position, &destination, &speed.total(),);
+    let velocity = Velocity::new(&position, &destination, &speed.max(),);
     dbg!(velocity);
 
     let mut world = World::new();

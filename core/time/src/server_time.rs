@@ -16,50 +16,53 @@ use std::{
 // -Add logic for deleting timers and updating their duration
 // -See if updating so it does not decrement the timers is a performance gain
 
-const TICK_FREQUENCY:f64 = 1.0 / 60.0;
+const TICK_FREQUENCY: f64 = 1.0 / 60.0;
 
 #[derive(Debug, Clone,)]
 pub struct ServerTime {
   /// The time the game started.
-  start_count:Instant,
+  start_count: Instant,
   /// Number of the current CPU count.
-  current_count:Instant,
+  current_count: Instant,
   /// Number of the previous CPU count.
-  previous_count:Instant,
+  previous_count: Instant,
   /// Time left over if the time between render frames was bigger than a tick.
-  seconds_since_render:Duration,
+  seconds_since_render: Duration,
   /// Time left over if the time between logic frames was bigger than a tick.
-  seconds_since_update:Duration,
+  seconds_since_update: Duration,
   /// Frequency of game logic updates.
-  tick_frequency:Duration,
+  tick_frequency: Duration,
   /// Frequency the scene re-renders.
-  render_frequency:Duration,
+  render_frequency: Duration,
   /// Bit masks tracking whether a timer index is free for use.
-  timermap:Vec<bool,>,
-  timers:Vec<Rc<RefCell<BasicTimer,>,>,>,
+  timermap: Vec<bool,>,
+  timers: Vec<Rc<RefCell<BasicTimer,>,>,>,
 }
 
 impl ServerTime {
+  /// Create a new `ServerTime`.
   pub fn new() -> Self {
     let start = Instant::now();
 
     ServerTime {
-      start_count:start,
-      current_count:start,
-      previous_count:start,
-      seconds_since_render:Duration::from_secs(0,),
-      seconds_since_update:Duration::from_secs(0,),
-      tick_frequency:Duration::from_secs_f64(TICK_FREQUENCY,),
-      render_frequency:Duration::from_secs_f64(1.0 / 240.0,),
-      timermap:Vec::default(),
-      timers:Vec::default(),
+      start_count: start,
+      current_count: start,
+      previous_count: start,
+      seconds_since_render: Duration::from_secs(0,),
+      seconds_since_update: Duration::from_secs(0,),
+      tick_frequency: Duration::from_secs_f64(TICK_FREQUENCY,),
+      render_frequency: Duration::from_secs_f64(1.0 / 240.0,),
+      timermap: Vec::default(),
+      timers: Vec::default(),
     }
   }
 
-  /// Updates the `seconds_since_last_update` and `seconds_since_render`.
-  /// Sets the `current_count` to the current [`Instant`].
+  /// Updates the [`ServerTime::seconds_since_update`] and
+  /// [`ServerTime::seconds_since_render`]. Sets [`ServerTime::current_count`]
+  /// to the current [`Instant`].
   ///
   /// # Warning
+  // TODO: Is this true
   /// Must execute first in a game loop.
   pub fn tick(&mut self,) {
     self.previous_count = self.current_count;
@@ -68,7 +71,7 @@ impl ServerTime {
     // Subtract the previous count from the current count to get the time since the
     // last tick
     let seconds_since_last_tick = self.current_count - self.previous_count;
-
+    // Update the accumulator fields with the `seconds_since_last_tick`
     self.seconds_since_update += seconds_since_last_tick;
     self.seconds_since_render += seconds_since_last_tick;
   }
@@ -82,8 +85,10 @@ impl ServerTime {
     )
   }
 
+  // TODO: This possibly should be a module test instead of method test
+
   /**
-  Compares the amount of unrendered time to engine's ticks per second and returns a boolean whose `true` value indicates the system should render/update.
+  Compares the amount of unrendered time to engine's ticks per second and returns a boolean whose `true` value indicates the system should update.
   Use in a while loop with `Timer::decrement_unrendered_time()` to render an amount of time from the unrendered time equal to the value of one game engine tick.
 
   # Examples
@@ -122,6 +127,9 @@ impl ServerTime {
     }
   }
 
+  /// Compares the amount of unrendered time to engine's ticks per second and
+  /// returns a boolean whose `true` value indicates the system should
+  /// render.
   pub fn should_render(&self,) -> bool {
     match self.seconds_since_render >= self.render_frequency {
       true => true,
@@ -161,18 +169,22 @@ impl ServerTime {
       .div_duration_f64(self.tick_frequency,)
   }
 
+  /// Return the [`Instant`] representing the game server's current tick.
+  pub fn get_current_tick(&self,) -> Instant {
+    self.current_count
+  }
+
   /// Change the number of frames to render per second.
-  pub fn update_render_frequency(&mut self, hz:u32,) {
+  pub fn update_render_frequency(&mut self, hz: u32,) {
     self.render_frequency = Duration::from_secs_f64(1.0 / (hz as f64),)
   }
 
-  // TODO: Is this needed? When would the tick frequency ever be updated that
-  // isn't also an engine rewrite? (During dev to test things but it would need to
-  // be removed in a real build)
-  pub fn update_tick_frequency(&mut self, hz:u32,) {
+  #[cfg(feature = "dev-only")]
+  pub fn update_tick_frequency(&mut self, hz: u32,) {
     self.tick_frequency = Duration::from_secs_f64(1.0 / (hz as f64),)
   }
 
+  /// Returns the game server's tick rate.
   pub fn get_tick_frequency(&self,) -> Seconds {
     self.tick_frequency.as_secs_f64()
   }
@@ -182,7 +194,7 @@ impl ServerTime {
 impl ServerTime {
   ///Adds a new timer to the [`ServerTime`]'s list of timers and returns an
   /// [`Rc`] to the timer alongside its index.
-  pub fn new_timer(&mut self, duration:Miliseconds,) -> (Rc<RefCell<BasicTimer,>,>, usize,) {
+  pub fn new_timer(&mut self, duration: Miliseconds,) -> (Rc<RefCell<BasicTimer,>,>, usize,) {
     let timer = Rc::new(RefCell::new(BasicTimer::new(duration,),),);
     if let Some((index, _,),) = self
       .timermap
@@ -193,8 +205,7 @@ impl ServerTime {
       self.timers[index] = timer;
       let timer = self.timers[index].clone();
       (timer, index,)
-    }
-    else {
+    } else {
       self.timers.push(timer,);
       let index = self.timers.len() - 1;
       let timer = self.timers[index].clone();
@@ -202,7 +213,7 @@ impl ServerTime {
     }
   }
 
-  pub fn remove_timer(&mut self, index:usize,) {
+  pub fn remove_timer(&mut self, index: usize,) {
     self.timermap[index] = false;
   }
 
@@ -297,15 +308,14 @@ mod tests {
   fn counter_does_update() {
     let mut count;
 
-    let mut tick:u64 = 0;
+    let mut tick: u64 = 0;
 
     loop {
       if tick < 20 {
         count = counter();
         tick += 1;
         println!("Tick:{}, Count:{:#?}", tick, count);
-      }
-      else {
+      } else {
         break;
       }
     }

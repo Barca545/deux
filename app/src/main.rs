@@ -93,9 +93,10 @@ fn main() {
         } => renderer.resize(PhysicalSize::new(width as u32, height as u32,),),
         // Record an event each time the mouse state is changed
         Event::MouseMotion { .. } | Event::MouseButtonDown { .. } => {
+          let time = world.get_resource::<ServerTime>().get_current_tick();
           world
             .get_resource_mut::<FrameInputs>()
-            .insert_mouse(event_pump.mouse_state(),);
+            .insert_mouse(event_pump.mouse_state(), time,);
         }
         // Generate an input for the keypress
         Event::KeyDown {
@@ -105,8 +106,9 @@ fn main() {
           // TODO: Maybe make this into a self contained function both for documentation
           // perposes and also to reduce clutter?
           // If the input exists, record it
+          let time = world.get_resource::<ServerTime>().get_current_tick();
           let keybinds = world.get_resource::<Keybinds>();
-          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Press,) {
+          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Press, time,) {
             Some(input,) => {
               let mut inputs = world.get_resource_mut::<FrameInputs>();
               inputs.insert(input,);
@@ -124,7 +126,9 @@ fn main() {
         } => {
           let keybinds = world.get_resource::<Keybinds>();
           // If the input exists, record it
-          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Release,) {
+          // Get the input's timestamp
+          let time = world.get_resource::<ServerTime>().get_current_tick();
+          match keybinds.build_input(&key, event_pump.mouse_state(), ButtonAction::Release, time,) {
             Some(input,) => {
               let mut inputs = world.get_resource_mut::<FrameInputs>();
               inputs.insert(input,);
@@ -150,8 +154,7 @@ fn main() {
     // Run update logic
     if server_time.should_update() {
       update(&mut world,);
-      // TODO: Not sure server time needs to update here
-      // Update the server time
+      // Update the time since the last update
       world
         .get_resource_mut::<ServerTime>()
         .decrement_seconds_since_update();
@@ -163,8 +166,11 @@ fn main() {
     if server_time.should_render() {
       // TODO: Use render system from the update mod
       render(&world, &mut renderer,);
-      let server_time = world.get_resource_mut::<ServerTime>();
-      server_time.decrement_seconds_since_render()
+
+      // Update the time since the last render
+      world
+        .get_resource_mut::<ServerTime>()
+        .decrement_seconds_since_render()
     }
   }
 }

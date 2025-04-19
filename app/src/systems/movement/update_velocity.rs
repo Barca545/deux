@@ -1,14 +1,10 @@
+use game_data::{player_movement::PlayerMovement, Controllable, UnitSpeed, Velocity};
 use nina::world::World;
-
-use crate::{
-  game_data::{Controllable, UnitSpeed, Velocity},
-  input::user_inputs::PlayerInputs,
-};
 // TODO: Eventually this will handle all entities with velocity and the function
 // docs will need updating
 
 /// Updates the [`Velocity`] component of the [`Controllable`] character.
-pub fn update_velocity(world:&World,) {
+pub fn update_velocity(world: &World,) {
   // Get the player
   let mut query = world.query();
   let player = &query.with_component::<Controllable>().unwrap().run()[0];
@@ -16,7 +12,7 @@ pub fn update_velocity(world:&World,) {
   // Get player movement stats
   let velocity = world.get_component_mut::<Velocity>(player.id,).unwrap();
   let speed = world.get_component::<UnitSpeed>(player.id,).unwrap();
-  let player_input_state = world.get_resource_mut::<PlayerInputs>();
+  let player_input_state = world.get_resource_mut::<PlayerMovement>();
 
   // If there is a horizontal input add it to the player's velocity.
   match (player_input_state.left, player_input_state.right,) {
@@ -43,14 +39,15 @@ pub fn update_velocity(world:&World,) {
   }
 
   // Normalize + scale velocity to ensure it always has a |v| = speed
-  if velocity.mag() > speed.total() {
-    *velocity = Velocity(velocity.0.normalize().scale(speed.total(),),);
+  if velocity.mag() > speed.max() {
+    *velocity = Velocity(velocity.0.normalize().scale(speed.max(),),);
   }
 }
 
 #[cfg(test)]
 mod test {
-  use crate::{game_data::Velocity, math::Vec3};
+  use game_data::Velocity;
+  use math::Vec3;
 
   #[test]
   // Confirms the math occuring in update velocity is correct
