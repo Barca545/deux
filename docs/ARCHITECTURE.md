@@ -27,6 +27,17 @@ Crates containing only a `lib.rs` are not expanded
 ```text
 ├─App
 │  ├─Gameplay
+│  │   ├─Systems
+│  │   │   ├─Movement
+│  │   │   ├─Inputs
+│  │   │   └─Combat
+│  │   ├─Components
+│  │   │   ├─Stats
+│  │   │   ├─Identification
+│  │   │   ├─Rendering
+│  │   │   └─Movement 
+│  │   └─Resources
+│  │       └─Player Movement 
 │  ├─Lib
 │  └─Main
 ├─Core
