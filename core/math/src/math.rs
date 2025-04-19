@@ -106,8 +106,7 @@ pub fn identity() -> Mat4 {
   nalgebra_glm::identity()
 }
 
-/// Finds the maximum between two numbers. Returns `a` if both numbers are
-/// equal.
+/// Finds the maximum between two numbers.
 pub fn max<N: Number,>(a: N, b: N,) -> N {
   match a >= b {
     true => a,

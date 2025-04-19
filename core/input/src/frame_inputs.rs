@@ -31,7 +31,6 @@ impl FrameInputs {
 
   /// Record a new [`Input`] in the current frame.
   pub fn insert(&mut self, input: Input,) {
-    dbg!(&input);
     self
       .frame
       .entry(input.ty,)

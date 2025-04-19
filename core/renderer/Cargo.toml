@@ -17,5 +17,5 @@ storage = { workspace = true }
 windowing = { workspace = true }
 nina = { workspace = true }
 time = { workspace = true }
-# game_data = { workspace = true }
 macros = { workspace = true }
+yakui-wgpu = "0.3.0"

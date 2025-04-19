@@ -20,17 +20,10 @@ impl Window {
     let size = PhysicalSize::new(1280, 720,);
 
     let window = video_subsystem
-      .window("Deux 2 The Second", size.width, size.height,)
+      .window("Deux 2: The Second Part Two", size.width, size.height,)
       .position_centered()
       .build()
       .unwrap();
-
-    // Convert the window into a canvas (this is what you can actually draw on)
-    // TODO: Do I actually need the the canvas? or do I just need the window?
-    // let mut canvas = window.into_canvas().build().unwrap();
-    // canvas.set_draw_color(BLACK,);
-    // canvas.clear();
-    // canvas.present();
 
     Window {
       inner: Arc::new(window,),
@@ -47,34 +40,3 @@ impl Window {
     }
   }
 }
-
-// /// Creates and returns a [`Window`].
-// // pub fn create_window() -> (Canvas<sdl2::video::Window,>, EventPump,) {
-// pub fn create_window() -> (Window, EventPump,) {
-//   // Create the window and canvas
-//   let sdl2_context = sdl2::init().unwrap();
-//   let video_subsystem = sdl2_context.video().unwrap();
-
-//   // TODO: This actually might be the kind of thing that could be a static
-//   // It exists the whole program, most things just need to reference it.
-//   let size = PhysicalSize::new(1280, 720,);
-
-//   let window = video_subsystem
-//     .window("Deux 2 The Second", size.width, size.height,)
-//     .position_centered()
-//     .build()
-//     .unwrap();
-
-//   // Convert the window into a canvas (this is what you can actually draw on)
-//   // TODO: Do I actually need the the canvas? or do I just need the window?
-//   // let mut canvas = window.into_canvas().build().unwrap();
-//   // canvas.set_draw_color(BLACK,);
-//   // canvas.clear();
-//   // canvas.present();
-
-//   // Create the event pump
-//   let event_pump = sdl2_context.event_pump().unwrap();
-
-//   // (canvas, event_pump,)
-//   (Window(Arc::new(window,),), event_pump,)
-// }

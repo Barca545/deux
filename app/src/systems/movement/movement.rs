@@ -1,5 +1,8 @@
 // use move_camera::update_camera_position;
-use super::{update_position::update_position, update_velocity::update_velocity};
+use super::{
+  update_position::{update_position, update_position_of_entities_with_destination},
+  update_velocity::update_velocity,
+};
 use nina::world::World;
 // use update_position::update_position;
 // use update_velocity::update_velocity;
@@ -14,6 +17,7 @@ use nina::world::World;
 pub fn movement(world: &mut World,) {
   update_velocity(world,);
   update_position(world,);
+  update_position_of_entities_with_destination(world,);
   // update_path(world,);
   // update_destination(world,);
   // update_camera_position(world,);

@@ -96,14 +96,14 @@ where
     self.bonus
   }
 
-  /// Return the sum of a [`BasicStat`]'s [`base`](BasicStat::base) and
+  /// Return the sum of a [`BasicStat`]'s [`max`](BasicStat::base) and
   /// [`bonus`](BasicStat::bonus) fields.
   #[inline(always)]
   pub fn max(&self,) -> N {
     self.max
   }
 
-  /// Return the remaning amount of a [`BasicGrowableStat`].
+  /// Return the remaning amount of a [`BasicStat`].
   #[inline(always)]
   pub fn remaining(&self,) -> N {
     self.remaining
@@ -132,59 +132,83 @@ macro_rules! new_basic_stat {
     pub struct $ident(BasicStat<$ty,>,);
 
     impl $ident {
+      #[allow(unused)]
       pub fn new(base: $ty,) -> Self {
         $ident(BasicStat::new(base,),)
       }
-
+      #[allow(unused)]
+      /// Add `amount` to the `base` field.
       pub fn add_base(&mut self, amount: $ty,) {
         self.0.add_base(amount,);
       }
 
+      #[allow(unused)]
+      /// Remove `amount` from the `base` field.
       pub fn sub_base(&mut self, amount: $ty,) {
         self.0.sub_base(amount,);
       }
 
+      #[allow(unused)]
+      /// Add `amount` to the `bonus` field.
       pub fn add_bonus(&mut self, amount: $ty,) {
         self.0.add_bonus(amount,);
       }
 
+      #[allow(unused)]
+      /// Remove `amount` from the `bonus` field.
       pub fn sub_bonus(&mut self, amount: $ty,) {
         self.0.sub_bonus(amount,);
       }
 
+      #[allow(unused)]
+      /// Add `amount` to the `remaining` field.
       pub fn add_remaining(&mut self, amount: $ty,) {
         self.0.add_remaining(amount,);
       }
 
+      #[allow(unused)]
+      /// Remove `amount` from the `remaining` field.
       pub fn sub_remaining(&mut self, amount: $ty,) {
         self.0.sub_remaining(amount,);
       }
 
+      #[allow(unused)]
+      /// Return the value of the `base ` field.
       pub fn base(&self,) -> $ty {
         self.0.base()
       }
 
+      #[allow(unused)]
+      /// Return the value of the `bonus` field.
       pub fn bonus(&self,) -> $ty {
         self.0.bonus()
       }
 
+      #[allow(unused)]
+      /// Return the value of the `max` field.
       pub fn max(&self,) -> $ty {
         self.0.max()
       }
 
+      #[allow(unused)]
+      /// Value of the `remaining` field.
       pub fn remaining(&self,) -> $ty {
         self.0.remaining()
       }
 
+      #[allow(unused)]
+      /// Set the `remaining` field equal to
+      /// the `max` value.
       pub fn reset(&mut self,) {
         self.0.reset()
       }
 
+      #[allow(unused)]
+      /// Return a `bool` indicating whether the `remaining`
+      /// field is zero.
       pub fn is_zero(&self,) -> bool {
         self.0.is_zero()
       }
     }
   };
 }
-
-new_basic_stat!(Test, f32,);

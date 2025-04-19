@@ -1,9 +1,10 @@
 use app::{
   render::render,
   systems::spawn::{
-    register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_player,
+    register_components, register_resources, spawn_dummy, spawn_enviroment, spawn_mob,
+    spawn_player,
   },
-  update,
+  update::update,
 };
 use inputs::{
   frame_inputs::FrameInputs,
@@ -14,15 +15,9 @@ use renderer::{renderer::Renderer, scene::camera::Camera};
 use sdl2::{
   event::{Event, WindowEvent},
   keyboard::Keycode,
-  mouse::MouseState,
-  EventPump,
 };
 use time::ServerTime;
-// use update::update;
-use windowing::{
-  sdl2_utils::{PhysicalPosition, PhysicalSize},
-  windowing::Window,
-};
+use windowing::{sdl2_utils::PhysicalSize, windowing::Window};
 
 // Refactor:
 // - Re-add other systems
@@ -34,6 +29,8 @@ use windowing::{
 //   its own function
 // - Look into the command pattern https://gameprogrammingpatterns.com/command.html
 //   for inputs
+// - I think some part of the loop is running too slowly and causing weird lag
+//   spikes something to investigate
 
 fn main() {
   let mut world = World::new();
@@ -60,8 +57,12 @@ fn main() {
   spawn_enviroment(&mut world, "ground", &mut renderer,);
 
   // Spawn dummies
-  spawn_dummy(&mut world, [3.0, 0.0, -3.0,], &mut renderer,);
-  spawn_dummy(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
+  // spawn_dummy(&mut world, [3.0, 0.0, -3.0,], &mut renderer,);
+  // spawn_dummy(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
+  spawn_mob(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
+  spawn_mob(&mut world, [7.0, 0.0, 0.0,], &mut renderer,);
+  spawn_mob(&mut world, [8.0, 0.0, 0.0,], &mut renderer,);
+  spawn_mob(&mut world, [9.0, 0.0, 0.0,], &mut renderer,);
 
   // Add the resources to world
   world.add_resource(camera,);
@@ -172,5 +173,17 @@ fn main() {
         .get_resource_mut::<ServerTime>()
         .decrement_seconds_since_render()
     }
+  }
+}
+
+enum HI {
+  Test,
+  No,
+}
+fn test() {
+  let t = HI::No;
+  match t {
+    HI::Test => todo!(),
+    HI::No => todo!(),
   }
 }
