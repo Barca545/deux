@@ -60,9 +60,9 @@ fn main() {
   // spawn_dummy(&mut world, [3.0, 0.0, -3.0,], &mut renderer,);
   // spawn_dummy(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
   spawn_mob(&mut world, [5.0, 0.0, 0.0,], &mut renderer,);
-  spawn_mob(&mut world, [7.0, 0.0, 0.0,], &mut renderer,);
-  spawn_mob(&mut world, [8.0, 0.0, 0.0,], &mut renderer,);
-  spawn_mob(&mut world, [9.0, 0.0, 0.0,], &mut renderer,);
+  // spawn_mob(&mut world, [7.0, 0.0, 0.0,], &mut renderer,);
+  // spawn_mob(&mut world, [8.0, 0.0, 0.0,], &mut renderer,);
+  // spawn_mob(&mut world, [9.0, 0.0, 0.0,], &mut renderer,);
 
   // Add the resources to world
   world.add_resource(camera,);
@@ -173,17 +173,5 @@ fn main() {
         .get_resource_mut::<ServerTime>()
         .decrement_seconds_since_render()
     }
-  }
-}
-
-enum HI {
-  Test,
-  No,
-}
-fn test() {
-  let t = HI::No;
-  match t {
-    HI::Test => todo!(),
-    HI::No => todo!(),
   }
 }

@@ -6,9 +6,81 @@ pub type Vec2 = TVec2<f32,>;
 pub type Vec3 = TVec3<f32,>;
 pub type Vec4 = TVec4<f32,>;
 pub type Mat4 = TMat4<f32,>;
-pub type Point3 = Vec3;
-pub type Point2 = Vec2;
 pub type Perspective = Perspective3<f32,>;
+
+#[derive(Debug, Clone, Copy, PartialEq,)]
+/// A 2D point.
+pub struct Point2 {
+  x: f32,
+  y: f32,
+}
+
+impl Point2 {
+  /// Create a new `Point2`.
+  pub fn new(x: f32, y: f32,) -> Self {
+    Point2 { x, y, }
+  }
+
+  /// Return the `x` coordinate of the `Point`.
+  pub fn x(&self,) -> f32 {
+    self.x
+  }
+
+  /// Return the `y` coordinate of the `Point`.
+  pub fn y(&self,) -> f32 {
+    self.y
+  }
+}
+
+impl From<Vec2,> for Point2 {
+  fn from(value: Vec2,) -> Self {
+    Point2 {
+      x: value.x,
+      y: value.y,
+    }
+  }
+}
+
+// TODO: Use this instead of Vec3 for position or make this Vec3
+#[derive(Debug, Clone, Copy,)]
+/// A 3D point.
+pub struct Point3 {
+  x: f32,
+  y: f32,
+  z: f32,
+}
+
+impl Point3 {
+  /// Create a new `Point2`.
+  pub fn new(x: f32, y: f32, z: f32,) -> Self {
+    Point3 { x, y, z, }
+  }
+
+  /// Return the `x` coordinate of the `Point`.
+  pub fn x(&self,) -> f32 {
+    self.x
+  }
+
+  /// Return the `y` coordinate of the `Point`.
+  pub fn y(&self,) -> f32 {
+    self.y
+  }
+
+  /// Return the `z` coordinate of the `Point`.
+  pub fn z(&self,) -> f32 {
+    self.z
+  }
+}
+
+impl From<Vec3,> for Point3 {
+  fn from(value: Vec3,) -> Self {
+    Point3 {
+      x: value.x,
+      y: value.y,
+      z: value.z,
+    }
+  }
+}
 
 /// Array represenation of a [`Mat4`] for GPU usage.
 pub type FlatMat4 = [[f32; 4]; 4];
@@ -112,6 +184,21 @@ pub fn max<N: Number,>(a: N, b: N,) -> N {
     true => a,
     false => b,
   }
+}
+
+/// Finds the minimum between two numbers.
+pub fn min<N: Number,>(a: N, b: N,) -> N {
+  match a >= b {
+    true => b,
+    false => a,
+  }
+}
+
+// Returns the solutions the quadratic equation defined by the given parameters.
+pub fn quadratic_solution(a: f32, b: f32, c: f32,) -> (f32, f32,) {
+  let solution_1 = -b + (b.powi(2,) - 4.0 * a * c).sqrt();
+  let solution_2 = -b + (b.powi(2,) - 4.0 * a * c).sqrt();
+  (solution_1, solution_2,)
 }
 
 /// Maps an `(x,y)` pixel value to a value in [normalized device coordinates](https://learnopengl.com/Getting-started/Coordinate-Systems).

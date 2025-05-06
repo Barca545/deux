@@ -1,21 +1,21 @@
-use crate::{raycasting::RayCast, Vec3};
+use crate::{raycasting::Ray3D, Vec3};
 
 /// A square shaped 2D [AABB](https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection).
 pub struct AABB2D {
-  pub radius:f32,
-  pub min:Vec3,
-  pub max:Vec3,
+  pub radius: f32,
+  pub min: Vec3,
+  pub max: Vec3,
 }
 
 impl AABB2D {
-  pub fn new(position:&Vec3, radius:f32,) -> Self {
-    let max:Vec3 = Vec3::new(position.x - radius, 0.0, position.z - radius,);
-    let min:Vec3 = Vec3::new(position.x + radius, 0.0, position.z + radius,);
+  pub fn new(position: &Vec3, radius: f32,) -> Self {
+    let max: Vec3 = Vec3::new(position.x - radius, 0.0, position.z - radius,);
+    let min: Vec3 = Vec3::new(position.x + radius, 0.0, position.z + radius,);
 
     AABB2D { radius, min, max, }
   }
 
-  pub fn update(&mut self, position:&Vec3,) {
+  pub fn update(&mut self, position: &Vec3,) {
     self.min = Vec3::new(position.x - self.radius, 0.0, position.z - self.radius,);
     self.max = Vec3::new(position.x + self.radius, 0.0, position.z - self.radius,);
   }
@@ -26,7 +26,7 @@ impl AABB2D {
   ///Based on the equation found here: https://tavianator.com/2011/ray_box.html.
   ///
   ///Image illustrating the technique: https://www.researchgate.net/figure/The-slab-method-for-ray-intersection-detection-15_fig3_283515372
-  pub fn check_ray_collision(&self, ray:&RayCast,) -> bool {
+  pub fn check_ray_collision(&self, ray: &Ray3D,) -> bool {
     //I do not really understand why this is the calculation of the tx/tz values
     // let tx1 = (self.max.x - ray.origin.x) * ray.inverse_direction.x;
     // let tx2 = (self.max.x - ray.origin.x) * ray.inverse_direction.x;
@@ -68,16 +68,16 @@ impl AABB2D {
 
 #[derive(Debug, Clone, Copy,)]
 pub struct AABB3D {
-  pub height:f32,
-  pub radius:f32,
-  pub min:Vec3,
-  pub max:Vec3,
+  pub height: f32,
+  pub radius: f32,
+  pub min: Vec3,
+  pub max: Vec3,
 }
 
 impl AABB3D {
-  pub fn new(position:Vec3, height:f32, radius:f32,) -> Self {
-    let min:Vec3 = Vec3::new(position.x - radius, height, position.z - radius,);
-    let max:Vec3 = Vec3::new(position.x + radius, 0.0, position.z + radius,);
+  pub fn new(position: Vec3, height: f32, radius: f32,) -> Self {
+    let min: Vec3 = Vec3::new(position.x - radius, height, position.z - radius,);
+    let max: Vec3 = Vec3::new(position.x + radius, 0.0, position.z + radius,);
     AABB3D {
       height,
       radius,
@@ -95,16 +95,16 @@ impl AABB3D {
 #[cfg(test)]
 mod test {
   use super::AABB2D;
-  use crate::{math::Vec3, raycasting::RayCast};
+  use crate::{math::Vec3, raycasting::Ray3D};
 
   #[test]
   fn check_collision() {
-    let position:Vec3 = Vec3::new(0.0, 0.0, 0.0,);
+    let position: Vec3 = Vec3::new(0.0, 0.0, 0.0,);
     let aabb = AABB2D::new(&position, 5.0,);
 
-    let origin:Vec3 = Vec3::new(0.0, 0.0, -5.0,);
-    let end:Vec3 = Vec3::new(0.0, 0.0, 0.0,);
-    let ray = RayCast::new(origin, end,);
+    let origin: Vec3 = Vec3::new(0.0, 0.0, -5.0,);
+    let end: Vec3 = Vec3::new(0.0, 0.0, 0.0,);
+    let ray = Ray3D::new(origin, end,);
 
     let hit_check = aabb.check_ray_collision(&ray,);
     dbg!(hit_check);

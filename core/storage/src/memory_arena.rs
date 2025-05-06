@@ -1,4 +1,4 @@
-use std::{hash::Hash, marker::PhantomData};
+use std::{hash::Hash, marker::PhantomData, ops::Index};
 
 // Refactor:
 // - Make the Arena generational I *think* this is as easy as making the ID
@@ -103,16 +103,101 @@ impl<T,> Hash for ArenaId<T,> {
   }
 }
 
-// /// Marker type which allows the implementor to index into an [`Arena`] of
-// type /// `T`.
-// pub trait ArenaIndex<T,> {
-//   fn id(&self,) -> usize;
-// }
+// TODO: Could adapt this entry idea for the slab pool thing in SPDR
+// just get rid of the gen field and make next only a u32
+// Or not the pool but the free list the allocator uses. Explore that.
+#[derive(Debug, Clone, Copy,)]
+enum ArenaEntry<T,> {
+  Entry { gen: u64, data: T, },
+  Empty { next: usize, },
+}
 
-// impl<T, I:ArenaIndex<T,>,> Index<I,> for Arena<T,> {
-//   type Output = T;
+#[derive(Debug,)]
+pub struct GenArenaIndex<T,> {
+  idx: usize,
+  generation: u64,
+  _data: PhantomData<*const T,>,
+}
 
-//   fn index(&self, index:I,) -> &Self::Output {
-//     &self.data[index.id()]
-//   }
-// }
+impl<T,> Clone for GenArenaIndex<T,> {
+  fn clone(&self,) -> Self {
+    Self {
+      idx: self.idx.clone(),
+      generation: self.generation.clone(),
+      _data: self._data.clone(),
+    }
+  }
+}
+
+impl<T,> Copy for GenArenaIndex<T,> {}
+
+/// Design inspired by https://docs.rs/generational-arena/latest/generational_arena/
+/// The default capacity is 10.
+pub struct GenerationalArena<T,> {
+  storage: Vec<ArenaEntry<T,>,>,
+  free: usize,
+}
+
+impl<T,> GenerationalArena<T,> {
+  const DEFAULT_CAP: usize = 10;
+
+  /// Create a new `GenerationalArena` with the default capacity.
+  pub fn new() -> Self {
+    // for i in 0..Self::DEFAULT_CAP {
+    //   storage[i] = ArenaEntry::Empty { next: i + 1, }
+    // }
+
+    Self {
+      storage: Vec::with_capacity(Self::DEFAULT_CAP,),
+      free: 0,
+    }
+  }
+
+  /// Create a new `GenerationalArena` with the provided capacityy
+  pub fn with_capacity(cap: usize,) -> Self {
+    // for i in 0..cap {
+    //   storage[i] = ArenaEntry::Empty { next: i + 1, }
+    // }
+
+    Self {
+      storage: Vec::with_capacity(cap,),
+      free: 0,
+    }
+  }
+
+  pub fn insert(&mut self, data: T,) {
+    // Place the data in the next free cell.
+    self.storage[self.free] = ArenaEntry::Entry {
+      gen: 0, data: data,
+    };
+    // Update the next free cell and freelist
+    todo!()
+  }
+
+  pub fn remove(&mut self,) -> T {
+    // Update the next free cell and freelist
+    todo!()
+  }
+
+  pub fn get(&self, idx: GenArenaIndex<T,>,) -> Option<&T,> {
+    // TODO: Confirm the index is the correct generation and return...something if
+    // not
+    match &self.storage[idx.idx] {
+      ArenaEntry::Entry { data, .. } => Some(data,),
+      ArenaEntry::Empty { .. } => None,
+    }
+  }
+
+  pub fn get_mut(&mut self, idx: GenArenaIndex<T,>,) -> Option<&mut T,> {
+    // TODO: Confirm the index is the correct generation and return...something if
+    // not
+    match &mut self.storage[idx.idx] {
+      ArenaEntry::Entry { data, gen, } => {
+        // Update the generation when accessed mutably
+        *gen += 1;
+        Some(data,)
+      }
+      ArenaEntry::Empty { .. } => None,
+    }
+  }
+}

@@ -1,4 +1,4 @@
-use crate::systems::{inputs::process_movement_inputs, movement::movement};
+use crate::{gameplay::systems::movement, systems::inputs::process_movement_inputs};
 use inputs::frame_inputs::FrameInputs;
 use nina::world::World;
 
